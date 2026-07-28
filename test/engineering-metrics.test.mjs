@@ -8,6 +8,7 @@ import test from "node:test";
 import {
   buildAfterActionReport,
   buildMetricsReport,
+  ENGINEERING_EVENT_FAMILIES,
   normalizeEngineeringEvent,
   readEngineeringEvents,
   recordEngineeringEvent
@@ -112,6 +113,128 @@ test("metrics record accepts a closed JSON event without exposing telemetry outp
   assert.equal(output, "");
   assert.equal(readEngineeringEvents({ ledger }).events[0].p50_hours, 2700);
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("typed token events retain only observed fields and expose field-level coverage", () => {
+  assert.deepEqual(ENGINEERING_EVENT_FAMILIES.Token, ["token."]);
+  const report = buildMetricsReport({
+    events: [
+      event("task.started", "2026-07-26T00:00:00.000Z"),
+      event("token.usage", "2026-07-26T00:05:00.000Z", {
+        input_tokens: 120,
+        output_tokens: 30,
+        total_tokens: 150,
+        provider_latency_ms: 41,
+        evidence_class: "observed",
+        evidence_authority: "runtime_metadata",
+        coverage_status: "partial"
+      }),
+      event("task.completed", "2026-07-26T01:00:00.000Z")
+    ],
+    thread: "thread-1",
+    days: 7,
+    now: NOW
+  });
+  const token = report.projects[0].tasks[0].views.token;
+  assert.equal(token.input_tokens.value, 120);
+  assert.equal(token.total_tokens.value, 150);
+  assert.equal(token.cached_input_tokens.value, null);
+  assert.equal(token.cached_input_tokens.coverage_status, "partial");
+  assert.equal(token.total_tokens.coverage_status, "partial");
+  assert.throws(() => normalizeEngineeringEvent(event("token.usage", "2026-07-26T00:00:00.000Z", {
+    evidence_class: "observed",
+    evidence_authority: "runtime_metadata",
+    coverage_status: "complete"
+  })), /requires at least one observed token or provider latency field/);
+});
+
+test("operator-requested comparison metrics require complete accepted-task denominators", () => {
+  const report = buildMetricsReport({
+    events: [
+      event("task.started", "2026-07-26T00:00:00.000Z"),
+      event("seat.started", "2026-07-26T00:00:00.000Z", { seat_id: "0" }),
+      event("seat.started", "2026-07-26T00:00:00.000Z", { seat_id: "1" }),
+      event("seat.started", "2026-07-26T00:00:00.000Z", { seat_id: "2" }),
+      event("token.usage", "2026-07-26T00:10:00.000Z", {
+        total_tokens: 2_000_000,
+        evidence_class: "observed",
+        evidence_authority: "runtime_metadata",
+        coverage_status: "complete"
+      }),
+      event("quality.duplicated_work", "2026-07-26T01:00:00.000Z", { duration_ms: 60 * 60 * 1000 }),
+      event("coordination.overhead", "2026-07-26T01:30:00.000Z", { duration_ms: 30 * 60 * 1000 }),
+      event("seat.stopped", "2026-07-26T02:00:00.000Z", { seat_id: "0" }),
+      event("seat.stopped", "2026-07-26T02:00:00.000Z", { seat_id: "1" }),
+      event("seat.stopped", "2026-07-26T02:00:00.000Z", { seat_id: "2" }),
+      event("task.result_usable", "2026-07-26T02:00:00.000Z"),
+      event("coverage.seat_intervals", "2026-07-26T02:00:00.000Z", { outcome: "complete" }),
+      event("coverage.duplicated_work", "2026-07-26T02:00:00.000Z", { outcome: "complete" }),
+      event("coverage.coordination", "2026-07-26T02:00:00.000Z", { outcome: "complete" }),
+      event("quality.acceptance", "2026-07-26T02:00:00.000Z", { first_pass: true }),
+      event("coverage.quality", "2026-07-26T02:00:00.000Z", { outcome: "complete" }),
+      event("task.completed", "2026-07-26T02:00:00.000Z")
+    ],
+    thread: "thread-1",
+    days: 7,
+    now: NOW
+  });
+  const comparison = report.projects[0].comparison;
+  assert.equal(comparison.accepted_tasks_per_hour, 0.5);
+  assert.equal(comparison.accepted_tasks_per_million_exact_observed_tokens, 0.5);
+  assert.equal(comparison.task_latency_hours_mean, 2);
+  assert.equal(comparison.average_delegated_worker_count, 2);
+  assert.equal(comparison.duplicated_work_duration_over_total_admitted_seat_time, 0.25);
+  assert.equal(comparison.orchestration_overhead_duration_over_wall_clock, 0.25);
+  assert.equal(comparison.coverage.exact_observed_tokens.ratio, 1);
+
+  const incomplete = buildMetricsReport({
+    events: [
+      event("task.started", "2026-07-26T00:00:00.000Z"),
+      event("quality.acceptance", "2026-07-26T02:00:00.000Z", { first_pass: true }),
+      event("coverage.quality", "2026-07-26T02:00:00.000Z", { outcome: "complete" }),
+      event("task.completed", "2026-07-26T02:00:00.000Z")
+    ],
+    thread: "thread-1",
+    days: 7,
+    now: NOW
+  }).projects[0].comparison;
+  assert.equal(incomplete.accepted_tasks_per_million_exact_observed_tokens, null);
+  assert.equal(incomplete.average_delegated_worker_count, null);
+  assert.equal(incomplete.duplicated_work_duration_over_total_admitted_seat_time, null);
+  assert.equal(incomplete.orchestration_overhead_duration_over_wall_clock, null);
+});
+
+test("orphan seat lifecycle and tooling fallbacks stay runtime diagnostics", () => {
+  const report = buildMetricsReport({
+    events: [
+      event("seat.started", "2026-07-26T00:00:00.000Z", {
+        thread_id: undefined,
+        seat_id: "orphan-seat"
+      }),
+      event("seat.stopped", "2026-07-26T00:10:00.000Z", {
+        thread_id: undefined,
+        seat_id: "orphan-seat"
+      }),
+      {
+        type: "runtime.tooling_fallback",
+        occurred_at: "2026-07-26T00:15:00.000Z",
+        project: "alpha",
+        source: "runtime",
+        evidence_class: "observed",
+        evidence_authority: "runtime_metadata",
+        coverage_status: "partial"
+      }
+    ],
+    days: 7,
+    now: NOW
+  });
+  assert.equal(report.projects[0].task_count, 0);
+  assert.equal(report.projects[0].delivery.completed_tasks, 0);
+  assert.equal(report.ledger.orphan_seat_lifecycle_events, 2);
+  assert.equal(report.runtime_diagnostics.unlinked_seat_lifecycle_events, 2);
+  assert.equal(report.runtime_diagnostics.tooling_fallback_events, 1);
+  assert.equal(report.runtime_diagnostics.kpi_effect, "none");
+  assert.equal(report.semantics.evidence_authority, "evidence_provenance_not_execution_authority");
 });
 
 test("forecasting keeps segment lower bounds and proposed human baselines separate", () => {

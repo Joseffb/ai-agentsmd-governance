@@ -2,7 +2,7 @@
 
 ![AI Coding Agent Governance workflow](docs/assets/ai-coding-agent-governance.png)
 
-> **Current release line:** RC-3.0 (`3.0.2`).
+> **Current release line:** RC-3.0 (`3.0.3`).
 > Immutable releases include the tracked source plugins, but bundling does not
 > prove that any host installed, loaded, or activated those plugins.
 
@@ -53,6 +53,15 @@ Kernel -> Receipts -> Events -> Metrics
 Metrics consume existing lifecycle evidence. They never change policy, authorize an operation, influence a receipt, weaken a safety control, or become a completion gate. The KPI layer is optional and replaceable.
 
 Telemetry is local and private by default. It records bounded lifecycle facts, identifiers, durations, outcomes, and estimates, not prompts, source code, model output, secrets, or hidden reasoning. Lifecycle writes are silent private JSONL. KPI and after-action reports are operator-requested only; run cleanup never sends them automatically.
+
+Runtime transcript ingestion, when enabled by a host integration, is a separate
+one-stream typed-family adapter. It reads only allowlisted `session_meta` and
+`token_count` fields only after an exact project-root and/or task binding is
+proved by session metadata. It projects per-turn `last_token_usage`, never
+cumulative token snapshots, into the private append-only ledger; it never
+writes the session or task source files. It cannot inject context, create
+a handoff, send a task message, use the network, report automatically, or
+change execution from a metric. See the [runtime telemetry contract](docs/agent-metrics.md#runtime-telemetry-ingestion-contract).
 
 Older tasks do not automatically gain newly installed launch hooks through
 reload. When a task is authoritatively confirmed as pre-hook, `acg context

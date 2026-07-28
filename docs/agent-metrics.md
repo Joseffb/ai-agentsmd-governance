@@ -90,6 +90,65 @@ average, peak, and displayed agent or seat counts. A displayed count of `N`
 represents delegated seats `1` through `N`; topology labels run from `0`
 through `N`.
 
+## Runtime Telemetry Ingestion Contract
+
+Runtime telemetry is a **one-stream, typed-family** adapter, not a task
+control plane. A conforming implementation deterministically reads a supplied
+immutable stream and accepts only the following allowlisted record families:
+
+| Record family | Allowlisted fields | Treatment |
+| --- | --- | --- |
+| `session_meta` | bounded session/task identity linkage needed for correlation | bounded identity projection only |
+| `token_count` | per-turn `last_token_usage` fields and primary rate-limit snapshot fields when supplied | exact observed values only |
+
+Unknown record families and fields are discarded. The adapter never parses or
+stores prompt text, source code, model output, hidden reasoning, credentials,
+or raw machine paths. Source session and task files are read-only inputs:
+they are never created, modified, truncated, renamed, or deleted by ingestion.
+
+Run the adapter only with at least one binding: `--path <exact-project-root>`
+and/or `--thread <exact-task-id>`. A session is admitted only when its
+`session_meta` proves that its `cwd` is within the exact root and/or that its
+task identity exactly matches the requested thread. Root selection alone never
+labels every session in a transcript. The adapter stores neither `cwd` nor a
+raw local path; every imported event is correlated through its bounded
+`task_id` or `thread_id`. A matching session timestamp may add one idempotent
+`task.started` projection, but ingestion never invents completion or
+acceptance.
+
+`last_token_usage` is a per-turn observation. Cumulative
+`total_token_usage` snapshots are not read or summed. A token event is emitted
+only as schema-recognized `token.usage`. Primary quota snapshots use only
+observed `used_percent`, `window_minutes`, and reset timestamp/epoch fields as
+schema-recognized `token.quota_snapshot`; they never include credits, balance,
+plan, or an inferred remaining percentage. Operator-reported quota facts use a
+separate `source: operator`, `evidence_class: user_report` ledger event.
+
+The only durable effect is an append-only, private local ledger event. Ingested
+events carry a stable bounded idempotency key, so replaying the same input
+produces no duplicate ledger fact. No event is rewritten or backfilled in
+place; a correction is a new linked append-only fact under the existing ledger
+rules.
+
+Token facts preserve exact values when observed. A missing, withheld, malformed,
+or non-numeric token component is `null`, with explicit coverage describing
+what was observed; it is never converted to zero, estimated, or borrowed from a
+different event. Reporting may project this ledger into exactly these bounded
+families: **Runtime**, **Work**, **Token**, **Acceptance**, and
+**Utilization**. A projection retains its coverage and cannot invent a value
+outside its input evidence.
+
+Tooling failures, unavailable host metadata, malformed records, and permitted
+fallbacks are reported only as telemetry coverage or tooling-health facts. They
+do not inflate task, acceptance, validation, or product-quality failure counts.
+Raw local machine paths remain local-only; any report or after-action payload
+uses bounded project, task, work, or session identities instead.
+
+This adapter has no authority to inject context, create or accept a handoff,
+send task messages, make network calls, create automatic reports, schedule
+work, or alter routing, model choice, delegation, validation, acceptance, or
+execution from a metric. Reports remain operator-requested and downstream-only.
+
 ## Reports
 
 ```sh
@@ -102,6 +161,13 @@ node bin/acg.mjs metrics report --project example --days 30
 # Diagnostic thread drilldown
 node bin/acg.mjs metrics report --thread thread-123 --days 14
 
+# Explicitly bound, quiet runtime import (at least --path or --thread is required)
+node bin/acg.mjs metrics ingest-runtime \
+  --session-root <session-root> \
+  --project example \
+  --path <project-root> \
+  --thread thread-123
+
 # Identity-free projection for large-goal cleanup
 node bin/acg.mjs metrics after-action \
   --project example \
@@ -112,7 +178,8 @@ Every report includes project dashboards and weekly trend data. A thread filter
 matches either the recorded thread ID or its linked task ID and adds task
 diagnostics without returning raw ledger rows. The JSON shape is
 deterministic for the selected ledger, filters, and report time, making it safe
-for a later scheduled task. No schedule is created by the metrics feature.
+for a later scheduled task. Comparison reporting is operator-requested only;
+no schedule is created without an explicit operator cadence.
 The after-action projection omits ledger diagnostics and raw task/thread IDs;
 it is the bounded payload supplied to the configured Agent System lane.
 
@@ -129,6 +196,14 @@ it is the bounded payload supplied to the configured Agent System lane.
 - Human Waiting Time = task start to the first usable operator result.
 - Manual Hours Avoided is a separately supplied engineering estimate. It is
   never derived from wall-clock time and is always labeled estimate-based.
+- Comparison projections include accepted tasks/hour, accepted tasks/million
+  exact observed tokens, mean accepted-task latency, average delegated worker
+  count (excluding Seat `0`), duplicated-work duration/admitted seat time, and
+  orchestration-overhead duration/wall-clock. Each uses only the accepted-task
+  cohort and reports `null` whenever its full timing, token, worker, duplicate,
+  coordination, or wall-clock denominator is incomplete. `coverage.duplicated_work`
+  and `coverage.coordination` explicitly close their corresponding observation
+  surfaces; their absence is not treated as zero.
 
 Missing timings, estimates, intervals, acceptance evidence, validation, or
 proof return `null` with coverage. They are never inferred from unrelated

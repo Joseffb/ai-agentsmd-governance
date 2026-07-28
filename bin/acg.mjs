@@ -19,6 +19,7 @@ import {
   buildMetricsReport,
   recordEngineeringEvent
 } from "../lib/engineering-metrics.mjs";
+import { ingestRuntimeTelemetry } from "../lib/runtime-telemetry.mjs";
 import { attestNativeSubagent } from "../lib/native-model-attestation.mjs";
 import { auditModelRouting } from "../lib/model-routing-audit.mjs";
 import {
@@ -110,6 +111,7 @@ function parseArgs(argv) {
     else if (value === "--parent-thread") args.parentThreadId = rest[++index];
     else if (value === "--agent") args.agentId = rest[++index];
     else if (value === "--session-root") args.sessionRoot = rest[++index];
+    else if (value === "--diagnostics") args.diagnostics = true;
     else if (value === "--days") args.days = Number(rest[++index]);
     else if (value === "--log") args.logFile = rest[++index];
     else if (value === "--ledger") args.ledger = rest[++index];
@@ -346,6 +348,15 @@ try {
     recordEngineeringEvent(event, { ledger: args.ledger });
     quiet = true;
     result = null;
+  } else if (args.command === "metrics" && args.positional[0] === "ingest-runtime") {
+    result = await ingestRuntimeTelemetry({
+      sessionRoot: args.sessionRoot,
+      project: args.project,
+      ledger: args.ledger,
+      projectPath: args.path,
+      thread: args.thread
+    });
+    quiet = args.diagnostics !== true;
   } else if (args.command === "lock") {
     result = lockPolicies(resolvePolicyRoot(args.policyRoot));
   } else if (args.command === "local-lock") {
@@ -369,7 +380,7 @@ try {
     result = listPolicyCatalog(args.positional[0] ?? "all", resolvePolicyRoot(args.policyRoot));
   } else {
     result = {
-      commands: ["audit", "orchestrate next", "orchestrate verify", "seat inspect", "seat preflight", "seat assign", "seat recover", "seat continue", "seat finalize", "seat explain", "metrics report", "metrics after-action", "metrics record", "context adopt-current", "context legacy", "profile add-root", "profile remove-root", "profile approval", "profile agent-system", "agent-system record-issue", "handoff verify", "handoff accept", "handoff communicate", "communicate", "route", "deliver", "acknowledge", "attest-native-model", "model-audit", "list", "lock", "local-lock", "local-verify", "traceability", "verify", "canary", "build-release", "activate", "publish-overlays"],
+      commands: ["audit", "orchestrate next", "orchestrate verify", "seat inspect", "seat preflight", "seat assign", "seat recover", "seat continue", "seat finalize", "seat explain", "metrics report", "metrics after-action", "metrics record", "metrics ingest-runtime", "context adopt-current", "context legacy", "profile add-root", "profile remove-root", "profile approval", "profile agent-system", "agent-system record-issue", "handoff verify", "handoff accept", "handoff communicate", "communicate", "route", "deliver", "acknowledge", "attest-native-model", "model-audit", "list", "lock", "local-lock", "local-verify", "traceability", "verify", "canary", "build-release", "activate", "publish-overlays"],
       audit: "audit --project <slug> --path <absolute-root> [--prior-receipt <file|->]",
       orchestrate: {
         next: "orchestrate next --project <slug> --path <absolute-root> --intent <intent> --facts <json-file|-> [--prior-bundle <absolute-path>]",
@@ -398,7 +409,8 @@ try {
       metrics: {
         report: "metrics report [--project <slug>] [--thread <id>] [--days 30] [--ledger <private-jsonl>]",
         after_action: "metrics after-action --project <slug> --thread <id> [--days <n>]",
-        record: "metrics record --event <type> --project <slug> [--thread <id>] [--task <id>] [--seat <id>] [bounded event fields]"
+        record: "metrics record --event <type> --project <slug> [--thread <id>] [--task <id>] [--seat <id>] [bounded event fields]",
+        ingest_runtime: "metrics ingest-runtime --session-root <absolute-root> --project <slug> [--path <exact-project-root>] [--thread <exact-task-id>] [--ledger <private-jsonl>] [--diagnostics]; require --path and/or --thread"
       },
       handoff: {
         verify: "handoff verify --project <slug> --handoff <absolute-path> [--pointer <absolute-path>] [--repository <absolute-path>]",
