@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "policy_root": "/tmp/example/local-policies",
+  "organizations": [
+    {
+      "id": "ExampleOrg",
+      "policy": {
+        "version": 1,
+        "path": "/tmp/example/local-policies/example-org.md"
+      },
+      "projects": [
+        {
+          "project_id": "ExampleProject",
+          "root": "/tmp/example/project",
+          "git_origin": "https://example.invalid/ExampleOrg/ExampleProject.git",
+          "policy": {
+            "version": 1,
+            "path": "/tmp/example/local-policies/example-project.md"
+          }
+        }
+      ]
+    }
+  ]
+}

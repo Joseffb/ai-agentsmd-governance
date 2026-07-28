@@ -1,0 +1,459 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.ai-codex-governance/schemas/orchestration-bundle.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "bundle_type",
+    "bundle_digest",
+    "release_identity",
+    "project_identity",
+    "predecessor_digest",
+    "immediate_intent",
+    "classification",
+    "seat0_decision",
+    "rule_selection",
+    "model_recommendation",
+    "contracts",
+    "native_fallback"
+  ],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "bundle_type": { "const": "jit_orchestration" },
+    "bundle_digest": { "$ref": "#/$defs/digest" },
+    "release_identity": {
+      "type": "object",
+      "required": [
+        "composer_version",
+        "checkout_system_version",
+        "checkout_system_version_evidence",
+        "installed_system_version",
+        "installed_release_id",
+        "installed_release_evidence",
+        "active_host_interception"
+      ],
+      "properties": {
+        "composer_version": { "const": "1.0.0" },
+        "checkout_system_version": { "$ref": "#/$defs/versionOrUnverified" },
+        "checkout_system_version_evidence": { "enum": ["package_json", "Unverified"] },
+        "installed_system_version": { "$ref": "#/$defs/versionOrUnverified" },
+        "installed_release_id": {
+          "anyOf": [
+            { "const": "Unverified" },
+            { "type": "string", "pattern": "^v1-[a-f0-9]{16,}$" }
+          ]
+        },
+        "installed_release_evidence": { "enum": ["immutable_release_json", "Unverified"] },
+        "active_host_interception": { "const": "Unverified" }
+      },
+      "additionalProperties": false
+    },
+    "project_identity": {
+      "type": "object",
+      "required": ["project", "project_root", "repository_root", "subtree", "immediate_intent"],
+      "properties": {
+        "project": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "project_root": { "type": "string", "minLength": 1 },
+        "repository_root": { "type": "string", "minLength": 1 },
+        "subtree": { "type": "string", "minLength": 1 },
+        "immediate_intent": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "predecessor_digest": {
+      "anyOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/digest" }
+      ]
+    },
+    "immediate_intent": { "type": "string", "minLength": 1 },
+    "classification": {
+      "type": "object",
+      "required": [
+        "immediate_intent",
+        "classification",
+        "estimated_duration_ms",
+        "effects",
+        "seat0_activity",
+        "source_mutation_surfaces",
+        "five_minute_limit_ms",
+        "anti_evasion"
+      ],
+      "properties": {
+        "immediate_intent": { "type": "string", "minLength": 1 },
+        "classification": {
+          "enum": [
+            "seat0_owned",
+            "seat0_atomic_allowed",
+            "worker_required",
+            "project_authority_required"
+          ]
+        },
+        "estimated_duration_ms": { "type": "integer", "minimum": 0 },
+        "effects": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "browser",
+              "build",
+              "contract_change",
+              "database_mutation",
+              "dependency",
+              "deployment",
+              "destructive_operation",
+              "external_communication",
+              "filesystem_mutation",
+              "git_history_rewrite",
+              "migration",
+              "privacy",
+              "publication",
+              "purchase",
+              "release",
+              "security",
+              "source_mutation",
+              "test"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "seat0_activity": {
+          "type": ["string", "null"],
+          "enum": ["integration", "coordination", "decision", "communication", "acceptance", null]
+        },
+        "source_mutation_surfaces": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "five_minute_limit_ms": { "const": 300000 },
+        "anti_evasion": {
+          "type": "object",
+          "required": [
+            "duration_over_limit_requires_worker",
+            "effect_requires_worker",
+            "effect_requires_project_authority",
+            "mandatory_effect_requires_worker",
+            "seat0_prohibition_requires_worker",
+            "unknown_remedy_requires_worker",
+            "worker_owned_slice_requires_worker",
+            "multiple_surfaces_requires_worker",
+            "atomic_source_mutation_surface_count",
+            "low_risk_correction",
+            "delegation_overhead_dominates",
+            "future_operations_considered"
+          ],
+          "properties": {
+            "duration_over_limit_requires_worker": { "type": "boolean" },
+            "effect_requires_worker": { "type": "boolean" },
+            "effect_requires_project_authority": { "type": "boolean" },
+            "mandatory_effect_requires_worker": { "type": "boolean" },
+            "seat0_prohibition_requires_worker": { "type": "boolean" },
+            "unknown_remedy_requires_worker": { "type": "boolean" },
+            "worker_owned_slice_requires_worker": { "type": "boolean" },
+            "multiple_surfaces_requires_worker": { "type": "boolean" },
+            "atomic_source_mutation_surface_count": { "type": "integer", "minimum": 0 },
+            "low_risk_correction": { "type": "boolean" },
+            "delegation_overhead_dominates": { "type": "boolean" },
+            "future_operations_considered": { "const": false }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "seat0_decision": {
+      "type": "object",
+      "required": ["seat", "decision", "reasons"],
+      "properties": {
+        "seat": { "const": 0 },
+        "decision": {
+          "enum": [
+            "seat0_owned",
+            "seat0_atomic_allowed",
+            "worker_required",
+            "project_authority_required"
+          ]
+        },
+        "reasons": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "rule_selection": {
+      "type": "object",
+      "required": [
+        "immediate_intent",
+        "required_rule_ids",
+        "rule_delta",
+        "context_ledger",
+        "accumulated_policy_tokens"
+      ],
+      "properties": {
+        "immediate_intent": { "type": "string", "minLength": 1 },
+        "required_rule_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "rule_delta": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["order", "id", "digest", "estimated_tokens"],
+            "properties": {
+              "order": { "type": "integer", "minimum": 1 },
+              "id": { "type": "string", "minLength": 1 },
+              "digest": { "$ref": "#/$defs/digest" },
+              "estimated_tokens": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "context_ledger": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/ledgerEntry" }
+        },
+        "accumulated_policy_tokens": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "topology": {
+      "type": "object",
+      "required": [
+        "coordinator",
+        "worker_count",
+        "seat0_included_in_worker_count",
+        "maximum_useful_disjoint_workers",
+        "workers"
+      ],
+      "properties": {
+        "coordinator": {
+          "type": "object",
+          "required": ["seat", "label"],
+          "properties": {
+            "seat": { "const": 0 },
+            "label": { "const": "Seat 0" }
+          },
+          "additionalProperties": false
+        },
+        "worker_count": { "type": "integer", "minimum": 1 },
+        "seat0_included_in_worker_count": { "const": false },
+        "maximum_useful_disjoint_workers": { "type": "integer", "minimum": 1 },
+        "workers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "seat",
+              "label",
+              "item_ids",
+              "assignment_ids",
+              "write_scopes",
+              "requested_model",
+              "requested_reasoning_raw",
+              "actual_model",
+              "actual_reasoning_raw",
+              "model_attestation",
+              "reasoning_attestation",
+              "prompt_envelope"
+            ],
+            "properties": {
+              "seat": { "type": "integer", "minimum": 1 },
+              "label": { "type": "string", "pattern": "^Seat [1-9][0-9]*$" },
+              "item_ids": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "assignment_ids": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "write_scopes": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "requested_model": { "type": "string", "minLength": 1 },
+              "requested_reasoning_raw": { "type": "string", "minLength": 1 },
+              "actual_model": { "const": "Unverified" },
+              "actual_reasoning_raw": { "const": "Unverified" },
+              "model_attestation": { "const": "configured_not_runtime_attested" },
+              "reasoning_attestation": { "const": "configured_not_runtime_attested" }
+              ,"prompt_envelope": { "$ref": "#/$defs/workerPromptEnvelope" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "model_recommendation": {
+      "type": "object",
+      "required": ["model", "reasoning", "rationale", "actual_model", "actual_reasoning_raw"],
+      "properties": {
+        "model": { "type": "string", "minLength": 1 },
+        "reasoning": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1 },
+        "actual_model": { "const": "Unverified" },
+        "actual_reasoning_raw": { "const": "Unverified" }
+      },
+      "additionalProperties": false
+    },
+    "contracts": {
+      "type": "object",
+      "required": ["authority", "isolation", "validation", "return", "fallback"],
+      "properties": {
+        "authority": {
+          "type": "object",
+          "required": ["origin", "bundle_grants_project_authority", "digest_proves"],
+          "properties": {
+            "origin": { "const": "external_user_or_project_authority_only" },
+            "bundle_grants_project_authority": { "const": false },
+            "digest_proves": { "const": "consistency_not_project_authority" }
+          },
+          "additionalProperties": false
+        },
+        "isolation": {
+          "type": "object",
+          "required": ["required_for_worker_mutation", "mode", "evidence"],
+          "properties": {
+            "required_for_worker_mutation": { "type": "boolean" },
+            "mode": { "const": "receipt_bound_git_worktree_before_launch" },
+            "evidence": { "const": "Unverified" }
+          },
+          "additionalProperties": false
+        },
+        "validation": {
+          "type": "object",
+          "required": [
+            "coordinator_seat",
+            "worker_results_are_advisory_until_verified",
+            "required_outcome",
+            "evidence"
+          ],
+          "properties": {
+            "coordinator_seat": { "const": 0 },
+            "worker_results_are_advisory_until_verified": { "const": true },
+            "required_outcome": { "const": "verified_against_candidate" },
+            "evidence": { "const": "Unverified" }
+          },
+          "additionalProperties": false
+        },
+        "return": {
+          "type": "object",
+          "required": ["recipient_seat", "required_fields"],
+          "properties": {
+            "recipient_seat": { "const": 0 },
+            "required_fields": {
+              "type": "array",
+              "prefixItems": [
+                { "const": "repository" },
+                { "const": "worktree" },
+                { "const": "base_commit" },
+                { "const": "final_head" },
+                { "const": "changed_files" },
+                { "const": "validation" },
+                { "const": "unresolved_findings" }
+              ],
+              "items": false,
+              "minItems": 7,
+              "maxItems": 7
+            }
+          },
+          "additionalProperties": false
+        },
+        "fallback": { "$ref": "#/$defs/fallback" }
+      },
+      "additionalProperties": false
+    },
+    "native_fallback": { "$ref": "#/$defs/fallback" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "versionOrUnverified": {
+      "anyOf": [
+        { "const": "Unverified" },
+        {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"
+        }
+      ]
+    },
+    "ledgerEntry": {
+      "type": "object",
+      "required": ["digest", "estimated_tokens"],
+      "properties": {
+        "digest": { "$ref": "#/$defs/digest" },
+        "estimated_tokens": { "type": "integer", "minimum": 0 },
+        "prior_versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["digest", "estimated_tokens"],
+            "properties": {
+              "digest": { "$ref": "#/$defs/digest" },
+              "estimated_tokens": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "fallback": {
+      "type": "object",
+      "required": [
+        "mode",
+        "requested_model",
+        "requested_reasoning_raw",
+        "actual_model",
+        "actual_reasoning_raw",
+        "attestation"
+      ],
+      "properties": {
+        "mode": { "const": "native_fallback" },
+        "requested_model": { "type": "string", "minLength": 1 },
+        "requested_reasoning_raw": { "type": "string", "minLength": 1 },
+        "actual_model": { "const": "Unverified" },
+        "actual_reasoning_raw": { "const": "Unverified" },
+        "attestation": { "const": "native_runtime_metadata_unavailable" }
+      },
+      "additionalProperties": false
+    },
+    "workerPromptEnvelope": {
+      "type": "object",
+      "required": ["schema_version", "scope", "authority", "non_authority", "non_goals", "acceptance", "stop_conditions", "validation", "isolation_effects", "evidence", "return", "requested_model", "requested_reasoning_raw", "fallback"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "scope": { "type": "object", "required": ["item_ids", "write_scopes"], "properties": { "item_ids": { "type": "array", "items": { "type": "string" } }, "write_scopes": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": false },
+        "authority": { "const": "external_user_or_project_authority_only" },
+        "non_authority": { "const": "does_not_grant_project_authority" },
+        "non_goals": { "type": "array", "items": { "type": "string" } },
+        "acceptance": { "const": "coordinator_verifies_against_candidate" },
+        "stop_conditions": { "type": "array", "items": { "type": "string" } },
+        "validation": { "const": "run_assigned_validation_and_report_actual_result" },
+        "isolation_effects": { "const": "receipt_bound_git_worktree_before_mutation" },
+        "evidence": { "const": "return_bounded_evidence_only" },
+        "return": { "const": "return_to_seat_0_using_required_fields" },
+        "requested_model": { "type": "string", "minLength": 1 },
+        "requested_reasoning_raw": { "type": "string", "minLength": 1 },
+        "fallback": { "const": "native_fallback_without_expanded_authority" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

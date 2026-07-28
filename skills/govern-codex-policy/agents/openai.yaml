@@ -1,0 +1,7 @@
+interface:
+  display_name: "Govern Codex Policy"
+  short_description: "Route and verify modular Codex governance"
+  default_prompt: "Use $govern-codex-policy to classify the immediate governed operation, resolve and verify the minimum policy closure, and preserve monotonic context growth without governance-imposed rollover."
+
+policy:
+  allow_implicit_invocation: true

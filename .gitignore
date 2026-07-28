@@ -1,0 +1,11 @@
+.runtime/
+receipts/
+*.tmp
+.DS_Store
+governance/legacy/
+governance/traceability/
+governance/organizations/
+governance/overlays/
+governance/local/
+governance/profiles/*
+!governance/profiles/codex-runtime.json

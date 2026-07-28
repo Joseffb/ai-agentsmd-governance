@@ -1,0 +1,1 @@
+{"mode":"mutation","phase":"delegation","project":"example-project","operations":["launch_mutating_subagent"],"tools":["subagent"],"paths":["/tmp/example-project"],"mutation_authority":true}

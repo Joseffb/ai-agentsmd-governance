@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "manifest": {
+    "id": "ai-codex-governance",
+    "version": 1,
+    "sha256": "sha256:bbf30f97a904b30ceacb09b175fdd195a77faa9cceb8387ab73d5c9b43bc210c"
+  },
+  "estimator": {
+    "id": "utf8-bytes-div-4-ceil",
+    "version": 1,
+    "encoding": "utf8",
+    "formula": "ceil(utf8_bytes / 4)",
+    "scope": "policy_estimate_only",
+    "runtime_context_capacity": "Unverified"
+  },
+  "kernel": {
+    "path": "kernel/AGENTS.md",
+    "sha256": "sha256:823c3ab22b19f1776c99cd6f97b4ce4c70cfda87b270cadf16bfdb0ed8d23918",
+    "bytes": 7973,
+    "words": 1042,
+    "estimated_tokens": 1994
+  },
+  "skill": {
+    "path": "skills/govern-codex-policy/SKILL.md",
+    "sha256": "sha256:b8e101612532e2a8beba666abbd3c3741e8140b2a5710a8e0d5cf828bfd54aa0",
+    "bytes": 19868,
+    "words": 2570,
+    "estimated_tokens": 4967
+  },
+  "modules": [
+    {
+      "id": "storage",
+      "version": 1,
+      "path": "modules/storage.md",
+      "sha256": "sha256:fbd05cded89126f6a6e13f4f9fd8f2d6a26312a8c2eefb3a289281ccb0cf53b5",
+      "bytes": 1415,
+      "words": 188,
+      "estimated_tokens": 354
+    },
+    {
+      "id": "trust-and-data",
+      "version": 1,
+      "path": "modules/trust-and-data.md",
+      "sha256": "sha256:c80f45660be4f27e5b34004fb6dfdd36d5c76cf2e3ddfa9b639734c7b46fcfdf",
+      "bytes": 1540,
+      "words": 191,
+      "estimated_tokens": 385
+    },
+    {
+      "id": "external-effects-and-supply-chain",
+      "version": 1,
+      "path": "modules/external-effects-and-supply-chain.md",
+      "sha256": "sha256:dc0ee6b217ec66da3265322e3c6bf920716b5848c8e9132abb9028809d90cdef",
+      "bytes": 1464,
+      "words": 181,
+      "estimated_tokens": 366
+    },
+    {
+      "id": "planning-and-capacity",
+      "version": 4,
+      "path": "modules/planning-and-capacity.md",
+      "sha256": "sha256:5f1ed75230c9eed5ed6dc7362367452e80b7f08490f08568d67fbb1c73600529",
+      "bytes": 3057,
+      "words": 408,
+      "estimated_tokens": 765
+    },
+    {
+      "id": "model-routing",
+      "version": 10,
+      "path": "modules/model-routing.md",
+      "sha256": "sha256:88347b521853d94abd53d860ee887dbe13d5301ad8b966bb50b0ef05315a283a",
+      "bytes": 8484,
+      "words": 1117,
+      "estimated_tokens": 2121
+    },
+    {
+      "id": "context-routing",
+      "version": 1,
+      "path": "modules/context-routing.md",
+      "sha256": "sha256:078c8285d8d8a78792e65004252c6910bd46511b03381c937fa09c379e45dfbd",
+      "bytes": 1091,
+      "words": 145,
+      "estimated_tokens": 273
+    },
+    {
+      "id": "jit-orchestration",
+      "version": 2,
+      "path": "modules/jit-orchestration.md",
+      "sha256": "sha256:78c7ad298d83b4532e926f6f3d5ed6872c43a6297ed8db7b07670a3af38d86f7",
+      "bytes": 8771,
+      "words": 1184,
+      "estimated_tokens": 2193
+    },
+    {
+      "id": "delegation",
+      "version": 14,
+      "path": "modules/delegation.md",
+      "sha256": "sha256:3de7e4771d4f2080975446be48257708a2fad160ab0504b85df5352e17cb8228",
+      "bytes": 9639,
+      "words": 1328,
+      "estimated_tokens": 2410
+    },
+    {
+      "id": "subagent-git",
+      "version": 5,
+      "path": "modules/subagent-git.md",
+      "sha256": "sha256:abdd48d45692d2ced2099f2d32ba204666e17714236ba64aeb5e3eb9181eb423",
+      "bytes": 6661,
+      "words": 848,
+      "estimated_tokens": 1666
+    },
+    {
+      "id": "continuity",
+      "version": 4,
+      "path": "modules/continuity.md",
+      "sha256": "sha256:0b7702166931e3179460e0c9382bb43b6039734e832c7ea9c3e4837be9c8a11e",
+      "bytes": 2793,
+      "words": 353,
+      "estimated_tokens": 699
+    },
+    {
+      "id": "validation-and-evidence",
+      "version": 1,
+      "path": "modules/validation-and-evidence.md",
+      "sha256": "sha256:10686cda09783114575546704d3df721c5164727df2f7f1abd6bb2156a5d52e0",
+      "bytes": 1371,
+      "words": 169,
+      "estimated_tokens": 343
+    },
+    {
+      "id": "findings",
+      "version": 2,
+      "path": "modules/findings.md",
+      "sha256": "sha256:b02dd8c0b7fa79a71ae661debfd772871a0a96ac92ebf64eb31b886a99f0701d",
+      "bytes": 2131,
+      "words": 272,
+      "estimated_tokens": 533
+    },
+    {
+      "id": "deep-audit",
+      "version": 1,
+      "path": "modules/deep-audit.md",
+      "sha256": "sha256:b2460a0720c43128b5ed32b848de37ff0c12260b86630f7a80eec0df477e4aba",
+      "bytes": 1232,
+      "words": 140,
+      "estimated_tokens": 308
+    },
+    {
+      "id": "project-overlays",
+      "version": 2,
+      "path": "modules/project-overlays.md",
+      "sha256": "sha256:a808e551be94a9004b4428e0a0086c99df242c7bbc41937ce7ff070ca6aacb45",
+      "bytes": 1726,
+      "words": 221,
+      "estimated_tokens": 432
+    },
+    {
+      "id": "mobile-review",
+      "version": 1,
+      "path": "modules/mobile-review.md",
+      "sha256": "sha256:1a943fb6864042679107221ed494f0bf098acc38d11a8a87970f201dae30412d",
+      "bytes": 665,
+      "words": 98,
+      "estimated_tokens": 167
+    },
+    {
+      "id": "release",
+      "version": 4,
+      "path": "modules/release.md",
+      "sha256": "sha256:8d970d1e11b46ae84b1603b9de143d0d506ebfa9ea512272668012c548f9334b",
+      "bytes": 4307,
+      "words": 588,
+      "estimated_tokens": 1077
+    }
+  ]
+}

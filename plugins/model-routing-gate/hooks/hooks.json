@@ -1,0 +1,55 @@
+{
+  "description": "Fail-closed subagent model assignment and attestation hooks.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Agent|spawn_agent|multi_agent_v1__spawn_agent|wait_agent|multi_agent_v1__wait_agent|close_agent|multi_agent_v1__close_agent)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$PLUGIN_ROOT/scripts/model-routing-gate.mjs\" hook",
+            "timeout": 10,
+            "statusMessage": "Checking subagent model assignment"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(Agent|spawn_agent|multi_agent_v1__spawn_agent)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$PLUGIN_ROOT/scripts/model-routing-gate.mjs\" hook",
+            "timeout": 10,
+            "statusMessage": "Binding subagent model evidence"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$PLUGIN_ROOT/scripts/model-routing-gate.mjs\" hook",
+            "timeout": 10,
+            "statusMessage": "Attesting subagent runtime model"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$PLUGIN_ROOT/scripts/model-routing-gate.mjs\" hook",
+            "timeout": 10,
+            "statusMessage": "Checking subagent output admissibility"
+          }
+        ]
+      }
+    ]
+  }
+}

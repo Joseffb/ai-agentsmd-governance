@@ -1,0 +1,19 @@
+{
+  "name": "jit-orchestration-governor",
+  "version": "3.0.0-rc.1",
+  "description": "Bounded JIT guard for immediate orchestration actions",
+  "author": {
+    "name": "AI Codex Governance"
+  },
+  "interface": {
+    "displayName": "JIT Orchestration Governor",
+    "shortDescription": "Guard JIT orchestration metadata before material actions.",
+    "longDescription": "Evaluates complete PreToolUse orchestration metadata, denies only an improper Seat 0 worker action or a missing-authority action, and records bounded private diagnostics without blocking the project.",
+    "developerName": "AI Codex Governance",
+    "category": "Developer Tools",
+    "capabilities": [
+      "hooks"
+    ],
+    "defaultPrompt": "Check this material action against JIT orchestration requirements."
+  }
+}

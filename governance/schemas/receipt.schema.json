@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.ai-codex-governance/schemas/receipt.schema.json",
+  "type": "object",
+  "required": [
+    "receipt_type",
+    "manifest",
+    "control_level",
+    "receipt_sha256"
+  ],
+  "properties": {
+    "receipt_type": {
+      "enum": [
+        "resolution_receipt",
+        "delivery_receipt",
+        "context_acknowledgment",
+        "operation_receipt",
+        "runtime_enforcement_receipt"
+      ]
+    },
+    "manifest": {
+      "type": "object"
+    },
+    "control_level": {
+      "enum": [
+        "runtime_enforced",
+        "required_by_kernel",
+        "advisory"
+      ]
+    },
+    "receipt_sha256": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

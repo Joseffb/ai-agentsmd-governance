@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ai-codex-governance/local-organization-index.schema.json",
+  "type": "object",
+  "required": ["schema_version", "policy_root", "organizations"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "disabled": { "type": "boolean" },
+    "policy_root": { "type": "string", "minLength": 1 },
+    "organizations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "policy", "projects"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "disabled": { "type": "boolean" },
+          "policy": { "$ref": "#/$defs/policy" },
+          "projects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["project_id", "root", "policy"],
+              "properties": {
+                "project_id": { "type": "string", "minLength": 1 },
+                "root": { "type": "string", "minLength": 1 },
+                "git_origin": { "type": "string", "minLength": 1 },
+                "disabled": { "type": "boolean" },
+                "policy": { "$ref": "#/$defs/policy" }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "policy": {
+      "type": "object",
+      "required": ["version", "path"],
+      "properties": {
+        "version": { "type": "integer", "minimum": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "minLength": 1 },
+        "estimated_tokens": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

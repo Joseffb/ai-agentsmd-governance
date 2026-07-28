@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.ai-codex-governance/schemas/route-request.schema.json",
+  "type": "object",
+  "required": [
+    "mode",
+    "phase",
+    "project",
+    "operations"
+  ],
+  "properties": {
+    "mode": {
+      "enum": [
+        "read_only",
+        "delegation",
+        "mutation",
+        "deep_audit"
+      ]
+    },
+    "phase": {
+      "type": "string",
+      "minLength": 1
+    },
+    "project": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "future_operations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "mutation_authority": {
+      "type": "boolean"
+    },
+    "runtime_capabilities": {
+      "type": "object"
+    },
+    "prior_receipt": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "subagent_worktree_receipt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "authorities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}

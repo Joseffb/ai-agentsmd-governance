@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "fixture_type": "default_estimation_benchmark",
+  "status": "active_fixture_no_unqualified_blinded_samples",
+  "fixture_id": "performed-work-package-generic-v1",
+  "canonical_generic_prompt_sha256": "0960a9ac1606458103f76b14e6391ad698edd46f222d848ff540b17ac36ddde0",
+  "performed_work_scope": "Consider the following completed software-engineering work package.\n\nThe work was performed in an existing multi-tenant Node.js and TypeScript platform using Express, GraphQL, Sequelize, PostgreSQL, server-rendered templates, and an established test suite.\n\nThe work package included:\n\n- Reconciled the current repository baseline and ownership boundaries across concurrent feature branches affecting shared routing, authentication, layouts, caching, migrations, and administration surfaces.\n- Developed and repeatedly refined the product architecture and implementation contracts for an opt-in talent-discovery network spanning independent matching consent, board-local discovery, cross-board network discovery, public presentation controls, contact eligibility, organization and actor blocking, partner administration, and consented lead attribution.\n- Defined durable boundaries separating candidate-board relationships, preferences, consent receipts, network membership, entitlements, effective eligibility, contextual visibility, identity presentation, and revocation behavior.\n- Implemented the policy and data kernel for independent preferences, consent, membership lifecycle, requester capability, actor and company blocks, single-record authorization decisions, and database-query constraint specifications.\n- Implemented safe local and cross-board discovery foundations, including privacy-safe projections, contextual local-versus-network classification, public presentation modes, opaque short-lived discovery handles, board contribution and discovery controls, membership-expiration behavior, direct-access and collection-query parity, and exclusions before counts and pagination.\n- Implemented controlled-activation infrastructure, including partner-lifecycle coordination, transactional invalidation, independent rollout policies, administrator commands, audit records, combined local and network directory composition, legacy-activation containment, runtime key-secret parsing and rotation support, aggregate page-issuance auditing, immutable force-off behavior, and unavailable display and profile authorities.\n- Audited and hardened launch boundaries involving migration-runner serialization and registration, authentication-token consistency, current-principal freshness, idempotency, webhook-event handling, CSRF and session behavior, security headers, resolver loading, privacy lifecycle, retention, and deletion behavior.\n- Investigated findings and implemented applicable bounded repairs or converted unresolved dependencies into explicit activation stop gates.\n- Created and revised database migrations, transactional services, authorization policies, privacy projections, runtime authorities, negative-path containment, and supporting documentation.\n- Added extensive unit, integration, PostgreSQL concurrency, migration, authorization, tenant-isolation, rollback, containment, and regression tests.\n- Ran repeated focused validation, migration rehearsals, production builds, full continuous-integration suites, independent adversarial reviews, failure triage, repair passes, and exact-candidate evidence reconciliation.\n- Maintained implementation continuity, checkpoint commits, ownership matrices, authorization and threat contracts, status reporting, pause and resume state, and a comprehensive handoff for remaining work.\n\nThe estimate should cover all work described above, including architecture revisions, investigation, implementation, testing, security and privacy review, repairs, integration, documentation, coordination, and handoff.",
+  "variants": {
+    "generic": "Give me an estimate.",
+    "human_specific": "Estimate conventional human engineering effort.",
+    "ai_specific": "Estimate execution time for a governed multi-agent coding system.",
+    "telemetry_informed": "Using only the separately supplied authorized delivery telemetry, give me an estimate."
+  },
+  "controls": {
+    "fresh_context": true,
+    "verified_current_hook_parent": true,
+    "authoritative_hook_execution_evidence_required": true,
+    "governance_bootstrap_outside_factual_prompt": true,
+    "older_tasks_do_not_gain_new_launch_hooks_on_reload": true,
+    "prompt_only_no_repository_filesystem_memory_web_prior_task_or_continuity_inspection": true,
+    "record_initial_response_before_follow_up": true,
+    "generic_forbidden_terms": [
+      "human estimate",
+      "AI agents",
+      "Codex",
+      "parallel",
+      "24/7",
+      "wall clock"
+    ],
+    "exploratory_samples_per_configuration": 5,
+    "distribution_samples_per_configuration": 10,
+    "launch_requires_operator_cost_approval": true,
+    "reject_stale_or_unverified_parent": true,
+    "reject_prompt_visible_governance_coaching": true,
+    "missing_bootstrap_is_defect_evidence_only_from_verified_current_hook_parent": true
+  }
+}

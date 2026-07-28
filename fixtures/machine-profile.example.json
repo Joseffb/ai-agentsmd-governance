@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "approval_mode": "ask",
+  "project_roots": {
+    "example-project": [
+      "/absolute/path/to/example-project"
+    ]
+  },
+  "project_read_roots": {
+    "example-project": [
+      "/absolute/path/to/read-only-dependency"
+    ]
+  },
+  "storage": {
+    "generated_root": "/absolute/path/to/generated-output",
+    "review_root": null,
+    "model_storage": "local_internal",
+    "fallback": "ask"
+  },
+  "continuity": {
+    "default_mode": "project_managed"
+  },
+  "agent_system": {
+    "label": "Agent System",
+    "match_field": "title",
+    "match_mode": "exact_non_archived",
+    "memory_path": "/absolute/path/to/private-agent-system-continuity.md",
+    "auto_create": false,
+    "auto_report": false,
+    "consent": {
+      "persistent_task": "declined",
+      "automatic_defect_reports": "declined",
+      "reported_defect_action": null,
+      "token_cost_acknowledged": true
+    }
+  },
+  "local_policy_index": null
+}

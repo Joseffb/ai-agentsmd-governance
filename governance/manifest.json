@@ -1,0 +1,1105 @@
+{
+  "schema_version": 1,
+  "id": "ai-codex-governance",
+  "version": 1,
+  "estimator": {
+    "id": "utf8-bytes-div-4-ceil",
+    "version": 1,
+    "encoding": "utf8",
+    "formula": "ceil(utf8_bytes / 4)",
+    "scope": "policy_estimate_only",
+    "runtime_context_capacity": "Unverified"
+  },
+  "control_levels": [
+    "runtime_enforced",
+    "required_by_kernel",
+    "advisory"
+  ],
+  "default_control_level": "required_by_kernel",
+  "budgets": {
+    "kernel_target_min": 1500,
+    "kernel_target_max": 2000,
+    "kernel_hard_max": 2200,
+    "module_default_max": 3500,
+    "module_exceptions": {
+      "continuity": 4000
+    },
+    "closure_enforcement": "advisory_only",
+    "closures": {
+      "read_only": 10000,
+      "delegation": 16000,
+      "mutation": 16000,
+      "deep_audit": 24000
+    }
+  },
+  "project_profiles": [
+    "*"
+  ],
+  "operation_catalog": {
+    "none": {
+      "effect_class": "none",
+      "required_modules": []
+    },
+    "read_file": {
+      "effect_class": "read_only",
+      "required_modules": []
+    },
+    "repository_inspection": {
+      "effect_class": "read_only",
+      "required_modules": [
+        "trust-and-data",
+        "findings"
+      ]
+    },
+    "design_review": {
+      "effect_class": "read_only",
+      "required_modules": [
+        "trust-and-data",
+        "findings"
+      ]
+    },
+    "security_review": {
+      "effect_class": "read_only",
+      "required_modules": [
+        "deep-audit"
+      ]
+    },
+    "audit": {
+      "effect_class": "read_only",
+      "required_modules": [
+        "deep-audit"
+      ]
+    },
+    "report_finding": {
+      "effect_class": "read_only",
+      "required_modules": [
+        "findings"
+      ]
+    },
+    "plan": {
+      "effect_class": "read_only",
+      "required_modules": [
+        "planning-and-capacity"
+      ]
+    },
+    "context_pack": {
+      "effect_class": "read_only",
+      "required_modules": [
+        "context-routing"
+      ]
+    },
+    "implementation": {
+      "effect_class": "filesystem_mutation",
+      "required_modules": [
+        "project-overlays"
+      ]
+    },
+    "edit_files": {
+      "effect_class": "filesystem_mutation",
+      "required_modules": [
+        "project-overlays"
+      ]
+    },
+    "build": {
+      "effect_class": "generated_output",
+      "required_modules": [
+        "storage",
+        "validation-and-evidence"
+      ]
+    },
+    "test": {
+      "effect_class": "generated_output",
+      "required_modules": [
+        "storage",
+        "validation-and-evidence"
+      ]
+    },
+    "validate": {
+      "effect_class": "generated_output",
+      "required_modules": [
+        "validation-and-evidence"
+      ]
+    },
+    "complete": {
+      "effect_class": "claim",
+      "required_modules": [
+        "validation-and-evidence"
+      ]
+    },
+    "docker": {
+      "effect_class": "generated_output",
+      "required_modules": [
+        "storage",
+        "external-effects-and-supply-chain"
+      ]
+    },
+    "browser_automation": {
+      "effect_class": "generated_output",
+      "required_modules": [
+        "storage",
+        "trust-and-data"
+      ]
+    },
+    "generate_media": {
+      "effect_class": "generated_output",
+      "required_modules": [
+        "storage"
+      ]
+    },
+    "local_ai_run": {
+      "effect_class": "generated_output",
+      "required_modules": [
+        "storage",
+        "trust-and-data"
+      ]
+    },
+    "install_dependency": {
+      "effect_class": "supply_chain",
+      "required_modules": [
+        "external-effects-and-supply-chain",
+        "storage"
+      ]
+    },
+    "network_read": {
+      "effect_class": "network_read",
+      "required_modules": [
+        "trust-and-data"
+      ]
+    },
+    "network_write": {
+      "effect_class": "network_write",
+      "required_modules": [
+        "external-effects-and-supply-chain",
+        "trust-and-data"
+      ]
+    },
+    "external_transmission": {
+      "effect_class": "data_egress",
+      "required_modules": [
+        "external-effects-and-supply-chain",
+        "trust-and-data"
+      ]
+    },
+    "communicate": {
+      "effect_class": "communication",
+      "required_modules": [
+        "external-effects-and-supply-chain",
+        "trust-and-data"
+      ]
+    },
+    "purchase": {
+      "effect_class": "purchase",
+      "required_modules": [
+        "external-effects-and-supply-chain"
+      ]
+    },
+    "database_mutation": {
+      "effect_class": "database_mutation",
+      "required_modules": [
+        "external-effects-and-supply-chain",
+        "validation-and-evidence"
+      ]
+    },
+    "launch_subagent": {
+      "effect_class": "delegation",
+      "required_modules": [
+        "delegation"
+      ]
+    },
+    "launch_mutating_subagent": {
+      "effect_class": "delegation_mutation",
+      "required_modules": [
+        "subagent-git"
+      ]
+    },
+    "git_commit": {
+      "effect_class": "git_mutation",
+      "required_modules": [
+        "continuity",
+        "validation-and-evidence"
+      ]
+    },
+    "git_merge": {
+      "effect_class": "git_mutation",
+      "required_modules": [
+        "release"
+      ]
+    },
+    "git_push": {
+      "effect_class": "network_write",
+      "required_modules": [
+        "release"
+      ]
+    },
+    "resume_work": {
+      "effect_class": "continuity",
+      "required_modules": [
+        "continuity",
+        "context-routing"
+      ]
+    },
+    "handoff": {
+      "effect_class": "continuity",
+      "required_modules": [
+        "continuity"
+      ]
+    },
+    "mobile_review_export": {
+      "effect_class": "filesystem_mutation",
+      "required_modules": [
+        "mobile-review"
+      ]
+    },
+    "deploy": {
+      "effect_class": "deployment",
+      "required_modules": [
+        "release"
+      ]
+    },
+    "publish": {
+      "effect_class": "publication",
+      "required_modules": [
+        "release"
+      ]
+    },
+    "release": {
+      "effect_class": "release",
+      "required_modules": [
+        "release"
+      ]
+    }
+  },
+  "modules": [
+    {
+      "id": "storage",
+      "version": 1,
+      "path": "modules/storage.md",
+      "digest": "sha256:fbd05cded89126f6a6e13f4f9fd8f2d6a26312a8c2eefb3a289281ccb0cf53b5",
+      "triggers": {
+        "operations": [
+          "build",
+          "test",
+          "docker",
+          "browser_automation",
+          "generate_media",
+          "local_ai_run",
+          "install_dependency",
+          "launch_mutating_subagent",
+          "mobile_review_export"
+        ]
+      },
+      "dependencies": [
+        "jit-orchestration"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "first_storage_producing_action"
+      ],
+      "precedence": 100,
+      "authority": "machine_profile",
+      "on_failure": {
+        "block": [
+          "generated_output",
+          "heavy_work"
+        ],
+        "allow": [
+          "safe_read_only_inspection"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 1415,
+      "words": 188,
+      "estimated_tokens": 354
+    },
+    {
+      "id": "trust-and-data",
+      "version": 1,
+      "path": "modules/trust-and-data.md",
+      "digest": "sha256:c80f45660be4f27e5b34004fb6dfdd36d5c76cf2e3ddfa9b639734c7b46fcfdf",
+      "triggers": {
+        "operations": [
+          "repository_inspection",
+          "design_review",
+          "security_review",
+          "audit",
+          "browser_automation",
+          "local_ai_run",
+          "network_read",
+          "network_write",
+          "external_transmission",
+          "communicate"
+        ]
+      },
+      "dependencies": [
+        "jit-orchestration"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "first_untrusted_or_sensitive_data_action"
+      ],
+      "precedence": 100,
+      "authority": "security",
+      "on_failure": {
+        "block": [
+          "data_handling",
+          "external_transmission"
+        ],
+        "allow": [
+          "non_sensitive_read_only_orientation"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 1540,
+      "words": 191,
+      "estimated_tokens": 385
+    },
+    {
+      "id": "external-effects-and-supply-chain",
+      "version": 1,
+      "path": "modules/external-effects-and-supply-chain.md",
+      "digest": "sha256:dc0ee6b217ec66da3265322e3c6bf920716b5848c8e9132abb9028809d90cdef",
+      "triggers": {
+        "operations": [
+          "docker",
+          "install_dependency",
+          "network_write",
+          "external_transmission",
+          "communicate",
+          "purchase",
+          "database_mutation",
+          "git_push",
+          "deploy",
+          "publish",
+          "release"
+        ]
+      },
+      "dependencies": [
+        "jit-orchestration"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "first_external_or_supply_chain_effect"
+      ],
+      "precedence": 100,
+      "authority": "security",
+      "on_failure": {
+        "block": [
+          "external_effect",
+          "supply_chain_mutation"
+        ],
+        "allow": [
+          "safe_read_only_inspection"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 1464,
+      "words": 181,
+      "estimated_tokens": 366
+    },
+    {
+      "id": "planning-and-capacity",
+      "version": 4,
+      "path": "modules/planning-and-capacity.md",
+      "digest": "sha256:5f1ed75230c9eed5ed6dc7362367452e80b7f08490f08568d67fbb1c73600529",
+      "triggers": {
+        "operations": [
+          "plan"
+        ]
+      },
+      "dependencies": [
+        "jit-orchestration"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "substantial_plan"
+      ],
+      "precedence": 80,
+      "authority": "workflow",
+      "on_failure": {
+        "block": [
+          "substantial_implementation_plan"
+        ],
+        "allow": [
+          "small_read_only_answer"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 3057,
+      "words": 408,
+      "estimated_tokens": 765
+    },
+    {
+      "id": "model-routing",
+      "version": 10,
+      "path": "modules/model-routing.md",
+      "digest": "sha256:88347b521853d94abd53d860ee887dbe13d5301ad8b966bb50b0ef05315a283a",
+      "triggers": {
+        "operations": [
+          "launch_subagent",
+          "launch_mutating_subagent"
+        ]
+      },
+      "dependencies": [
+        "jit-orchestration"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "delegated_seat_launch"
+      ],
+      "precedence": 90,
+      "authority": "workflow",
+      "on_failure": {
+        "block": [
+          "delegated_seat_launch"
+        ],
+        "allow": [
+          "coordinator_owned_work"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 8484,
+      "words": 1117,
+      "estimated_tokens": 2121
+    },
+    {
+      "id": "context-routing",
+      "version": 1,
+      "path": "modules/context-routing.md",
+      "digest": "sha256:078c8285d8d8a78792e65004252c6910bd46511b03381c937fa09c379e45dfbd",
+      "triggers": {
+        "operations": [
+          "context_pack",
+          "resume_work"
+        ]
+      },
+      "dependencies": [],
+      "conflicts": [],
+      "load_before": [
+        "context_pack_read",
+        "resumption"
+      ],
+      "precedence": 80,
+      "authority": "workflow",
+      "on_failure": {
+        "block": [
+          "pack_dependent_mutation"
+        ],
+        "allow": [
+          "bounded_safe_orientation"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 1091,
+      "words": 145,
+      "estimated_tokens": 273
+    },
+    {
+      "id": "jit-orchestration",
+      "version": 2,
+      "path": "modules/jit-orchestration.md",
+      "digest": "sha256:78c7ad298d83b4532e926f6f3d5ed6872c43a6297ed8db7b07670a3af38d86f7",
+      "triggers": {
+        "operations": [
+          "repository_inspection",
+          "design_review",
+          "security_review",
+          "audit",
+          "report_finding",
+          "plan",
+          "implementation",
+          "edit_files",
+          "build",
+          "test",
+          "validate",
+          "complete",
+          "docker",
+          "browser_automation",
+          "generate_media",
+          "local_ai_run",
+          "install_dependency",
+          "network_read",
+          "network_write",
+          "external_transmission",
+          "communicate",
+          "purchase",
+          "database_mutation",
+          "launch_subagent",
+          "launch_mutating_subagent",
+          "git_commit",
+          "git_merge",
+          "git_push",
+          "resume_work",
+          "handoff",
+          "mobile_review_export",
+          "deploy",
+          "publish",
+          "release"
+        ]
+      },
+      "dependencies": [
+        "context-routing"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "material_governed_operation",
+        "worker_topology",
+        "worker_prompt_composition"
+      ],
+      "precedence": 95,
+      "authority": "workflow",
+      "on_failure": {
+        "block": [
+          "proven_improper_seat0_direct_worker_required_execution",
+          "affected_agent_system_path"
+        ],
+        "allow": [
+          "native_project_execution",
+          "native_worker_delegation",
+          "manual_scoped_worker_prompts",
+          "project_native_tooling"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 8771,
+      "words": 1184,
+      "estimated_tokens": 2193
+    },
+    {
+      "id": "delegation",
+      "version": 14,
+      "path": "modules/delegation.md",
+      "digest": "sha256:3de7e4771d4f2080975446be48257708a2fad160ab0504b85df5352e17cb8228",
+      "triggers": {
+        "operations": [
+          "launch_subagent",
+          "launch_mutating_subagent"
+        ]
+      },
+      "dependencies": [
+        "model-routing",
+        "context-routing"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "subagent_launch"
+      ],
+      "precedence": 85,
+      "authority": "workflow",
+      "on_failure": {
+        "block": [
+          "subagent_launch"
+        ],
+        "allow": [
+          "safe_coordinator_work"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 9639,
+      "words": 1328,
+      "estimated_tokens": 2410
+    },
+    {
+      "id": "subagent-git",
+      "version": 5,
+      "path": "modules/subagent-git.md",
+      "digest": "sha256:abdd48d45692d2ced2099f2d32ba204666e17714236ba64aeb5e3eb9181eb423",
+      "triggers": {
+        "operations": [
+          "launch_mutating_subagent"
+        ]
+      },
+      "dependencies": [
+        "delegation",
+        "continuity",
+        "storage"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "create_subagent_worktree",
+        "launch_mutating_subagent"
+      ],
+      "precedence": 90,
+      "authority": "workflow",
+      "on_failure": {
+        "block": [
+          "mutating_subagent"
+        ],
+        "allow": [
+          "read_only_subagent"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 6661,
+      "words": 848,
+      "estimated_tokens": 1666
+    },
+    {
+      "id": "continuity",
+      "version": 4,
+      "path": "modules/continuity.md",
+      "digest": "sha256:0b7702166931e3179460e0c9382bb43b6039734e832c7ea9c3e4837be9c8a11e",
+      "triggers": {
+        "operations": [
+          "launch_mutating_subagent",
+          "git_commit",
+          "resume_work",
+          "handoff",
+          "git_merge",
+          "git_push",
+          "deploy",
+          "publish",
+          "release"
+        ]
+      },
+      "dependencies": [
+        "jit-orchestration"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "durable_handoff",
+        "resumption",
+        "checkpoint",
+        "completion_transition"
+      ],
+      "precedence": 85,
+      "authority": "workflow",
+      "on_failure": {
+        "block": [
+          "durable_handoff",
+          "resumable_mutation"
+        ],
+        "allow": [
+          "read_only_review"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 2793,
+      "words": 353,
+      "estimated_tokens": 699
+    },
+    {
+      "id": "validation-and-evidence",
+      "version": 1,
+      "path": "modules/validation-and-evidence.md",
+      "digest": "sha256:10686cda09783114575546704d3df721c5164727df2f7f1abd6bb2156a5d52e0",
+      "triggers": {
+        "operations": [
+          "build",
+          "test",
+          "validate",
+          "complete",
+          "database_mutation",
+          "git_commit",
+          "git_merge",
+          "git_push",
+          "deploy",
+          "publish",
+          "release"
+        ]
+      },
+      "dependencies": [
+        "jit-orchestration"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "validation",
+        "completion_claim"
+      ],
+      "precedence": 90,
+      "authority": "evidence",
+      "on_failure": {
+        "block": [
+          "verified_completion_claim"
+        ],
+        "allow": [
+          "unverified_reporting"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 1371,
+      "words": 169,
+      "estimated_tokens": 343
+    },
+    {
+      "id": "findings",
+      "version": 2,
+      "path": "modules/findings.md",
+      "digest": "sha256:b02dd8c0b7fa79a71ae661debfd772871a0a96ac92ebf64eb31b886a99f0701d",
+      "triggers": {
+        "operations": [
+          "repository_inspection",
+          "design_review",
+          "security_review",
+          "audit",
+          "report_finding"
+        ]
+      },
+      "dependencies": [
+        "jit-orchestration"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "first_finding_report"
+      ],
+      "precedence": 85,
+      "authority": "governance",
+      "on_failure": {
+        "block": [
+          "formal_review_verdict"
+        ],
+        "allow": [
+          "raw_observation"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 2131,
+      "words": 272,
+      "estimated_tokens": 533
+    },
+    {
+      "id": "deep-audit",
+      "version": 1,
+      "path": "modules/deep-audit.md",
+      "digest": "sha256:b2460a0720c43128b5ed32b848de37ff0c12260b86630f7a80eec0df477e4aba",
+      "triggers": {
+        "operations": [
+          "security_review",
+          "audit"
+        ]
+      },
+      "dependencies": [
+        "findings",
+        "trust-and-data",
+        "external-effects-and-supply-chain",
+        "validation-and-evidence"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "deep_audit"
+      ],
+      "precedence": 90,
+      "authority": "governance",
+      "on_failure": {
+        "block": [
+          "deep_audit_verdict"
+        ],
+        "allow": [
+          "bounded_non_audit_inspection"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 1232,
+      "words": 140,
+      "estimated_tokens": 308
+    },
+    {
+      "id": "project-overlays",
+      "version": 2,
+      "path": "modules/project-overlays.md",
+      "digest": "sha256:a808e551be94a9004b4428e0a0086c99df242c7bbc41937ce7ff070ca6aacb45",
+      "triggers": {
+        "operations": [
+          "implementation",
+          "edit_files"
+        ]
+      },
+      "dependencies": [
+        "context-routing",
+        "jit-orchestration"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "project_mutation"
+      ],
+      "precedence": 80,
+      "authority": "workflow",
+      "on_failure": {
+        "block": [
+          "project_specific_mutation"
+        ],
+        "allow": [
+          "generic_read_only_orientation"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 1726,
+      "words": 221,
+      "estimated_tokens": 432
+    },
+    {
+      "id": "mobile-review",
+      "version": 1,
+      "path": "modules/mobile-review.md",
+      "digest": "sha256:1a943fb6864042679107221ed494f0bf098acc38d11a8a87970f201dae30412d",
+      "triggers": {
+        "operations": [
+          "mobile_review_export"
+        ]
+      },
+      "dependencies": [
+        "storage",
+        "trust-and-data"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "mobile_review_export"
+      ],
+      "precedence": 80,
+      "authority": "workflow",
+      "on_failure": {
+        "block": [
+          "mobile_review_export"
+        ],
+        "allow": [
+          "authoritative_source_work"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 665,
+      "words": 98,
+      "estimated_tokens": 167
+    },
+    {
+      "id": "release",
+      "version": 4,
+      "path": "modules/release.md",
+      "digest": "sha256:8d970d1e11b46ae84b1603b9de143d0d506ebfa9ea512272668012c548f9334b",
+      "triggers": {
+        "operations": [
+          "git_merge",
+          "git_push",
+          "deploy",
+          "publish",
+          "release"
+        ]
+      },
+      "dependencies": [
+        "external-effects-and-supply-chain",
+        "validation-and-evidence",
+        "continuity"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "integration",
+        "release",
+        "deployment",
+        "publication"
+      ],
+      "precedence": 95,
+      "authority": "release",
+      "on_failure": {
+        "block": [
+          "integration",
+          "release",
+          "deployment",
+          "publication"
+        ],
+        "allow": [
+          "read_only_release_assessment"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 4307,
+      "words": 588,
+      "estimated_tokens": 1077
+    }
+  ],
+  "authority_model": {
+    "read_only_forbidden_effects": [
+      "filesystem_mutation",
+      "generated_output",
+      "supply_chain",
+      "network_write",
+      "data_egress",
+      "communication",
+      "purchase",
+      "database_mutation",
+      "delegation_mutation",
+      "git_mutation",
+      "deployment",
+      "publication",
+      "release"
+    ],
+    "mutation_authority_effects": [
+      "filesystem_mutation",
+      "generated_output",
+      "delegation_mutation",
+      "git_mutation"
+    ],
+    "explicit_authority_effects": [
+      "delegation",
+      "supply_chain",
+      "network_write",
+      "data_egress",
+      "communication",
+      "purchase",
+      "database_mutation",
+      "deployment",
+      "publication",
+      "release"
+    ],
+    "path_required_effects": [
+      "filesystem_mutation",
+      "generated_output",
+      "supply_chain",
+      "database_mutation",
+      "delegation_mutation",
+      "git_mutation",
+      "deployment",
+      "publication",
+      "release"
+    ]
+  },
+  "tool_catalog": {
+    "filesystem_read": [
+      "read_only"
+    ],
+    "filesystem_write": [
+      "filesystem_mutation",
+      "generated_output"
+    ],
+    "shell": [
+      "none",
+      "read_only",
+      "filesystem_mutation",
+      "generated_output",
+      "claim",
+      "supply_chain",
+      "network_read",
+      "network_write",
+      "data_egress",
+      "communication",
+      "purchase",
+      "database_mutation",
+      "delegation",
+      "delegation_mutation",
+      "git_mutation",
+      "continuity",
+      "deployment",
+      "publication",
+      "release"
+    ],
+    "git": [
+      "read_only",
+      "git_mutation",
+      "network_read",
+      "network_write"
+    ],
+    "network_read": [
+      "network_read",
+      "read_only"
+    ],
+    "network_write": [
+      "network_write",
+      "data_egress"
+    ],
+    "browser": [
+      "read_only",
+      "network_read",
+      "network_write",
+      "data_egress",
+      "generated_output"
+    ],
+    "subagent": [
+      "delegation",
+      "delegation_mutation"
+    ],
+    "database": [
+      "read_only",
+      "database_mutation"
+    ],
+    "package_manager": [
+      "supply_chain",
+      "generated_output",
+      "network_read",
+      "network_write"
+    ],
+    "deployment": [
+      "deployment",
+      "publication",
+      "release",
+      "network_write"
+    ],
+    "communication": [
+      "communication",
+      "data_egress",
+      "network_write"
+    ],
+    "local_runtime": [
+      "none",
+      "claim",
+      "continuity",
+      "generated_output"
+    ]
+  },
+  "risk_tag_catalog": {
+    "prompt_injection": [
+      "trust-and-data"
+    ],
+    "secrets": [
+      "trust-and-data"
+    ],
+    "personal_data": [
+      "trust-and-data"
+    ],
+    "tenant_data": [
+      "trust-and-data"
+    ],
+    "external_effect": [
+      "external-effects-and-supply-chain"
+    ],
+    "supply_chain": [
+      "external-effects-and-supply-chain"
+    ],
+    "destructive": [
+      "external-effects-and-supply-chain",
+      "validation-and-evidence"
+    ],
+    "irreversible": [
+      "external-effects-and-supply-chain",
+      "validation-and-evidence"
+    ],
+    "security_critical": [
+      "deep-audit"
+    ],
+    "heavy_output": [
+      "storage"
+    ],
+    "generated_code": [
+      "external-effects-and-supply-chain"
+    ],
+    "compound_command": []
+  }
+}

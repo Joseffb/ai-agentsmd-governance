@@ -1,0 +1,21 @@
+{
+  "name": "model-routing-gate",
+  "version": "1.0.3+codex.20260726204413",
+  "description": "Fail-closed model assignment and runtime model attestation for Codex subagents",
+  "author": {
+    "name": "AI Codex Governance"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Model Routing Gate",
+    "shortDescription": "Enforce and attest subagent model assignments.",
+    "longDescription": "Blocks inherited or missing subagent assignments, correlates launch requests with runtime model evidence, and prevents inadmissible agent output from being collected.",
+    "developerName": "AI Codex Governance",
+    "category": "Developer Tools",
+    "capabilities": [
+      "hooks",
+      "skills"
+    ],
+    "defaultPrompt": "Route subagents through the Model Routing Gate."
+  }
+}

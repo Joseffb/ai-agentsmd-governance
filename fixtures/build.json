@@ -1,0 +1,1 @@
+{"mode":"mutation","phase":"build","project":"example-project","operations":["build"],"tools":["shell"],"paths":["/tmp/example-project/.runtime"],"risk_tags":["heavy_output"],"mutation_authority":true}
