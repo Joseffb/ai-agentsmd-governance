@@ -406,7 +406,7 @@
       "id": "planning-and-capacity",
       "version": 4,
       "path": "modules/planning-and-capacity.md",
-      "digest": "sha256:5f1ed75230c9eed5ed6dc7362367452e80b7f08490f08568d67fbb1c73600529",
+      "digest": "sha256:a5bf21eeeff2d1ca020e51f939c0e757023111c84e7e7045992d03a0068ccd0f",
       "triggers": {
         "operations": [
           "plan"
@@ -432,9 +432,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 3057,
-      "words": 408,
-      "estimated_tokens": 765
+      "bytes": 3268,
+      "words": 433,
+      "estimated_tokens": 817
     },
     {
       "id": "model-routing",
@@ -507,9 +507,9 @@
     },
     {
       "id": "jit-orchestration",
-      "version": 2,
+      "version": 3,
       "path": "modules/jit-orchestration.md",
-      "digest": "sha256:78c7ad298d83b4532e926f6f3d5ed6872c43a6297ed8db7b07670a3af38d86f7",
+      "digest": "sha256:10fb2558f715cf7fefb9b80b26d360fc2ee9808ecb35bec16b539d1190197ac0",
       "triggers": {
         "operations": [
           "repository_inspection",
@@ -574,15 +574,15 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 8771,
-      "words": 1184,
-      "estimated_tokens": 2193
+      "bytes": 10895,
+      "words": 1461,
+      "estimated_tokens": 2724
     },
     {
       "id": "delegation",
-      "version": 14,
+      "version": 15,
       "path": "modules/delegation.md",
-      "digest": "sha256:3de7e4771d4f2080975446be48257708a2fad160ab0504b85df5352e17cb8228",
+      "digest": "sha256:725160374ade6223042f94044ac175571c73bc178863035950773feeddb87c10",
       "triggers": {
         "operations": [
           "launch_subagent",
@@ -610,9 +610,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 9639,
-      "words": 1328,
-      "estimated_tokens": 2410
+      "bytes": 11924,
+      "words": 1625,
+      "estimated_tokens": 2981
     },
     {
       "id": "subagent-git",

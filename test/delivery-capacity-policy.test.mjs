@@ -23,9 +23,9 @@ test("policy accounting grows monotonically without imposing a context rollover"
   const skill = read("skills/govern-codex-policy/SKILL.md");
   const skillAgent = read("skills/govern-codex-policy/agents/openai.yaml");
   assert.match(kernel, /Policy context grows monotonically/);
-  assert.match(kernel, /never.*force compaction, rollover, handoff, or a fresh task/s);
-  assert.match(kernel, /Only an authoritative hosting-runtime capacity failure can require a bounded\s+context transition/u);
-  assert.match(kernel, /they never force compaction, rollover, handoff, or a fresh task/);
+  assert.match(kernel, /never.*force\s+compaction, rollover, handoff, or a fresh task/s);
+  assert.match(kernel, /Only authoritative hosting-\s*runtime capacity failure can require a bounded\s+context transition/u);
+  assert.match(kernel, /Totals and closure targets are advisory telemetry:\s+never force\s+compaction, rollover, handoff, or a fresh task/);
   assert.match(skill, /Estimated policy totals never force rollover or handoff/);
   assert.match(skill, /Advisory context-growth targets never block an operation/);
   assert.doesNotMatch(skill, /policy context budget overflow/);
@@ -46,14 +46,20 @@ test("AI-native estimates stay separate from conventional human effort", () => {
   assert.doesNotMatch(policy, /divide by `5`|fivefold/);
 });
 
-test("delegation maximizes useful concurrency without rewarding raw seat count", () => {
+test("delegation defaults to the largest useful isolated lifecycle without rewarding raw seat count", () => {
   const policy = read("governance/modules/delegation.md");
-  assert.match(policy, /use maximum useful concurrency/);
-  assert.match(policy, /Fill available worker capacity/);
-  assert.match(policy, /keep ordered dependencies and shared-contract decisions serial/);
-  assert.match(policy, /duplicate discovery, overlapping writes/);
-  assert.match(policy, /coordination, synthesis, and validation cost erases the benefit/);
-  assert.match(policy, /safe beneficial parallel work is left idle, state the concrete constraint/);
+  assert.match(policy, /Default parallel delivery lifecycle/);
+  assert.match(policy, /decompose before launch/);
+  assert.match(policy, /largest useful set of non-overlapping independent lanes within available\s+capacity/);
+  assert.match(policy, /Run separable implementation, test, and review lanes concurrently/);
+  assert.match(policy, /create and verify one isolated branch\/worktree\s+for that worker/);
+  assert.match(policy, /Seat `0` accepts and integrates candidate work, then runs\s+authoritative validation against that integrated candidate/);
+  assert.match(policy, /keep only ordered dependencies and shared-contract decisions serial/);
+  assert.match(policy, /unsafe overlap, unavailable capacity or tooling/);
+  assert.match(policy, /coordination cost truly erases the benefit/);
+  assert.match(policy, /When useful capacity remains idle, state the material\s+constraint/);
+  assert.match(policy, /Topology is JIT launch-order metadata[\s\S]*?does not load broader context[\s\S]*?persistent workflow state machine/i);
+  assert.match(policy, /dependency confidence is\s+insufficient[\s\S]*?SERIAL[\s\S]*?EXPLORATORY/i);
 });
 
 test("Seat 0 permits only a pre-estimated atomic five-minute correction", () => {
@@ -116,4 +122,6 @@ test("confirmed pre-hook tasks adopt current policy without making Agent System 
   assert.match(skill, /context adopt-current --operator-confirmed-pre-hook/);
   assert.match(skill, /Continue same-task work and legacy agents by default/);
   assert.match(skill, /Launch-time hook and host-interception enforcement remain Unverified/);
+  assert.match(jit, /topology helper or\s+classifier fails[\s\S]*?manual or\s+native worker fallback/i);
+  assert.match(jit, /does not block the project/i);
 });

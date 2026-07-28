@@ -45,6 +45,8 @@ test("orchestrate next persists a private content-addressed bundle and emits onl
   const facts = writeFacts(root, {
     estimated_duration_ms: 300001,
     effects: ["filesystem_mutation"],
+    decomposition_complete: true,
+    coherent_chain: false,
     work_items: [{ id: "implementation", write_scopes: ["lib/implementation.mjs"] }],
     rules: [{ id: "base", digest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", estimated_tokens: 2 }]
   });
@@ -54,7 +56,7 @@ test("orchestrate next persists a private content-addressed bundle and emits onl
   const report = JSON.parse(next.stdout);
   assert.deepEqual(Object.keys(report).sort(), ["bundle_digest", "bundle_path", "decision", "exact_next_action", "persisted"]);
   assert.equal(report.decision, "worker_required");
-  assert.equal(report.exact_next_action, "prepare_and_assign_a_mutating_worker_worktree");
+  assert.equal(report.exact_next_action, "prepare_and_assign_one_serial_coherent_chain_worker");
   assert.equal(report.bundle_path.startsWith(path.join(fs.realpathSync(bundleRoot), "fixture")), true);
   assert.deepEqual(fs.readdirSync(project), initialProjectEntries);
   assert.equal(fs.existsSync(path.join(project, ".runtime")), false);
@@ -72,7 +74,7 @@ test("orchestrate next persists a private content-addressed bundle and emits onl
     immediate_intent: "implementation"
   });
   assert.equal(persisted.seat0_decision.decision, "worker_required");
-  assert.deepEqual(Object.keys(persisted.contracts), ["authority", "isolation", "validation", "return", "fallback"]);
+  assert.deepEqual(Object.keys(persisted.contracts), ["authority", "isolation", "validation", "lifecycle", "return", "fallback"]);
   assert.deepEqual(persisted.contracts.authority, {
     origin: "external_user_or_project_authority_only",
     bundle_grants_project_authority: false,
@@ -90,7 +92,7 @@ test("orchestrate next persists a private content-addressed bundle and emits onl
     bundle_digest: report.bundle_digest,
     integrity: "verified",
     decision: "worker_required",
-    exact_next_action: "prepare_and_assign_a_mutating_worker_worktree"
+    exact_next_action: "prepare_and_assign_one_serial_coherent_chain_worker"
   });
   fs.chmodSync(report.bundle_path, 0o644);
   const exposed = run(["orchestrate", "verify", "--bundle", report.bundle_path], environment);
@@ -116,6 +118,57 @@ test("orchestrate next accepts only a verified private predecessor and binds its
   const rejected = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "decide", "--facts", facts, "--prior-bundle", prior.bundle_path], environment);
   assert.notEqual(rejected.status, 0);
   assert.match(rejected.stderr, /bundle digest is invalid/);
+});
+
+test("orchestrate next exposes the first eligible dependency stage rather than a future lane", (t) => {
+  const { root, project, environment } = fixture(t);
+  const facts = writeFacts(root, {
+    estimated_duration_ms: 300001,
+    effects: ["filesystem_mutation"],
+    decomposition_complete: true,
+    coherent_chain: false,
+    work_items: [
+      { id: "alpha", write_scopes: ["lib/alpha.mjs"], expected_artifact: "alpha.patch" },
+      { id: "beta", write_scopes: ["lib/beta.mjs"], depends_on: ["alpha"], expected_artifact: "beta.patch" }
+    ]
+  });
+  const next = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "implementation", "--facts", facts], environment);
+  assert.equal(next.status, 0, next.stderr);
+  const report = JSON.parse(next.stdout);
+  assert.equal(report.exact_next_action, "prepare_and_assign_only_available_pipeline_launch_stage_1_workers");
+  const bundle = JSON.parse(fs.readFileSync(report.bundle_path, "utf8"));
+  assert.equal(bundle.topology.execution_class, "PIPELINED");
+  assert.deepEqual(bundle.topology.launch_stages.map((stage) => stage.item_ids), [["alpha"], ["beta"]]);
+  assert.equal(run(["orchestrate", "verify", "--bundle", report.bundle_path], environment).status, 0);
+});
+
+test("orchestrate next keeps implementation queued behind one bounded exploratory discovery worker", (t) => {
+  const { root, project, environment } = fixture(t);
+  const facts = writeFacts(root, {
+    estimated_duration_ms: 300001,
+    effects: ["filesystem_mutation"],
+    decomposition_complete: false,
+    coherent_chain: false,
+    work_items: [
+      { id: "unknown", write_scopes: ["lib/unknown.mjs"], expected_artifact: "unknown.patch" }
+    ]
+  });
+  const next = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "implementation", "--facts", facts], environment);
+  assert.equal(next.status, 0, next.stderr);
+  const report = JSON.parse(next.stdout);
+  assert.equal(report.exact_next_action, "prepare_and_assign_one_bounded_discovery_worker_before_implementation");
+  const bundle = JSON.parse(fs.readFileSync(report.bundle_path, "utf8"));
+  assert.equal(bundle.topology.execution_class, "EXPLORATORY");
+  assert.equal(bundle.topology.worker_count, 1);
+  assert.equal(bundle.topology.maximum_useful_disjoint_workers, 1);
+  assert.deepEqual(bundle.topology.queued_item_ids, ["unknown"]);
+  assert.deepEqual(bundle.topology.queued_write_scopes, ["lib/unknown.mjs"]);
+  assert.deepEqual(bundle.topology.workers[0].assignment_ids, ["bounded-discovery"]);
+  assert.deepEqual(bundle.topology.workers[0].item_ids, []);
+  assert.deepEqual(bundle.topology.workers[0].write_scopes, []);
+  assert.equal(bundle.topology.workers[0].prompt_envelope.non_goals.includes("implementation"), true);
+  assert.equal(bundle.topology.workers[0].prompt_envelope.isolation_effects, "read_only_discovery_no_project_mutation");
+  assert.equal(run(["orchestrate", "verify", "--bundle", report.bundle_path], environment).status, 0);
 });
 
 test("orchestrate rejects prompt, source content, model output, hidden reasoning, credentials, and raw lifecycle data", (t) => {
@@ -178,7 +231,7 @@ test("orchestrate verify rejects a digest-recomputed unknown bundle instruction"
 test("composer identity distinguishes source checkout metadata from an immutable installed release", (t) => {
   const sourceIdentity = resolveOrchestrationReleaseIdentity(repository);
   assert.deepEqual(sourceIdentity, {
-    composer_version: "1.0.0",
+    composer_version: "1.2.0",
     checkout_system_version: checkoutSystemVersion,
     checkout_system_version_evidence: "package_json",
     installed_system_version: "Unverified",
@@ -198,7 +251,7 @@ test("composer identity distinguishes source checkout metadata from an immutable
     system_version: "2.2.1"
   }), { mode: 0o444 });
   assert.deepEqual(resolveOrchestrationReleaseIdentity(policies), {
-    composer_version: "1.0.0",
+    composer_version: "1.2.0",
     checkout_system_version: "Unverified",
     checkout_system_version_evidence: "Unverified",
     installed_system_version: "2.2.1",

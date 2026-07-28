@@ -3,7 +3,7 @@
   "manifest": {
     "id": "ai-codex-governance",
     "version": 1,
-    "sha256": "sha256:bbf30f97a904b30ceacb09b175fdd195a77faa9cceb8387ab73d5c9b43bc210c"
+    "sha256": "sha256:4f2033a03bae384508e66943e3fa5539310814b16c725bf59dbf178cd376ecbe"
   },
   "estimator": {
     "id": "utf8-bytes-div-4-ceil",
@@ -15,17 +15,17 @@
   },
   "kernel": {
     "path": "kernel/AGENTS.md",
-    "sha256": "sha256:823c3ab22b19f1776c99cd6f97b4ce4c70cfda87b270cadf16bfdb0ed8d23918",
-    "bytes": 7973,
-    "words": 1042,
+    "sha256": "sha256:cb258486a40d739de870df90a8e22e763a071c272850d91f519126b4331b4cf0",
+    "bytes": 7974,
+    "words": 987,
     "estimated_tokens": 1994
   },
   "skill": {
     "path": "skills/govern-codex-policy/SKILL.md",
-    "sha256": "sha256:b8e101612532e2a8beba666abbd3c3741e8140b2a5710a8e0d5cf828bfd54aa0",
-    "bytes": 19868,
-    "words": 2570,
-    "estimated_tokens": 4967
+    "sha256": "sha256:cef941bf953e6e00e034f03f011c88dafdff5f123d719ae5053f0a717db1a49b",
+    "bytes": 21153,
+    "words": 2731,
+    "estimated_tokens": 5289
   },
   "modules": [
     {
@@ -59,10 +59,10 @@
       "id": "planning-and-capacity",
       "version": 4,
       "path": "modules/planning-and-capacity.md",
-      "sha256": "sha256:5f1ed75230c9eed5ed6dc7362367452e80b7f08490f08568d67fbb1c73600529",
-      "bytes": 3057,
-      "words": 408,
-      "estimated_tokens": 765
+      "sha256": "sha256:a5bf21eeeff2d1ca020e51f939c0e757023111c84e7e7045992d03a0068ccd0f",
+      "bytes": 3268,
+      "words": 433,
+      "estimated_tokens": 817
     },
     {
       "id": "model-routing",
@@ -84,21 +84,21 @@
     },
     {
       "id": "jit-orchestration",
-      "version": 2,
+      "version": 3,
       "path": "modules/jit-orchestration.md",
-      "sha256": "sha256:78c7ad298d83b4532e926f6f3d5ed6872c43a6297ed8db7b07670a3af38d86f7",
-      "bytes": 8771,
-      "words": 1184,
-      "estimated_tokens": 2193
+      "sha256": "sha256:10fb2558f715cf7fefb9b80b26d360fc2ee9808ecb35bec16b539d1190197ac0",
+      "bytes": 10895,
+      "words": 1461,
+      "estimated_tokens": 2724
     },
     {
       "id": "delegation",
-      "version": 14,
+      "version": 15,
       "path": "modules/delegation.md",
-      "sha256": "sha256:3de7e4771d4f2080975446be48257708a2fad160ab0504b85df5352e17cb8228",
-      "bytes": 9639,
-      "words": 1328,
-      "estimated_tokens": 2410
+      "sha256": "sha256:725160374ade6223042f94044ac175571c73bc178863035950773feeddb87c10",
+      "bytes": 11924,
+      "words": 1625,
+      "estimated_tokens": 2981
     },
     {
       "id": "subagent-git",

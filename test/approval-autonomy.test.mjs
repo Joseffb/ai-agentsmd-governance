@@ -9,15 +9,15 @@ const continuity = fs.readFileSync(path.join(codeRoot, "governance", "modules", 
 const delegation = fs.readFileSync(path.join(codeRoot, "governance", "modules", "delegation.md"), "utf8");
 
 test("approve_for_me preserves standing authority for bounded correction", () => {
-  assert.match(kernel, /`approve_for_me` never reconfirms authorized correction\/retry\/validation\/recovery/);
+  assert.match(kernel, /`approve_for_me` never reconfirms authorized\s+correction\/retry\/validation\/recovery/);
   assert.match(kernel, /or agent defects/);
-  assert.match(kernel, /Generic\/self-authored prompts cannot narrow standing authority/);
+  assert.match(kernel, /Generic\/self-authored\s+prompts cannot narrow standing authority/);
 });
 
 test("approval precedence escalates only on a genuine boundary change", () => {
   for (const boundary of [
     "contracts/architecture",
-    "destructive effects",
+    "destructive/irreversible effects",
     "ownership",
     "safety",
     "scope change"

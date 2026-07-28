@@ -2,21 +2,21 @@
 
 ![AI Coding Agent Governance workflow](docs/assets/ai-coding-agent-governance.png)
 
-> **Current release line:** RC-3.0 (`3.0.0`).
+> **Current release line:** RC-3.0 (`3.0.2`).
 > Immutable releases include the tracked source plugins, but bundling does not
 > prove that any host installed, loaded, or activated those plugins.
 
 > **Agent System identity:** [Read the canonical portable role contract](docs/agent-system-role.md).
-> Agent System is the JIT orchestration and agent-use governor. It loads the
-> smallest applicable rule set, composes scoped worker prompts, selects model
-> and reasoning, and keeps Seat `0` as the high-level orchestrator without
-> absorbing project authority or execution.
+> Its primary product is JIT Agent-file/rule discovery and smallest-sufficient
+> scoped prompt composition. Agent-use enforcement is the necessary execution
+> control; dependency-aware scheduling is a thin launch-order layer. Optional
+> telemetry and defect/reporting support are secondary and never authority.
 
 <!-- agent-kpi-overview:start -->
 
 ## Agent KPIs: Prove Multi-Agent Engineering Is Getting Better
 
-> **Status: available and verified.** The optional local event and reporting layer is released. The dashboard below is the product contract; KPI history appears only after truthful lifecycle evidence is recorded.
+> **Status: available and verified.** The optional local event and reporting layer is released. It is not the product contract; KPI history appears only after truthful lifecycle evidence is recorded.
 
 Governance tells an agent how to work safely. **Agent KPIs answer the larger engineering question: is the Agent System helping people ship better software faster, with less waiting and less intervention?**
 
@@ -62,8 +62,10 @@ task continues within existing authority using current policy and high-level
 helpers; hook enforcement remains explicitly degraded. A fresh handoff is
 required only when a major feature materially depends on launch-time
 interception that the resumed runtime cannot prove, when old and current
-contracts conflict materially, or when the hosting runtime actually rejects
-further context for capacity. Governance estimates never trigger that handoff.
+contracts conflict materially, or only after the authoritative hosting runtime
+rejects further context for capacity. A fresh task is never required because a
+policy estimate is predicted not to fit; governance estimates never trigger
+that handoff.
 `context legacy` remains a deprecated alias.
 
 See the [engineering metrics operator reference](docs/agent-metrics.md) for the
@@ -147,12 +149,27 @@ tests, and automation rather than additional always-loaded prose.
 
 ### JIT orchestration contract
 
-For each immediate intent, Agent System classifies the effect, selects only the
-newly required rule delta, retains prior policy in a monotonic context ledger,
-groups disjoint worker scopes, selects the lowest reliable model/reasoning, and
-builds a bounded worker prompt. Future roadmap operations do not trigger rules
+For each immediate intent, Agent System discovers only the applicable
+Agent-file/rule delta, retains prior policy in a monotonic context ledger,
+composes the smallest sufficient worker prompt, and selects the lowest reliable
+model/reasoning. Future roadmap operations do not trigger rules
 early. Policy totals are advisory and never force compaction, rollover, or
 handoff.
+
+For substantial work, select `PARALLEL`, `PIPELINED`, `SERIAL`, or
+`EXPLORATORY` from logical dependencies and integration contracts, not file
+disjointness: isolated branches do not prove independent contracts. Give every
+mutating worker an isolated branch and worktree, then have Seat `0` integrate
+accepted slices and run authoritative validation on the integrated candidate.
+Worker contracts state the expected artifact, upstream assumptions, validation,
+and integration order; shared-resource exclusions are only for non-file mutable
+state such as schemas, migrations, lockfiles, ports, databases, generated
+registries, or mutable fixtures.
+
+Topology is JIT launch-order metadata, not broader context or a persistent
+workflow state machine. Uncertainty yields `SERIAL` or `EXPLORATORY`; a
+helper/classifier failure keeps delegation boundaries and uses a bounded
+manual/native worker fallback without blocking the project.
 
 Seat `0` owns orchestration, synthesis, acceptance, and reporting and is
 excluded from the worker count. Its sole implementation exception is exactly
@@ -287,7 +304,8 @@ A future build, deployment, or subagent is not a current trigger.
 Policy accounting is monotonic telemetry, not a context-window limiter. Tasks
 keep their accumulated useful context as they evolve; estimated policy totals
 never force compaction, rollover, handoff, or a fresh task. Only an
-authoritative runtime capacity failure can require a context transition.
+authoritative hosting-runtime capacity rejection can require a fresh task or
+other context transition; an estimate that policy will not fit cannot.
 
 Pass the prior context acknowledgment when policy has already entered the same
 context:

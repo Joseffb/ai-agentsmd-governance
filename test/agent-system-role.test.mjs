@@ -54,6 +54,31 @@ test("KPI events stay silent and after-action reports require an operator reques
   assert.match(continuity, /never\s+prompts, source, output, secrets, hidden reasoning, or raw task\/thread IDs/);
 });
 
+test("metrics remain downstream observations rather than optimization authority", () => {
+  const metrics = fs.readFileSync(path.join(root, "docs", "agent-metrics.md"), "utf8");
+  const jit = fs.readFileSync(path.join(root, "governance", "modules", "jit-orchestration.md"), "utf8");
+  for (const text of [metrics, jit]) {
+    assert.match(text, /metrics observe execution\s+and never become execution authority/i);
+    assert.match(text, /no KPI, alone or\s+in\s+combination,[\s\S]*?or mutate policy/i);
+    assert.match(text, /Historical (?:metric data|metrics) (?:remain|are)\s+downstream-only[\s\S]*?cannot feed live prompts or decisions automatically/i);
+    assert.match(text, /worker topology follows real, independently integrable\s+architecture boundaries[;:]\s+agent count is never a target/i);
+    assert.match(text, /metric-informed policy change/i);
+    assert.match(text, /explicit\s+operator\s+review, a new version, stated assumptions, and post-change\s+recalibration/i);
+  }
+  assert.match(metrics, /Goodhart's,\s+Campbell's, Lucas's, and Conway's warnings/i);
+  assert.match(metrics, /speed with validation, quality, and rework;\s+tokens with accepted scope; parallelism with integration and rework cost; and\s+autonomy with operator intervention and escaped defects; context compression\s+with information loss and clarification rate; and test pass rate with defect\s+escape rate/is);
+  assert.match(metrics, /Tag comparisons with the Agent System version, rule set, model mix, and\s+validation topology/i);
+  assert.match(metrics, /no KPI, alone or in\s+combination,[\s\S]*?set worker count/i);
+  assert.match(metrics, /Do not blend pre- and post-policy relationships without a\s+qualification/i);
+  for (const text of [metrics, jit]) {
+    assert.match(text, /Ashby's Law of Requisite Variety constrains governance complexity/i);
+    assert.match(text, /must not\s+exceed what operators can understand or workers can reliably execute/i);
+    assert.match(text, /Add rules\s+only for observed failure classes; every rule needs a clear purpose and\s+observable effect/is);
+    assert.match(text, /Expose unresolved rule conflicts rather than silently\s+choosing/i);
+    assert.match(text, /governance reduces uncertainty rather than creating it/i);
+  }
+});
+
 test("Agent System automation requires explicit separate consent and has a local-only disposition", () => {
   const role = fs.readFileSync(rolePath, "utf8");
   const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
@@ -108,7 +133,7 @@ test("RC consent continues projects immediately and bounds legacy migration", ()
   }
   assert.match(kernel, /wait-for-Agent-System state/i);
   assert.match(kernel, /Agent System failure\s+never blocks the project/i);
-  assert.match(kernel, /never authorizes automatic KPI\/after-action\s+reports, repair, project mutation, or public-branch mutation/i);
+  assert.match(kernel, /never authorizes automatic KPI\/after-action\s+reports, repair, project, or\s+public-branch mutation/i);
   assert.match(role, /Helper failure never grants Seat `0` implementation/i);
   assert.match(readme, /missing or failed helper never grants Seat `0` implementation/i);
   assert.match(skill, /helper failure grants no Seat `0` implementation/i);
@@ -144,6 +169,17 @@ test("JIT manifest failure behavior blocks only the affected Agent System path",
     "manual_scoped_worker_prompts",
     "project_native_tooling"
   ]);
+});
+
+test("topology remains a bounded planning aid and helper failure preserves worker fallback", () => {
+  const role = fs.readFileSync(rolePath, "utf8");
+  const jit = fs.readFileSync(path.join(root, "governance", "modules", "jit-orchestration.md"), "utf8");
+  for (const text of [role, jit]) {
+    assert.match(text, /Topology is JIT launch-order metadata[\s\S]*?(?:not|never) broader context[\s\S]*?persistent workflow state/i);
+    assert.match(text, /[Uu]ncertain(?:ty| dependencies)[\s\S]*?SERIAL[\s\S]*?EXPLORATORY/i);
+    assert.match(text, /(?:helper|classifier)[\s\S]*?(?:manual|native)[\s\S]*?fallback/i);
+    assert.match(text, /without blocking(?: the)? project|does not block the project/i);
+  }
 });
 
 test("complete tracked distribution contains no machine-private identity", () => {

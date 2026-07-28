@@ -11,6 +11,37 @@ Kernel -> Receipts -> Events -> Metrics
 Metrics consume bounded lifecycle evidence. They do not authorize, deny, block,
 route, modify, or score governed execution, and no metric is a completion gate.
 
+## Anti-optimization doctrine
+
+Metrics observe execution and never become execution authority. Goodhart's,
+Campbell's, Lucas's, and Conway's warnings apply: a measured proxy can be
+gamed, distorted by incentives, changed by the rule that reacts to it, or
+mistaken for a universal organizational signal. Therefore no KPI, alone or in
+combination, may automatically route, rank, reward, punish, block, authorize,
+select models, choose delegation, set worker count, declare progress or
+completion, or mutate policy. Historical metrics are downstream-only; they
+cannot feed live prompts or decisions automatically.
+
+Keep raw components, evidence labels, coverage, and denominators with every
+derived metric. Always interpret speed with validation, quality, and rework;
+tokens with accepted scope; parallelism with integration and rework cost; and
+autonomy with operator intervention and escaped defects; context compression
+with information loss and clarification rate; and test pass rate with defect
+escape rate. Worker topology follows real, independently integrable
+architecture boundaries: agent count is never a target.
+
+Tag comparisons with the Agent System version, rule set, model mix, and
+validation topology. Do not blend pre- and post-policy relationships without a
+qualification. A metric-informed policy change requires explicit operator
+review, a new version, stated assumptions, and post-change recalibration; it is
+not an automated feedback loop.
+
+Ashby's Law of Requisite Variety constrains governance complexity: it must not
+exceed what operators can understand or workers can reliably execute. Add rules
+only for observed failure classes; every rule needs a clear purpose and
+observable effect. Expose unresolved rule conflicts rather than silently
+choosing, and ensure governance reduces uncertainty rather than creating it.
+
 ## Local Event Ledger
 
 The default ledger is a private JSONL file in the local Codex governance data

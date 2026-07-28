@@ -1,19 +1,60 @@
 # Delegation Policy
 
-For substantial work, use maximum useful concurrency when bounded independent seats can safely shorten the critical path or add valuable independent challenge. Fill available worker capacity with separable research, implementation, tests, and review; keep ordered dependencies and shared-contract decisions serial. Do not delegate tiny or tightly coupled work, ceremony, duplicate discovery, overlapping writes, or work whose context transfer, coordination, synthesis, and validation cost erases the benefit. If safe beneficial parallel work is left idle, state the concrete constraint.
+## Dependency-aware launch topology
+
+Default parallel delivery lifecycle: decompose before launch; reserve the
+largest useful set of non-overlapping independent lanes within available
+capacity; create and verify one isolated branch/worktree for that worker; and
+Run separable implementation, test, and review lanes concurrently. Keep only
+ordered dependencies and shared-contract decisions serial.
+Default scheduling must keep only ordered dependencies and shared-contract decisions serial.
+
+Choose launch order from logical dependencies and integration contracts, not
+file disjointness alone. Isolated, disjoint branches do not prove that their
+contracts are independent. Use only these topology classes:
+
+- `PARALLEL`: workers can independently implement, test, commit, and integrate
+  in any order.
+- `PIPELINED`: separate workers proceed in dependency order because a downstream
+  worker consumes an upstream artifact or commit.
+- `SERIAL`: one worker owns the coherent implementation chain.
+- `EXPLORATORY`: one bounded investigation discovers the implementation
+  decomposition before implementation lanes launch.
+
+For substantial decomposable work, choose the smallest topology that preserves
+the real dependency order. Before launching each mutating worker, create and
+verify one isolated branch/worktree. Workers never merge, integrate, or touch
+the shared primary worktree. Seat `0` accepts and integrates candidate work,
+then runs authoritative validation against that integrated candidate.
+
+Seat `0` accepts and integrates candidate work, then runs authoritative validation against that integrated candidate.
+
+Topology is JIT launch-order metadata: it does not load broader context or
+create a persistent workflow state machine. When dependency confidence is
+insufficient, choose `SERIAL` or `EXPLORATORY`. If a topology helper or
+classifier fails, preserve delegation boundaries and use a bounded manual or
+native worker fallback; the project continues under existing authority.
+
+Skip or constrain this default only for genuinely tiny or tightly coupled work,
+unsafe overlap, unavailable capacity or tooling, ordered dependencies, or when
+coordination cost truly erases the benefit. Do not use ceremony, a convenient
+single-worker topology, or an untested assertion of coupling as a substitute
+for decomposition. When useful capacity remains idle, state the material
+constraint.
 
 Mutating `seat assign` emits an integrity-bound shell-free child preflight. Pass it verbatim; it verifies the assignment/worktree and owns the immediate implementation route, delivery, and acknowledgment. A child never constructs raw lifecycle JSON.
 
-Seat `0` is the responsive, user-facing orchestrator and cannot receive a worker assignment: it owns routing, synthesis, conflicts, evidence, validation, release, and reporting. It may directly implement one genuinely atomic, bounded correction only when estimated before start at no more than five AI-active minutes and delegation overhead dominates.
+Seat `0` is the responsive, user-facing orchestrator and cannot receive a worker assignment: it owns routing, synthesis, conflicts, acceptance and integration, evidence, authoritative validation, release, and reporting. It may directly implement one genuinely atomic, bounded correction only when estimated before start at no more than five AI-active minutes and delegation overhead dominates; it must not absorb a substantial implementation lane.
 
 Delegate when work exceeds five minutes, scope is uncertain, surfaces or risk are multiple, or it requires browser, build, test, deploy, or validation execution, or when a worker lane is explicit or already established. Do not split or chain micro-edits to evade this rule. If elapsed time or scope crosses five minutes, stop at a safe boundary and delegate what remains.
 
 A stricter direct user or project instruction, including “Seat 0 does not implement,” overrides this exception. Apply the boundary by effect, not labels (integration, validation, recovery, audit, generated, temporary, cache, artifact, urgency, repair); equivalent actions and omissions cannot bypass it. Receipts are procedural, not host-interception proof.
 
 A missing, failed, or incompatible helper never grants Seat `0` implementation
-authority. Preserve the same delegation boundary, report or local-log the
-helper defect once according to consent, and continue other safe project work
-with existing tool definitions or native tools.
+authority or blocks the project. Preserve the same delegation boundary, report
+or local-log the helper defect once according to consent, then continue with a
+safe native/manual worker path or project-owned tooling under existing
+authority.
 
 Use one counting contract in capacity reports, dashboards, and operator updates. Reserve seat `0` for the coordinator/orchestrator so topology labels start at zero, but exclude it from the unqualified agent count and seat count. A displayed count of `N` means `N` delegated worker seats, numbered `1` through `N`; the topology therefore has labels `0` through `N`. For example, a count of `2` may be reported as `0 orchestrator, 1 UI, 2 security`. Use `total participants` when a value intentionally includes the orchestrator.
 
@@ -23,13 +64,13 @@ Each seat owns a fresh governance ledger. Never pass a parent policy acknowledgm
 
 Reuse an active seat only when its objective, project, repository state, model and reasoning assignment, authority, and context remain valid. Do not reuse when independent or adversarial review is needed; model, reasoning, authority, project, worktree, or write ownership changes; or context may be stale. After reconciliation, promptly close completed, failed, redundant, or idle seats so they release shared runtime concurrency. Keep a completed seat open only for an immediate, tightly related reuse. Treat any exact agent limit as runtime metadata, not a hard-coded constant.
 
-Every significant prompt includes role, objective, project and repository, work ID, branch/worktree and base commit when relevant, bounded continuity, authoritative references, allowed read/write scope, acceptance criteria, stop conditions, validation, Git permissions, integration dependencies, and return format.
+Every significant prompt includes role, objective, project and repository, work ID, branch/worktree and base commit when relevant, bounded continuity, authoritative references, allowed read/write scope, acceptance criteria, stop conditions, expected artifact, upstream assumptions, validation, Git permissions, integration order, and return format. Add shared-resource exclusions only when needed for non-file mutable state such as schemas, migrations, lockfiles, ports, databases, generated registries, or mutable fixtures.
 
 Load `model-routing` before launch. Also load `subagent-git` and `continuity` before mutating launch. Read-only seats must not mutate source, Git, tracked generated files, locks, formatter output, or continuity.
 
 Use route mode `delegation` for subagent planning and read-only launch. Keep `mutation_authority:false` for read-only seats and grant only `delegation`. Mutating seats use mutation mode and the isolated-worktree contract.
 
-Returned work is advisory until the coordinator verifies claimed files, candidate commit, diff scope, and validation evidence. Centralize conflicts and shared-contract decisions. Stop or redirect satisfied, superseded, or redundant seats; report why beneficial delegation was safely skipped.
+Returned work is advisory until the coordinator verifies claimed files, candidate commit, diff scope, and validation evidence. Seat `0` alone integrates accepted candidates; authoritative validation runs only after integration against the integrated candidate. Centralize conflicts and shared-contract decisions. Stop or redirect satisfied, superseded, or redundant seats; report why beneficial delegation was safely skipped.
 
 ## Coordination Recovery
 

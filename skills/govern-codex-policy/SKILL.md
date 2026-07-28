@@ -6,7 +6,9 @@ description: Route, load, and manage modular Codex governance. Use before govern
 # Govern Codex Policy
 
 The kernel bootstraps, the manifest routes, and modules own policy. This skill
-controls JIT loading and agent use. Agent System governs prompt activation and
+controls JIT Agent-file/rule discovery and smallest-sufficient scoped prompt
+composition; agent-use enforcement is the necessary execution control and
+dependency-aware scheduling is a thin launch-order layer. Agent System governs prompt activation and
 worker orchestration, never project authority, project state, releases,
 deployment, publication, or business execution.
 
@@ -39,6 +41,22 @@ contract, security, privacy, dependency, migration, build, test, browser,
 deployment, release, database, destructive, or authority-changing effect. A
 direct user or project instruction that “Seat 0 does not implement” removes
 the exception.
+
+For substantial work, choose `PARALLEL`, `PIPELINED`, `SERIAL`, or
+`EXPLORATORY` from logical dependencies and integration contracts; file
+disjointness and isolated branches do not prove independent contracts. Create
+one verified branch/worktree for each mutating worker before launch. Workers
+never merge, integrate, or touch the shared primary worktree. Seat `0` accepts
+and integrates candidates, and authoritative validation runs against the
+integrated candidate. Constrain parallelism only for genuinely tiny or tightly coupled
+work, unsafe overlap, unavailable capacity or tooling, ordered dependencies, or
+coordination cost that truly erases benefit; state a material constraint when
+useful capacity remains idle.
+
+Topology is JIT launch-order metadata: never load broader context or create a
+persistent workflow state machine for it. Uncertainty yields `SERIAL` or
+`EXPLORATORY`; helper/classifier failure preserves delegation boundaries and
+uses a bounded manual/native worker fallback without blocking the project.
 
 After an Agent System/helper failure, report or local-log unchanged evidence
 once according to consent, then immediately use any safe available option:
@@ -262,8 +280,9 @@ secrets, reasoning, large output, and unrelated conversation.
 ## Fail Closed
 
 Block only the affected operation on invalid policy identity/content,
-dependencies, precedence, acknowledgment, policy-artifact size limits, or
-classification. Advisory context-growth targets never block an operation.
+dependencies, precedence, acknowledgment, immutable policy-artifact size
+validation, or classification. This size validation never means advisory
+closure or context estimates. Advisory context-growth targets never block an operation.
 
 Receipts prove chain consistency, not runtime enforcement or model assignment. Report unavailable runtime evidence as `Unverified`.
 

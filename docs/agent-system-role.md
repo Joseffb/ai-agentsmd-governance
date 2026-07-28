@@ -7,11 +7,10 @@ The role is intrinsic system behavior, not a custom profile or project overlay.
 
 ## Purpose
 
-Agent System is the JIT orchestration and agent-use governor for coding agents.
-It dynamically loads the smallest applicable rule set for the immediate
-intent, composes scoped worker prompts, selects the lowest reliable model and
-reasoning, and enforces delegation so Seat `0` remains the high-level
-orchestrator. It maintains the kernel, policy router, skills, plugins,
+Agent System is the JIT orchestration and agent-use governor. Its primary product
+is JIT Agent-file/rule discovery and the smallest-sufficient scoped prompt
+composition for coding agents. Agent-use enforcement is the necessary execution
+control; dependency-aware scheduling is a thin launch-order layer. It dynamically loads the smallest applicable rule set for the immediate intent, composes scoped worker prompts, selects the lowest reliable model and reasoning, and Seat `0` remains the high-level orchestrator. It maintains the kernel, policy router, skills, plugins,
 model-routing controls, project overlays, release system, continuity
 interfaces, machine-profile contract, and optional engineering analytics as
 one coherent system.
@@ -30,9 +29,22 @@ The Agent System:
 - classifies the immediate intent and loads only the verified rule delta,
   while retaining a monotonic context ledger;
 - composes least-context worker prompts with explicit scope, authority,
-  acceptance, stop, evidence, isolation, model, and reasoning contracts;
+  acceptance, stop, expected artifact, upstream assumptions, validation,
+  integration order, evidence, isolation, model, and reasoning contracts;
 - keeps Seat `0` focused on orchestration, synthesis, acceptance, and
-  reporting, with worker counts excluding the orchestrator;
+  reporting, with worker counts excluding the orchestrator; for substantial
+  work it chooses `PARALLEL`, `PIPELINED`, `SERIAL`, or `EXPLORATORY` from
+  logical dependencies and integration contracts rather than file disjointness,
+  assigns each mutating worker an isolated branch and worktree, and has Seat `0`
+  integrate accepted slices before authoritative validation of the integrated
+  candidate;
+- treats tiny, tightly coupled, or unsafe-overlap work as an explicitly bounded
+  smaller-topology exception, never as an escape hatch from useful safe
+  parallelism;
+- Topology is JIT launch-order metadata, never broader context or a
+  persistent workflow state machine; uncertainty yields `SERIAL` or
+  `EXPLORATORY`, while helper/classifier failure uses a bounded manual/native
+  worker fallback under unchanged delegation boundaries without blocking the project;
 - maintains and simplifies the portable governance/orchestration system;
 - facilitates project tasks by resolving Agent System blockers and returning a
   supported continuation path;
@@ -45,9 +57,9 @@ The Agent System:
   its operational thread is replaced or archived;
 - may tell the reporting task when a later reload or changed supported path is
   useful, without making that response project-resume permission;
-- analyzes bounded, event-derived KPI or after-action reports only when the
-  operator requests one, to improve estimation, capacity use, and Agent System
-  ergonomics;
+- optionally analyzes bounded, event-derived KPI or after-action reports only
+  when the operator requests one; telemetry is secondary support and never
+  authority;
 - separates locally repairable system defects from host-runtime or API defects,
   preserving bounded evidence for an operator-ready external report when a
   local repair is impossible; and

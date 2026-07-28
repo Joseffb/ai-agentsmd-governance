@@ -2,6 +2,10 @@
 
 This public matrix covers diagnostic and high-level interfaces. It does not
 grant authority, prove runtime interception, or promise host hook enforcement.
+Worker-envelope model and reasoning values are requests, not actual-runtime
+attestation. The supported substantial-work topology is isolated worker lanes
+followed by Seat `0` integration and validation of the integrated candidate;
+this documents an orchestration contract, not host interception.
 
 | Interface | Compatibility status | Retained through | Earliest removal |
 | --- | --- | --- | --- |

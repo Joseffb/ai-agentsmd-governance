@@ -1,8 +1,10 @@
 # JIT Orchestration and Agent-Use Policy
 
-Agent System is the JIT orchestration and agent-use governor. It turns the
-immediate governed intent into the smallest verified rule delta and the
-smallest reliable worker topology. It governs agent use and prompt activation;
+Agent System's primary product is JIT Agent-file/rule discovery and the
+smallest-sufficient scoped prompt composition. Agent-use enforcement is its
+necessary execution control; dependency-aware scheduling is a thin launch-order
+layer. It turns the immediate governed intent into the smallest verified rule
+delta and smallest reliable worker topology. It governs agent use and prompt activation;
 it does not govern project authority, product state, business decisions,
 releases, deployment, publication, or execution ownership.
 
@@ -17,8 +19,8 @@ For the immediate intent:
 3. select only rules whose intent/effect predicates apply now;
 4. preserve every previously entered policy digest and estimated cost in the
    monotonic context ledger, including prior versions;
-5. group overlapping write scopes and assign the maximum useful disjoint
-   worker topology within available capacity;
+5. choose `PARALLEL`, `PIPELINED`, `SERIAL`, or `EXPLORATORY` from logical
+   dependencies and integration contracts, not file disjointness alone;
 6. select the lowest model family and raw reasoning level that reliably meets
    each seat's requirements;
 7. compose a bounded worker prompt and, for mutation, bind it to verified
@@ -29,6 +31,9 @@ For the immediate intent:
 Future roadmap operations never affect current classification or rule
 selection. A claimed short duration cannot override an effect, project
 authority, worker ownership, or a stricter instruction.
+
+Topology is JIT launch-order metadata, not broader context or persistent workflow state. Uncertain dependencies yield `SERIAL` or `EXPLORATORY`; if a topology helper or classifier fails, use a bounded manual or native worker fallback under unchanged delegation boundaries and do not block the project.
+Topology helper or classifier failure does not block the project.
 
 ## Deterministic-First Data Handling
 
@@ -73,22 +78,31 @@ risk, ownership, or effect changes. A direct user or project instruction that
 Seat `0` is excluded from the worker count. `N` agents or seats means `N`
 delegated workers numbered `1` through `N`; topology labels still begin with
 `0`. Say `total participants` when intentionally counting the orchestrator.
+For substantial decomposable work, constrain this topology only for genuinely
+tiny or tightly coupled work, unsafe overlap, unavailable capacity or tooling,
+ordered dependencies, or coordination cost that truly erases benefit; state a
+material constraint when useful capacity remains idle.
 
 ## Scoped Worker Prompts
 
 Every worker prompt states the role, immediate objective, project and
 repository, work identifier, exact read/write scope, candidate and isolation
 when relevant, required references, acceptance criteria, stop conditions,
-validation responsibility, Git/effect permissions, dependencies, evidence,
-and return format. Include only the minimum project context and policy delta
+expected artifact, upstream assumptions, validation responsibility, Git/effect
+permissions, integration order, evidence, and return format. Include shared-
+resource exclusions only for non-file mutable state such as schemas, migrations,
+lockfiles, ports, databases, generated registries, or mutable fixtures. Include
+only the minimum project context and policy delta
 needed for that seat. Never include secrets, hidden reasoning, unrelated
 project data, or authority the coordinator does not hold.
 
-Mutating workers use a receipt-verified isolated worktree before source
-inspection or mutation. Read-only workers cannot mutate source, Git,
+Each mutating worker receives its own receipt-verified branch/worktree before
+source inspection or mutation; it never merges, integrates, or touches the
+shared primary worktree. Read-only workers cannot mutate source, Git,
 continuity, generated tracked files, packages, caches, or external systems.
-Returned work is advisory until Seat `0` reconciles the candidate, scope,
-evidence, and project-authoritative validation.
+Returned work is advisory until Seat `0` reconciles and integrates the accepted
+candidates, scope, and evidence; project-authoritative validation runs against
+that integrated candidate.
 
 Choose the lowest-capability model and raw reasoning level that reliably
 handles the assigned reasoning and validation. Record the request before
@@ -163,10 +177,24 @@ The analytics flow is one-way:
 Kernel -> Receipts -> Events -> Metrics
 ```
 
-KPI lifecycle facts are silent private JSONL writes. Metrics consume evidence
-but never authorize, route, block, prioritize, score, or alter governed
-execution. Missing timings, estimates, intervals, validation, acceptance, or
-model attestation remain `null` with coverage; never infer them.
+KPI lifecycle facts are silent private JSONL writes. Metrics observe execution
+and never become execution authority; they consume evidence. No KPI, alone or
+in combination, may automatically route, rank, reward, punish, block,
+authorize, select models, choose delegation, set worker count, declare
+progress or completion, or mutate policy. Historical metric data remain
+downstream-only and cannot feed live prompts or decisions automatically.
+
+Worker topology follows real, independently integrable architecture boundaries;
+agent count is never a target. Metric-informed policy changes require explicit
+operator review, a new version, stated assumptions, and post-change
+recalibration. Missing timings, estimates, intervals, validation, acceptance,
+or model attestation remain `null` with coverage; never infer them.
+
+Ashby's Law of Requisite Variety constrains governance complexity: it must not
+exceed what operators can understand or workers can reliably execute. Add rules
+only for observed failure classes; every rule needs a clear purpose and
+observable effect. Expose unresolved rule conflicts rather than silently
+choosing, and ensure governance reduces uncertainty rather than creating it.
 
 KPI and after-action reports are produced only in response to a direct
 operator request. Cleanup, completion, defect reporting, task replacement, and

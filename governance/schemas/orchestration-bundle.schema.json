@@ -2,6 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://local.ai-codex-governance/schemas/orchestration-bundle.schema.json",
   "type": "object",
+  "oneOf": [
+    { "$ref": "#/$defs/v2Bundle" },
+    { "$ref": "#/$defs/v3Bundle" },
+    { "$ref": "#/$defs/v4Bundle" }
+  ],
   "required": [
     "schema_version",
     "bundle_type",
@@ -18,7 +23,7 @@
     "native_fallback"
   ],
   "properties": {
-    "schema_version": { "const": 2 },
+    "schema_version": { "enum": [2, 3, 4] },
     "bundle_type": { "const": "jit_orchestration" },
     "bundle_digest": { "$ref": "#/$defs/digest" },
     "release_identity": {
@@ -33,7 +38,7 @@
         "active_host_interception"
       ],
       "properties": {
-        "composer_version": { "const": "1.0.0" },
+        "composer_version": { "enum": ["1.0.0", "1.1.0", "1.2.0"] },
         "checkout_system_version": { "$ref": "#/$defs/versionOrUnverified" },
         "checkout_system_version_evidence": { "enum": ["package_json", "Unverified"] },
         "installed_system_version": { "$ref": "#/$defs/versionOrUnverified" },
@@ -240,12 +245,14 @@
           },
           "additionalProperties": false
         },
-        "worker_count": { "type": "integer", "minimum": 1 },
+        "capacity_limit": { "anyOf": [{ "const": "Unverified" }, { "type": "integer", "minimum": 1, "maximum": 9007199254740990 }] },
+        "capacity_evidence": { "enum": ["Unverified", "declared_by_caller"] },
+        "worker_count": { "type": "integer", "minimum": 0 },
         "seat0_included_in_worker_count": { "const": false },
-        "maximum_useful_disjoint_workers": { "type": "integer", "minimum": 1 },
+        "maximum_useful_disjoint_workers": { "type": "integer", "minimum": 0 },
         "workers": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 0,
           "items": {
             "type": "object",
             "required": [
@@ -267,7 +274,7 @@
               "label": { "type": "string", "pattern": "^Seat [1-9][0-9]*$" },
               "item_ids": {
                 "type": "array",
-                "minItems": 1,
+                "minItems": 0,
                 "uniqueItems": true,
                 "items": { "type": "string", "minLength": 1 }
               },
@@ -279,7 +286,7 @@
               },
               "write_scopes": {
                 "type": "array",
-                "minItems": 1,
+                "minItems": 0,
                 "uniqueItems": true,
                 "items": { "type": "string", "minLength": 1 }
               },
@@ -289,11 +296,60 @@
               "actual_reasoning_raw": { "const": "Unverified" },
               "model_attestation": { "const": "configured_not_runtime_attested" },
               "reasoning_attestation": { "const": "configured_not_runtime_attested" }
+              ,"worker_kind": { "enum": ["implementation", "bounded_discovery"] }
               ,"prompt_envelope": { "$ref": "#/$defs/workerPromptEnvelope" }
             },
             "additionalProperties": false
           }
-        }
+        },
+        "decomposed_items": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "required": ["id", "write_scopes"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "write_scopes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+              "depends_on": { "type": "array", "uniqueItems": true, "maxItems": 32, "items": { "type": "string", "minLength": 1 } },
+              "expected_artifact": { "type": ["string", "null"], "minLength": 1 },
+              "shared_resources": { "type": "array", "uniqueItems": true, "maxItems": 32, "items": { "type": "string", "minLength": 1 } }
+            },
+            "additionalProperties": false
+          }
+        },
+        "queued_item_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "queued_write_scopes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "execution_class": { "enum": ["PARALLEL", "PIPELINED", "SERIAL", "EXPLORATORY"] },
+        "decomposition_complete": { "type": "boolean" },
+        "coherent_chain": { "type": "boolean" },
+        "dependency_edges": {
+          "type": "array", "uniqueItems": true,
+          "items": { "type": "object", "required": ["from", "to"], "properties": { "from": { "type": "string", "minLength": 1 }, "to": { "type": "string", "minLength": 1 } }, "additionalProperties": false }
+        },
+        "launch_stages": {
+          "type": "array", "minItems": 1,
+          "items": { "type": "object", "required": ["stage", "item_ids"], "properties": { "stage": { "type": "integer", "minimum": 1 }, "item_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } } }, "additionalProperties": false }
+        },
+        "artifact_expectations": {
+          "type": "array", "uniqueItems": true,
+          "items": { "type": "object", "required": ["item_id", "expected_artifact"], "properties": { "item_id": { "type": "string", "minLength": 1 }, "expected_artifact": { "type": "string", "minLength": 1 } }, "additionalProperties": false }
+        },
+        "integration_order": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "shared_resource_declarations": {
+          "type": "array", "uniqueItems": true,
+          "items": { "type": "object", "required": ["item_id", "shared_resources"], "properties": { "item_id": { "type": "string", "minLength": 1 }, "shared_resources": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } } }, "additionalProperties": false }
+        },
+        "scheduler_fallback": { "const": "native_or_manual_worker_without_expanded_authority" }
       },
       "additionalProperties": false
     },
@@ -349,6 +405,24 @@
           },
           "additionalProperties": false
         },
+        "lifecycle": {
+          "type": "object",
+          "required": ["stages", "capacity_bound_work_is_queued", "mutating_worker_isolation", "parallel_phase", "integration_seat", "final_validation", "execution_evidence"],
+          "properties": {
+            "stages": { "type": "array", "minItems": 5, "maxItems": 6, "items": { "type": "string", "minLength": 1 } },
+            "capacity_bound_work_is_queued": { "const": true },
+            "mutating_worker_isolation": { "const": "isolated_branch_and_receipt_bound_worktree_per_worker" },
+            "parallel_phase": { "type": "string", "minLength": 1 },
+            "integration_seat": { "const": 0 },
+            "final_validation": { "const": "planned_seat_0_authoritative_against_integrated_candidate" },
+            "execution_evidence": { "const": "Unverified" },
+            "execution_class": { "enum": ["PARALLEL", "PIPELINED", "SERIAL", "EXPLORATORY"] },
+            "launch_stages": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["stage", "item_ids"], "properties": { "stage": { "type": "integer", "minimum": 1 }, "item_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } } }, "additionalProperties": false } },
+            "scheduler_scope": { "const": "deterministic_planning_only_no_persistent_workflow_state" },
+            "scheduler_failure_fallback": { "const": "native_or_manual_worker_without_expanded_authority" }
+          },
+          "additionalProperties": false
+        },
         "return": {
           "type": "object",
           "required": ["recipient_seat", "required_fields"],
@@ -380,6 +454,142 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "v2Bundle": {
+      "type": "object",
+      "required": ["schema_version", "release_identity"],
+      "properties": {
+        "schema_version": { "const": 2 },
+        "release_identity": {
+          "type": "object",
+          "required": ["composer_version"],
+          "properties": { "composer_version": { "const": "1.0.0" } }
+        }
+      }
+    },
+    "v3Bundle": {
+      "allOf": [
+        {
+          "type": "object",
+          "required": ["schema_version", "release_identity"],
+          "properties": {
+            "schema_version": { "const": 3 },
+            "release_identity": {
+              "type": "object",
+              "required": ["composer_version"],
+              "properties": { "composer_version": { "const": "1.1.0" } }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["topology", "classification"],
+            "properties": {
+              "classification": {
+                "type": "object",
+                "required": ["classification"],
+                "properties": { "classification": { "const": "worker_required" } }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "topology": {
+                "required": ["capacity_limit", "capacity_evidence", "decomposed_items", "queued_item_ids", "queued_write_scopes"]
+              },
+              "contracts": {
+                "required": ["lifecycle"]
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "topology": false,
+              "contracts": { "not": { "required": ["lifecycle"] } }
+            }
+          }
+        }
+      ]
+    },
+    "v4Bundle": {
+      "allOf": [
+        {
+          "type": "object",
+          "required": ["schema_version", "release_identity"],
+          "properties": {
+            "schema_version": { "const": 4 },
+            "release_identity": {
+              "type": "object",
+              "required": ["composer_version"],
+              "properties": { "composer_version": { "const": "1.2.0" } }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["topology", "classification"],
+            "properties": {
+              "classification": {
+                "type": "object",
+                "required": ["classification"],
+                "properties": { "classification": { "const": "worker_required" } }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "topology": {
+                "required": ["capacity_limit", "capacity_evidence", "decomposed_items", "queued_item_ids", "queued_write_scopes", "execution_class", "decomposition_complete", "coherent_chain", "dependency_edges", "launch_stages", "artifact_expectations", "integration_order", "shared_resource_declarations", "scheduler_fallback"],
+                "properties": {
+                  "workers": {
+                    "items": { "required": ["worker_kind"] }
+                  }
+                },
+                "allOf": [
+                  {
+                    "if": { "properties": { "execution_class": { "const": "EXPLORATORY" } }, "required": ["execution_class"] },
+                    "then": {
+                      "properties": {
+                        "worker_count": { "const": 1 },
+                        "maximum_useful_disjoint_workers": { "const": 1 },
+                        "workers": {
+                          "minItems": 1,
+                          "maxItems": 1,
+                          "prefixItems": [
+                            {
+                              "properties": {
+                                "seat": { "const": 1 },
+                                "worker_kind": { "const": "bounded_discovery" },
+                                "item_ids": { "maxItems": 0 },
+                                "assignment_ids": { "prefixItems": [{ "const": "bounded-discovery" }], "minItems": 1, "maxItems": 1 },
+                                "write_scopes": { "maxItems": 0 }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              "contracts": {
+                "properties": {
+                  "lifecycle": {
+                    "required": ["execution_class", "launch_stages", "scheduler_scope", "scheduler_failure_fallback"]
+                  }
+                },
+                "required": ["lifecycle"]
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "topology": false,
+              "contracts": { "not": { "required": ["lifecycle"] } }
+            }
+          }
+        }
+      ]
+    },
     "digest": {
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
@@ -439,14 +649,15 @@
       "required": ["schema_version", "scope", "authority", "non_authority", "non_goals", "acceptance", "stop_conditions", "validation", "isolation_effects", "evidence", "return", "requested_model", "requested_reasoning_raw", "fallback"],
       "properties": {
         "schema_version": { "const": 1 },
+        "worker_kind": { "enum": ["implementation", "bounded_discovery"] },
         "scope": { "type": "object", "required": ["item_ids", "write_scopes"], "properties": { "item_ids": { "type": "array", "items": { "type": "string" } }, "write_scopes": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": false },
         "authority": { "const": "external_user_or_project_authority_only" },
         "non_authority": { "const": "does_not_grant_project_authority" },
         "non_goals": { "type": "array", "items": { "type": "string" } },
         "acceptance": { "const": "coordinator_verifies_against_candidate" },
         "stop_conditions": { "type": "array", "items": { "type": "string" } },
-        "validation": { "const": "run_assigned_validation_and_report_actual_result" },
-        "isolation_effects": { "const": "receipt_bound_git_worktree_before_mutation" },
+        "validation": { "enum": ["run_assigned_validation_and_report_actual_result", "return_bounded_decomposition_facts_only"] },
+        "isolation_effects": { "enum": ["receipt_bound_git_worktree_before_mutation", "read_only_discovery_no_project_mutation"] },
         "evidence": { "const": "return_bounded_evidence_only" },
         "return": { "const": "return_to_seat_0_using_required_fields" },
         "requested_model": { "type": "string", "minLength": 1 },
