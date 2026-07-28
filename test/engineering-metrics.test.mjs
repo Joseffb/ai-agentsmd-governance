@@ -148,6 +148,111 @@ test("typed token events retain only observed fields and expose field-level cove
   })), /requires at least one observed token or provider latency field/);
 });
 
+test("anchorless in-window runtime and token evidence remains visible without fabricating task lifecycle", () => {
+  const report = buildMetricsReport({
+    events: [
+      event("token.usage", "2026-07-26T00:05:00.000Z", {
+        total_tokens: 150,
+        evidence_class: "observed",
+        evidence_authority: "runtime_metadata",
+        coverage_status: "complete"
+      }),
+      event("token.quota_snapshot", "2026-07-26T00:06:00.000Z", {
+        used_percent: 30,
+        window_minutes: 300,
+        evidence_class: "observed",
+        evidence_authority: "runtime_metadata",
+        coverage_status: "complete"
+      }),
+      event("runtime.tooling_fallback", "2026-07-26T00:07:00.000Z", {
+        evidence_class: "observed",
+        evidence_authority: "runtime_metadata",
+        coverage_status: "partial"
+      }),
+      event("seat.started", "2026-07-26T00:08:00.000Z", { seat_id: "seat-1" })
+    ],
+    thread: "thread-1",
+    days: 7,
+    now: NOW
+  });
+  const project = report.projects[0];
+  const task = project.tasks[0];
+  assert.equal(report.ledger.selected_events, 4);
+  assert.equal(report.ledger.anchorless_runtime_evidence_events, 4);
+  assert.deepEqual(report.runtime_diagnostics.anchorless_runtime_evidence, {
+    coverage_status: "partial",
+    event_count: 4,
+    task_count: 1
+  });
+  assert.equal(task.started_at, null);
+  assert.equal(task.usable_at, null);
+  assert.equal(task.terminal_at, null);
+  assert.equal(task.wall_clock_hours, null);
+  assert.equal(task.accepted, false);
+  assert.equal(task.views.work.coverage_status, "unknown");
+  assert.equal(task.views.utilization.effective_seat_hours, null);
+  assert.equal(task.views.utilization.peak_concurrent_seats, null);
+  assert.equal(task.views.runtime.anchorless_runtime_evidence, true);
+  assert.equal(task.views.runtime.seat_lifecycle_events, 1);
+  assert.equal(task.views.runtime.tooling_fallback_events, 1);
+  assert.equal(task.views.token.total_tokens.value, 150);
+  assert.equal(task.views.token.quota_snapshots[0].used_percent, 30);
+  assert.equal(project.delivery.wall_clock_hours, null);
+  assert.equal(project.comparison.accepted_tasks_per_hour, null);
+  assert.equal(project.comparison.accepted_tasks_per_million_exact_observed_tokens, null);
+});
+
+test("pre-window task anchors retain only in-window runtime and token evidence", () => {
+  const report = buildMetricsReport({
+    events: [
+      event("task.started", "2026-07-20T00:00:00.000Z"),
+      event("token.usage", "2026-07-24T23:59:59.000Z", {
+        total_tokens: 999,
+        evidence_class: "observed",
+        evidence_authority: "runtime_metadata",
+        coverage_status: "complete"
+      }),
+      event("token.usage", "2026-07-26T00:05:00.000Z", {
+        total_tokens: 100,
+        evidence_class: "observed",
+        evidence_authority: "runtime_metadata",
+        coverage_status: "complete"
+      }),
+      event("runtime.segment", "2026-07-26T00:06:00.000Z", {
+        workstream_id: "workstream-1",
+        segment_id: "segment-1",
+        duration_ms: 3600000,
+        runtime_status: "complete",
+        completeness: "complete",
+        evidence_class: "observed",
+        qualification: "current_segment"
+      }),
+      event("seat.started", "2026-07-26T00:07:00.000Z", { seat_id: "seat-1" }),
+      event("token.quota_snapshot", "2026-07-27T00:00:00.000Z", {
+        used_percent: 80,
+        evidence_class: "observed",
+        evidence_authority: "runtime_metadata",
+        coverage_status: "complete"
+      })
+    ],
+    thread: "thread-1",
+    days: 2,
+    now: NOW
+  });
+  const project = report.projects[0];
+  const task = project.tasks[0];
+  assert.equal(report.ledger.selected_events, 3);
+  assert.equal(task.started_at, null);
+  assert.equal(task.wall_clock_hours, null);
+  assert.equal(task.views.token.total_tokens.value, 100);
+  assert.equal(task.views.token.quota_snapshots.length, 0);
+  assert.equal(task.views.runtime.complete_wall_clock_hours, 1);
+  assert.equal(task.views.utilization.effective_seat_hours, null);
+  assert.equal(project.delivery.wall_clock_hours, null);
+  assert.equal(project.agent_efficiency.average_concurrent_seats, null);
+  assert.equal(project.comparison.task_latency_hours_mean, null);
+});
+
 test("operator-requested comparison metrics require complete accepted-task denominators", () => {
   const report = buildMetricsReport({
     events: [
