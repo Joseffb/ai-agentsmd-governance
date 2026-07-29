@@ -163,6 +163,39 @@ test("runtime ingestion treats direct parent lineage alone as a distinct worker 
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test("runtime ingestion preserves legacy same-seat starts while backfilling missing lifecycle facts", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-runtime-seat-backfill-"));
+  const sessions = path.join(root, "sessions");
+  const projectRoot = path.join(root, "project");
+  const ledger = path.join(root, "events.jsonl");
+  const seedLedger = path.join(root, "seed-events.jsonl");
+  fs.mkdirSync(sessions);
+  fs.mkdirSync(projectRoot);
+  fs.writeFileSync(path.join(sessions, "parent.jsonl"), [
+    JSON.stringify({ type: "session_meta", timestamp: "2026-07-28T00:00:00.000Z", payload: { id: "parent-session", session_id: "parent-task", cwd: projectRoot } }),
+    JSON.stringify({ type: "event_msg", payload: { type: "sub_agent_activity", kind: "started", agent_thread_id: "child-one", occurred_at_ms: Date.parse("2026-07-28T00:00:02.000Z") } }),
+    JSON.stringify({ type: "event_msg", payload: { type: "sub_agent_activity", kind: "interrupted", agent_thread_id: "child-one", occurred_at_ms: Date.parse("2026-07-28T00:00:03.000Z") } })
+  ].join("\n"));
+  fs.writeFileSync(path.join(sessions, "child-one.jsonl"), JSON.stringify({ type: "session_meta", timestamp: "2026-07-28T00:00:01.000Z", payload: { id: "child-one", session_id: "parent-task", parent_thread_id: "parent-task", cwd: projectRoot } }));
+  fs.writeFileSync(path.join(sessions, "child-two.jsonl"), JSON.stringify({ type: "session_meta", timestamp: "2026-07-28T00:00:04.000Z", payload: { id: "child-two", session_id: "parent-task", parent_thread_id: "parent-task", cwd: projectRoot } }));
+  const options = { sessionRoot: sessions, project: "alpha", projectPath: projectRoot, thread: "parent-task" };
+  await ingestRuntimeTelemetry({ ...options, ledger: seedLedger });
+  const seedEvents = fs.readFileSync(seedLedger, "utf8").trim().split("\n").map(JSON.parse);
+  const seededSeat = seedEvents.find((event) => event.type === "seat.stopped");
+  fs.writeFileSync(ledger, `${JSON.stringify({ ...seededSeat, type: "seat.started", event_id: "legacy-seat-start", occurred_at: "2026-07-27T23:59:00.000Z", recorded_at: "2026-07-27T23:59:00.000Z" })}\n`);
+
+  const result = await ingestRuntimeTelemetry({ ...options, ledger });
+  const repeated = await ingestRuntimeTelemetry({ ...options, ledger });
+  const events = fs.readFileSync(ledger, "utf8").trim().split("\n").map(JSON.parse);
+  assert.equal(events.filter((event) => event.type === "seat.started" && event.seat_id === seededSeat.seat_id).length, 1, "legacy same-seat start is retained without a timestamp-variant duplicate");
+  assert.equal(events.filter((event) => event.type === "seat.started").length, 2, "a distinct missing worker seat still appends");
+  assert.equal(events.filter((event) => event.type === "seat.stopped").length, 1, "stops remain independently appendable");
+  assert.equal(events.filter((event) => event.type === "task.started").length, 1, "missing task start still appends");
+  assert.ok(result.coverage.skipped_existing >= 1);
+  assert.equal(repeated.appended, 0, "event-id idempotence remains intact after semantic backfill deduplication");
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test("runtime ingestion projects allowlisted worker lifecycle metadata without retaining collaboration content", async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-runtime-lifecycle-"));
   const sessions = path.join(root, "sessions");
