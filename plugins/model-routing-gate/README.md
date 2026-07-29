@@ -21,11 +21,11 @@ Every hook invokes the bundled POSIX launcher rather than a bare `node` command.
 
 ## Compatibility boundary
 
-Some Codex collaboration paths bypass local-function `PreToolUse` and `PostToolUse` hooks while still emitting `SubagentStart`. On those paths the plugin can observe the actual model but cannot prove the requested-to-actual binding or technically block output. Treat model-critical delegation as inadmissible until a negative canary proves interception for the active runtime.
+Native collaboration interception is capability-dependent: some Codex paths bypass local-function `PreToolUse` and `PostToolUse` while still emitting `SubagentStart`. On an unhooked path the plugin cannot prove the requested-to-actual binding or technically block output. A failed negative canary is telemetry for that runtime/path, never a project stop and not a claim that every host bypasses hooks. Normal workers may proceed with explicit model/reasoning requests, exact scope, isolation, and validation; report actual routing as `Unverified` without authoritative metadata. Reserve `model_critical:true` for work whose result validity or safety explicitly depends on attested model identity; it defaults to `false`. A mutating model-critical seat that truly needs attestation must use a hook-covered path or an operator-approved redesign, while unrelated work continues.
 
 ## Install
 
-Add the plugin to a local marketplace, install it, trust its hooks through `/hooks`, and start a new task. Plugin hooks do not retrofit an already-running task.
+Add the plugin to a local marketplace, install it, and trust its hooks through `/hooks`. After installing or updating it in Codex desktop, use app Reload as the supported refresh action. Create a new top-level proof task only when launch-time enforcement needs proof. If Reload does not refresh the plugin, mark enforcement `Unverified`, continue projects through the permitted fallback, and leave any restart or diagnostic action to explicit operator choice. Reload does not retrofit transcript history or prove hook interception, and starting a fresh task alone does not reload a process-cached plugin.
 
 ## Test
 

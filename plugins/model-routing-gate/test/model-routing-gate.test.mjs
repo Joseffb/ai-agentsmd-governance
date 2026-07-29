@@ -53,7 +53,7 @@ function pre(stateRoot, toolUseId, seat, options = {}) {
   return processHook({
     session_id: options.sessionId || sessionId,
     hook_event_name: "PreToolUse",
-    tool_name: "Agent",
+    tool_name: options.toolName || "Agent",
     tool_use_id: toolUseId,
     tool_input: {
       message: options.rawMessage ?? message(seat, options),
@@ -68,7 +68,7 @@ function post(stateRoot, toolUseId, agentId, options = {}) {
   return processHook({
     session_id: options.sessionId || sessionId,
     hook_event_name: "PostToolUse",
-    tool_name: "Agent",
+    tool_name: options.toolName || "Agent",
     tool_use_id: toolUseId,
     tool_input: {},
     tool_response: { agent_id: agentId, nickname: "ignored" }
@@ -107,6 +107,48 @@ test("direct ungoverned Agent launch is blocked", (t) => {
   const state = root(t);
   const result = pre(state, "t1", "seat", { rawMessage: "No envelope", model: "gpt-5.6-terra", reasoning: "high" });
   assert.equal(result.hookSpecificOutput.permissionDecision, "deny");
+});
+
+test("plugin metadata and guidance limit enforcement to proven hook-covered paths", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(pluginRoot, ".codex-plugin", "plugin.json"), "utf8"));
+  const skill = fs.readFileSync(path.join(pluginRoot, "skills", "model-routing-gate", "SKILL.md"), "utf8");
+  const readme = fs.readFileSync(path.join(pluginRoot, "README.md"), "utf8");
+  const governSkill = fs.readFileSync(path.resolve(pluginRoot, "..", "..", "skills", "govern-codex-policy", "SKILL.md"), "utf8");
+  assert.match(manifest.description, /hook-covered/i);
+  assert.match(manifest.interface.shortDescription, /hook-covered/i);
+  assert.match(manifest.interface.longDescription, /proven hook-covered paths/i);
+  assert.match(manifest.interface.longDescription, /Unverified/i);
+  assert.doesNotMatch(`${manifest.description}\n${manifest.interface.shortDescription}\n${manifest.interface.longDescription}`, /universal/i);
+  assert.match(skill, /Set `model_critical:false` unless result validity or safety explicitly depends/i);
+  assert.match(skill, /app Reload as the supported refresh action/i);
+  assert.match(skill, /creating a fresh task alone does not reload a process-cached plugin/i);
+  assert.match(readme, /failed negative canary is telemetry.*never a project stop/is);
+  assert.match(readme, /mutating model-critical seat.*hook-covered path or an operator-approved redesign/is);
+  const refreshFallback = "If Reload does not refresh the plugin, mark enforcement `Unverified`, continue projects through the permitted fallback, and leave any restart or diagnostic action to explicit operator choice.";
+  for (const text of [readme, skill, governSkill]) {
+    assert.match(text, new RegExp(refreshFallback.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.doesNotMatch(text, /fully quit|quit and reopen|must restart|require.*restart/i);
+  }
+  assert.deepEqual([readme, skill, governSkill].map((text) => text.match(new RegExp(refreshFallback.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))?.[0]), [refreshFallback, refreshFallback, refreshFallback]);
+});
+
+test("native spawn_agent hooks enforce when invoked and absence leaves no fabricated interception", (t) => {
+  const state = root(t);
+  const toolName = "multi_agent_v1__spawn_agent";
+  const allowed = pre(state, "native-spawn", "native-seat", {
+    model: "gpt-5.6-terra",
+    reasoning: "high",
+    toolName
+  });
+  assert.equal(allowed.hookSpecificOutput.permissionDecision, "allow");
+  start(state, "native-agent", "gpt-5.6-terra");
+  post(state, "native-spawn", "native-agent", { toolName });
+  assert.equal(readAgentReceipt(state, sessionId, "native-agent").output_admissible, true);
+
+  const ungatedState = root(t);
+  const observedStart = start(ungatedState, "host-bypassed-agent", "gpt-5.6-terra");
+  assert.match(observedStart.systemMessage, /captured runtime model evidence and is awaiting deterministic spawn binding/i);
+  assert.equal(readAgentReceipt(ungatedState, sessionId, "host-bypassed-agent"), null);
 });
 
 test("missing exact model is blocked instead of inheriting", (t) => {

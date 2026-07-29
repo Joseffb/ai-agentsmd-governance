@@ -19,7 +19,9 @@ When explicit per-seat selection exists, every new or resumed seat must receive 
 
 If family selection is unavailable, say so, claim none, and optimize decomposition with the lowest suitable model. Report unavailable reasoning selection separately and imply no level.
 
-Use the Model Routing Gate plugin only after a runtime-specific negative canary proves that direct launch and output collection traverse its `PreToolUse` and `PostToolUse` hooks. When proven, it must block missing or inherited assignments, bind the launch request to the runtime `agent_id`, and reject missing or mismatched evidence. If native collaboration bypasses either hook, direct launches are only kernel-prohibited, not technically blocked; model-critical delegation is inadmissible until an authoritative gateway exists. `SubagentStart` model metadata alone proves the actual model, not the requested-to-actual binding.
+Use the Model Routing Gate plugin only after a runtime-specific negative canary proves that direct launch and output collection traverse its `PreToolUse` and `PostToolUse` hooks. When proven, it must block missing or inherited assignments, bind the launch request to the runtime `agent_id`, and reject missing or mismatched evidence. Native collaboration interception is capability-dependent. A negative canary that is denied is evidence that this runtime and path are hook-covered; a canary that starts is evidence that this path is not hook-gated, not a universal expectation for every host. On an unhooked path, normal workers may still proceed with explicit model and reasoning requests, exact scope, verified isolation when mutating, and proportionate validation; report `Actual model: Unverified` unless authoritative runtime metadata attests it. `SubagentStart` model metadata alone may prove the actual model, but not the requested-to-actual binding.
+
+Set `model_critical:false` by default. Set it to `true` only when the result's validity or safety explicitly depends on attested model identity; it is not a proxy for task importance. A mutating model-critical seat that truly requires that attestation must use a hook-covered path or an operator-approved redesign. Block only that attestation-dependent seat and continue unrelated work through the available normal-worker or native fallback path.
 
 Reuse only an accepted, model-compatible seat. Close rejected seats; permit one explicitly assigned relaunch, then block the seat as a runtime-routing defect.
 
@@ -39,7 +41,7 @@ For Sol or `xhigh`/stronger assignments, record before launch why a cheaper mode
 
 ## Native Spawn Quarantine
 
-Some native collaboration paths may bypass plugin `PreToolUse` and `PostToolUse` hooks. A negative canary proves launch enforcement only when the unenveloped launch is denied before start; accepting it proves the path is not hook-gated.
+Some native collaboration paths may bypass plugin `PreToolUse` and `PostToolUse` hooks. A negative canary proves launch enforcement only when the unenveloped launch is denied before start; accepting it is telemetry that this path is not hook-gated. It never stops the project or requires waiting for an Agent System repair.
 
 For a read-only model-critical seat on an ungated native path:
 

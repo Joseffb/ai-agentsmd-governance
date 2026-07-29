@@ -438,9 +438,9 @@
     },
     {
       "id": "model-routing",
-      "version": 10,
+      "version": 11,
       "path": "modules/model-routing.md",
-      "digest": "sha256:88347b521853d94abd53d860ee887dbe13d5301ad8b966bb50b0ef05315a283a",
+      "digest": "sha256:2d3d220132a66750a356d7d38471e397dac1349c588adec3f65790c3843d3fdf",
       "triggers": {
         "operations": [
           "launch_subagent",
@@ -467,9 +467,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 8484,
-      "words": 1117,
-      "estimated_tokens": 2121
+      "bytes": 9349,
+      "words": 1248,
+      "estimated_tokens": 2338
     },
     {
       "id": "context-routing",

@@ -1,6 +1,6 @@
 ---
 name: model-routing-gate
-description: Enforce exact per-seat subagent model and reasoning assignments, consume runtime model attestations, and reject inadmissible subagent output.
+description: On proven hook-covered paths, enforce exact per-seat subagent model and reasoning assignments, consume runtime model attestations, and reject inadmissible subagent output.
 ---
 
 # Model Routing Gate
@@ -21,17 +21,17 @@ MODEL_ROUTING_GATE_V1 {"schema_version":1,"seat_id":"rpc-review","model_critical
 5. Pass the same exact model and reasoning through the launch tool's `model` and `reasoning_effort` arguments.
 6. Use attempt `2` only after the first launch is rejected. Do not launch a third attempt.
 
-Every governed seat needs an explicit model and reasoning assignment, including non-critical seats. Keep the four audit strings concise and free of secrets or project data. `weaker_insufficient` is required for Sol or `xhigh`/stronger assignments. `model_critical` controls output-admission rigor; it does not authorize inheritance.
+Every governed seat needs an explicit model and reasoning assignment, including non-critical seats. Keep the four audit strings concise and free of secrets or project data. `weaker_insufficient` is required for Sol or `xhigh`/stronger assignments. Set `model_critical:false` unless result validity or safety explicitly depends on attested model identity; it controls output-admission rigor and does not authorize inheritance.
 
 ## Runtime admission
 
 The hooks bind `PreToolUse.tool_use_id` to `PostToolUse.agent_id`, then compare the requested model with `SubagentStart.model`. Do not use nickname, order, timing, output style, or role names as routing evidence.
 
-Before relying on the gate, run a negative canary that attempts an unenveloped supported-model launch. The canary passes only when `PreToolUse` denies the launch and writes a receipt. A marker-only success is not proof.
+Before relying on the gate for attestation-dependent work, run a negative canary that attempts an unenveloped supported-model launch. The canary passes only when `PreToolUse` denies the launch and writes a receipt. A marker-only success is not proof. If it starts, record that capability result for this runtime/path; do not assume denial is universal and do not stop project work.
 
 On a hook-covered runtime, do not call `wait_agent` until the gate admits the agent. The hook blocks collection when the receipt is missing, pending, rejected, or mismatched. Close rejected agents immediately. Their output is inadmissible for synthesis, implementation, security, continuity, integration, release, or completion.
 
-If native collaboration launch or wait bypasses `PreToolUse` or `PostToolUse`, report the path as technically ungoverned and block model-critical delegation. `SubagentStart.model` may still prove the actual model, but cannot alone prove which requested assignment produced it.
+If native collaboration launch or wait bypasses `PreToolUse` or `PostToolUse`, report the path as technically ungoverned. Normal workers may proceed with explicit model/reasoning requests, exact scope, isolation, and validation, with actual routing `Unverified`. Block only a model-critical delegation whose validity or safety truly requires attested identity; a mutating one must use a hook-covered path or operator-approved redesign. `SubagentStart.model` may still prove the actual model, but cannot alone prove which requested assignment produced it.
 
 Reuse only a seat with an accepted receipt, the same seat ID, the same exact model, and the same configured reasoning.
 
@@ -56,7 +56,7 @@ Receipts are private, compact, and outside the plugin source tree under `PLUGIN_
 
 The plugin appends hook-observed lifecycle metadata to `model-routing-events.jsonl` in the same private directory. For a complete task audit, including native paths that bypass hooks, run `node ~/.codex/policies/bin/acg.mjs model-audit --thread <task-id> --days 14`.
 
-Codex hooks are a runtime guardrail, not a universal host security boundary. The gate technically blocks supported `Agent` and `wait_agent` hook paths only after the plugin is installed, enabled, trusted in a new task, and proven by a negative canary. Report unsupported or bypassing runtime paths as ungoverned.
+Codex hooks are a runtime guardrail, not a universal host security boundary. After installing or updating this plugin in Codex desktop, use app Reload as the supported refresh action; create a new top-level proof task only when launch-time enforcement must be demonstrated. If Reload does not refresh the plugin, mark enforcement `Unverified`, continue projects through the permitted fallback, and leave any restart or diagnostic action to explicit operator choice. Reload does not retrofit transcript history or prove interception, and creating a fresh task alone does not reload a process-cached plugin. The gate technically blocks only supported paths that a negative canary has proven hook-covered. Report unsupported or bypassing runtime paths as ungoverned.
 
 ## Ungated Native Path
 

@@ -1,15 +1,15 @@
 {
   "name": "model-routing-gate",
-  "version": "1.0.4+codex.20260728235728",
-  "description": "Fail-closed model assignment and runtime model attestation for Codex subagents",
+  "version": "1.0.6+codex.20260729004851",
+  "description": "Hook-covered model assignment and runtime model attestation for Codex subagents",
   "author": {
     "name": "AI Codex Governance"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "Model Routing Gate",
-    "shortDescription": "Enforce and attest subagent model assignments.",
-    "longDescription": "Blocks inherited or missing subagent assignments, correlates launch requests with runtime model evidence, and prevents inadmissible agent output from being collected.",
+    "shortDescription": "Enforce and attest hook-covered subagent assignments.",
+    "longDescription": "On proven hook-covered paths, blocks inherited or missing subagent assignments, correlates launch requests with runtime model evidence, and prevents inadmissible agent output from being collected. Host interception remains Unverified without runtime evidence.",
     "developerName": "AI Codex Governance",
     "category": "Developer Tools",
     "capabilities": [

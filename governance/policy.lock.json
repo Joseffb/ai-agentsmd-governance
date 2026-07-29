@@ -3,7 +3,7 @@
   "manifest": {
     "id": "ai-codex-governance",
     "version": 1,
-    "sha256": "sha256:e6d06f528cdbdfd57bfd268e40fbf7991443ef92722e3bc4c49f162a8a2bade0"
+    "sha256": "sha256:ab137ffdf6250961c8bdf85f723f7d7d975382f8e0ece544546c153f7f203ae3"
   },
   "estimator": {
     "id": "utf8-bytes-div-4-ceil",
@@ -22,10 +22,10 @@
   },
   "skill": {
     "path": "skills/govern-codex-policy/SKILL.md",
-    "sha256": "sha256:4763cebf123cba6121378e17465802010e026393d77667c2cb09935c08630afb",
-    "bytes": 22152,
-    "words": 2859,
-    "estimated_tokens": 5538
+    "sha256": "sha256:30e70b66c427030c1f05fc44a93e76f3f7f6202a7ed799a25cab8bbfbcd18362",
+    "bytes": 22605,
+    "words": 2927,
+    "estimated_tokens": 5652
   },
   "modules": [
     {
@@ -66,12 +66,12 @@
     },
     {
       "id": "model-routing",
-      "version": 10,
+      "version": 11,
       "path": "modules/model-routing.md",
-      "sha256": "sha256:88347b521853d94abd53d860ee887dbe13d5301ad8b966bb50b0ef05315a283a",
-      "bytes": 8484,
-      "words": 1117,
-      "estimated_tokens": 2121
+      "sha256": "sha256:2d3d220132a66750a356d7d38471e397dac1349c588adec3f65790c3843d3fdf",
+      "bytes": 9349,
+      "words": 1248,
+      "estimated_tokens": 2338
     },
     {
       "id": "context-routing",

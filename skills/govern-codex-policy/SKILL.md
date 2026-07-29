@@ -302,7 +302,7 @@ Receipts prove chain consistency, not runtime enforcement or model assignment. R
 ### Receipt-pinned release resolution
 
 With a prior acknowledgment, the CLI selects the immutable release matching its manifest, kernel, and skill. Supply the receipt once; do not guess a router, reload, or reset accounting. If no release matches, follow the fresh-context instruction.
-Running tasks never reload or mix routers; new tasks use the active release.
+Running tasks never reload or mix routers; new tasks use the active release. For a Codex desktop plugin install or update, app Reload is the supported refresh action; use a new top-level proof task only when launch-time enforcement must be proven. If Reload does not refresh the plugin, mark enforcement `Unverified`, continue projects through the permitted fallback, and leave any restart or diagnostic action to explicit operator choice. Neither Reload nor a fresh task retrofits transcript history or proves hook interception.
 
 ### Legacy task compatibility
 
