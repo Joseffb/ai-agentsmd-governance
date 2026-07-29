@@ -88,7 +88,7 @@ test("runtime ingestion refuses unbound or misattributed session transcripts", a
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test("runtime ingestion aggregates subagent token use but projects the earliest genuine main task start once", async () => {
+test("runtime ingestion treats bare subagent source as a root task and requires parent lineage for worker classification", async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-runtime-main-start-"));
   const sessions = path.join(root, "sessions");
   const projectRoot = path.join(root, "project");
@@ -108,11 +108,10 @@ test("runtime ingestion aggregates subagent token use but projects the earliest 
   const events = fs.readFileSync(ledger, "utf8").trim().split("\n").map(JSON.parse);
   assert.equal(result.coverage.task_started_projections, 1);
   assert.equal(events.filter((event) => event.type === "task.started").length, 1);
-  assert.equal(events.find((event) => event.type === "task.started").occurred_at, "2026-07-28T00:00:03.000Z");
+  assert.equal(events.find((event) => event.type === "task.started").occurred_at, "2026-07-28T00:00:00.000Z", "a root session_id with no parent remains task-level even when thread_source says subagent");
   assert.equal(events.find((event) => event.type === "token.usage").total_tokens, 9, "subagent token usage remains parent-task evidence");
-  assert.equal(events.filter((event) => event.type === "seat.started").length, 1);
-  assert.match(events.find((event) => event.type === "seat.started").seat_id, /^runtime-[a-f0-9]{32}$/);
-  assert.equal(events.find((event) => event.type === "coverage.seat_intervals").outcome, "incomplete");
+  assert.equal(events.filter((event) => event.type === "seat.started").length, 0);
+  assert.equal(events.filter((event) => event.type === "coverage.seat_intervals").length, 0);
   assert.equal(repeated.appended, 0, "main and subagent start projections are idempotent");
   fs.rmSync(root, { recursive: true, force: true });
 });
@@ -139,6 +138,71 @@ test("runtime ingestion recognizes nested subagent metadata without fabricating 
   const seatCoverage = events.find((event) => event.type === "coverage.seat_intervals");
   assert.equal(seatCoverage.outcome, "incomplete", "without an authoritative stop, utilization duration stays unavailable");
   assert.equal(seatCoverage.coverage_status, "partial");
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("runtime ingestion treats direct parent lineage alone as a distinct worker session", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-runtime-direct-parent-"));
+  const sessions = path.join(root, "sessions");
+  const projectRoot = path.join(root, "project");
+  const ledger = path.join(root, "events.jsonl");
+  fs.mkdirSync(sessions);
+  fs.mkdirSync(projectRoot);
+  fs.writeFileSync(path.join(sessions, "direct-parent.jsonl"), [
+    JSON.stringify({ type: "session_meta", timestamp: "2026-07-28T00:00:00.000Z", payload: { id: "child-direct", session_id: "parent-task", parent_thread_id: "parent-task", cwd: projectRoot } }),
+    JSON.stringify({ type: "event_msg", timestamp: "2026-07-28T00:00:01.000Z", payload: { type: "token_count", info: { last_token_usage: { input_tokens: 3, total_tokens: 5 } } } })
+  ].join("\n"));
+
+  const result = await ingestRuntimeTelemetry({ sessionRoot: sessions, project: "alpha", projectPath: projectRoot, thread: "parent-task", ledger });
+  const events = fs.readFileSync(ledger, "utf8").trim().split("\n").map(JSON.parse);
+  assert.equal(result.coverage.task_started_projections, 0);
+  assert.equal(events.filter((event) => event.type === "task.started").length, 0);
+  assert.equal(events.filter((event) => event.type === "seat.started").length, 1);
+  assert.match(events.find((event) => event.type === "seat.started").seat_id, /^runtime-[a-f0-9]{32}$/);
+  assert.equal(events.find((event) => event.type === "token.usage").task_id, "parent-task");
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("runtime ingestion projects allowlisted worker lifecycle metadata without retaining collaboration content", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-runtime-lifecycle-"));
+  const sessions = path.join(root, "sessions");
+  const projectRoot = path.join(root, "project");
+  const ledger = path.join(root, "events.jsonl");
+  fs.mkdirSync(sessions);
+  fs.mkdirSync(projectRoot);
+  fs.writeFileSync(path.join(sessions, "parent.jsonl"), [
+    JSON.stringify({ type: "session_meta", timestamp: "2026-07-28T00:00:00.000Z", payload: { id: "parent-session", session_id: "parent-task", cwd: projectRoot } }),
+    JSON.stringify({ type: "event_msg", payload: { type: "sub_agent_activity", kind: "started", agent_thread_id: "child-one", occurred_at_ms: Date.parse("2026-07-28T00:00:01.000Z"), agent_path: "/private/path", event_id: "event-private" } }),
+    JSON.stringify({ type: "event_msg", payload: { type: "sub_agent_activity", kind: "started", agent_thread_id: "child-two", occurred_at_ms: Date.parse("2026-07-28T00:00:02.000Z") } }),
+    JSON.stringify({ type: "event_msg", payload: { type: "sub_agent_activity", kind: "interrupted", agent_thread_id: "child-two", occurred_at_ms: Date.parse("2026-07-28T00:00:03.000Z") } })
+  ].join("\n"));
+  fs.writeFileSync(path.join(sessions, "child-one.jsonl"), [
+    JSON.stringify({ type: "session_meta", timestamp: "2026-07-28T00:00:01.000Z", payload: { id: "child-one", session_id: "parent-task", parent_thread_id: "parent-task", cwd: projectRoot, source: { subagent: { thread_spawn: { parent_thread_id: "parent-task" } } } } }),
+    JSON.stringify({ type: "event_msg", timestamp: "2026-07-28T00:00:05.000Z", payload: { type: "task_complete", last_agent_message: "never persist" } })
+  ].join("\n"));
+  fs.writeFileSync(path.join(sessions, "child-two.jsonl"), JSON.stringify({ type: "session_meta", timestamp: "2026-07-28T00:00:02.000Z", payload: { id: "child-two", session_id: "parent-task", parent_thread_id: "parent-task", cwd: projectRoot } }));
+
+  const first = await ingestRuntimeTelemetry({ sessionRoot: sessions, project: "alpha", projectPath: projectRoot, thread: "parent-task", ledger });
+  const second = await ingestRuntimeTelemetry({ sessionRoot: sessions, project: "alpha", projectPath: projectRoot, thread: "parent-task", ledger });
+  const events = fs.readFileSync(ledger, "utf8").trim().split("\n").map(JSON.parse);
+  const started = events.find((event) => event.type === "seat.started");
+  const stopped = events.find((event) => event.type === "seat.stopped");
+  assert.equal(first.coverage.seat_started_projections, 2);
+  assert.equal(first.coverage.seat_stopped_projections, 2);
+  assert.equal(first.coverage.observed_completion_projections, 1);
+  assert.equal(second.appended, 0, "lifecycle projections are idempotent");
+  assert.match(started.seat_id, /^runtime-[a-f0-9]{32}$/);
+  assert.equal(stopped.seat_id, started.seat_id);
+  const startedSeatIds = new Set(events.filter((event) => event.type === "seat.started").map((event) => event.seat_id));
+  const stoppedSeatIds = new Set(events.filter((event) => event.type === "seat.stopped").map((event) => event.seat_id));
+  assert.equal(startedSeatIds.size, 2, "distinct child UUIDs retain distinct opaque seat identities");
+  assert.deepEqual(stoppedSeatIds, startedSeatIds, "parent activities pair with the observed child UUID identities");
+  assert.equal(stopped.occurred_at, "2026-07-28T00:00:05.000Z");
+  assert.equal(stopped.coverage_status, "partial", "a task_complete record without completed_at is first-observed completion");
+  assert.equal(events.filter((event) => event.type === "seat.stopped" && event.coverage_status === "complete").length, 1, "timestamped interruption is an exact observed stop");
+  assert.equal(events.find((event) => event.type === "coverage.seat_intervals").outcome, "incomplete");
+  assert.equal(JSON.stringify(events).includes("never persist"), false);
+  assert.equal(JSON.stringify(events).includes("private/path"), false);
   fs.rmSync(root, { recursive: true, force: true });
 });
 

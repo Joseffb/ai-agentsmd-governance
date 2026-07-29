@@ -148,6 +148,56 @@ test("typed token events retain only observed fields and expose field-level cove
   })), /requires at least one observed token or provider latency field/);
 });
 
+test("quota diagnostics retain bounded chronological detail without changing efficiency projections", () => {
+  const base = [
+    event("task.started", "2026-07-26T00:00:00.000Z"),
+    event("token.usage", "2026-07-26T00:01:00.000Z", {
+      input_tokens: 100,
+      cached_input_tokens: 20,
+      output_tokens: 10,
+      reasoning_output_tokens: 5,
+      evidence_class: "observed",
+      evidence_authority: "runtime_metadata",
+      coverage_status: "complete"
+    }),
+    event("quality.acceptance", "2026-07-26T01:00:00.000Z", { first_pass: true }),
+    event("coverage.quality", "2026-07-26T01:00:00.000Z", { outcome: "complete" }),
+    event("task.completed", "2026-07-26T01:00:00.000Z")
+  ];
+  const quotaSnapshots = Array.from({ length: 26 }, (_, index) => event(
+    "token.quota_snapshot",
+    new Date(Date.parse("2026-07-26T00:10:00.000Z") + index * 60_000).toISOString(),
+    {
+      used_percent: index,
+      window_minutes: 300,
+      evidence_class: "observed",
+      evidence_authority: "runtime_metadata",
+      coverage_status: index % 2 === 0 ? "complete" : "partial"
+    }
+  ));
+  const withoutQuota = buildMetricsReport({ events: base, thread: "thread-1", days: 7, now: NOW });
+  const withQuota = buildMetricsReport({
+    events: [...base, ...quotaSnapshots], thread: "thread-1", days: 7, now: NOW
+  });
+  const token = withQuota.projects[0].tasks[0].views.token;
+  assert.equal(token.quota_snapshot_count, 26);
+  assert.equal(token.quota_snapshot_retained_count, 24);
+  assert.equal(token.quota_snapshot_truncated_count, 2);
+  assert.equal(token.quota_snapshots.length, 24);
+  assert.deepEqual(token.quota_snapshot_coverage_counts, {
+    total: { complete: 13, partial: 13, unknown: 0, not_applicable: 0 },
+    retained: { complete: 12, partial: 12, unknown: 0, not_applicable: 0 }
+  });
+  assert.equal(token.quota_snapshots[0].used_percent, 2);
+  assert.equal(token.quota_snapshots.at(-1).used_percent, 25);
+  assert.equal(token.quota_snapshots[0].coverage_status, "complete");
+  assert.equal(token.quota_snapshots[1].coverage_status, "partial");
+  assert.deepEqual(
+    withQuota.projects[0].agent_efficiency.efficiency_projection,
+    withoutQuota.projects[0].agent_efficiency.efficiency_projection
+  );
+});
+
 test("anchorless in-window runtime and token evidence remains visible without fabricating task lifecycle", () => {
   const report = buildMetricsReport({
     events: [
@@ -307,6 +357,98 @@ test("operator-requested comparison metrics require complete accepted-task denom
   assert.equal(incomplete.average_delegated_worker_count, null);
   assert.equal(incomplete.duplicated_work_duration_over_total_admitted_seat_time, null);
   assert.equal(incomplete.orchestration_overhead_duration_over_wall_clock, null);
+});
+
+test("hourly efficiency projection uses observed token deltas and explicit accepted work, never quota", () => {
+  const events = [
+    event("task.started", "2026-07-26T00:00:00.000Z"),
+    event("token.usage", "2026-07-26T00:05:00.000Z", {
+      input_tokens: 1_000,
+      cached_input_tokens: 250,
+      output_tokens: 100,
+      reasoning_output_tokens: 25,
+      evidence_class: "observed",
+      evidence_authority: "runtime_metadata",
+      coverage_status: "partial"
+    }),
+    event("token.quota_snapshot", "2026-07-26T00:10:00.000Z", {
+      used_percent: 10,
+      window_minutes: 300,
+      evidence_class: "observed",
+      evidence_authority: "runtime_metadata",
+      coverage_status: "complete"
+    }),
+    event("quality.acceptance", "2026-07-26T00:30:00.000Z", { first_pass: true }),
+    event("coverage.quality", "2026-07-26T00:30:00.000Z", { outcome: "complete" }),
+    event("task.completed", "2026-07-26T00:30:00.000Z"),
+    event("token.usage", "2026-07-26T01:05:00.000Z", {
+      input_tokens: 300,
+      evidence_class: "observed",
+      evidence_authority: "runtime_metadata",
+      coverage_status: "partial"
+    })
+  ];
+  const report = buildMetricsReport({ events, days: 7, now: NOW });
+  const projection = report.projects[0].agent_efficiency.efficiency_projection;
+  assert.equal(projection.bucket_unit, "hour");
+  assert.equal(projection.truncated_bucket_count, 0);
+  assert.equal(projection.hourly_trend.length, 2);
+  assert.deepEqual(projection.hourly_trend[0], {
+    hour_start: "2026-07-26T00:00:00.000Z",
+    uncached_input_tokens: 750,
+    output_tokens: 100,
+    reasoning_tokens: 25,
+    cache_ratio: 0.25,
+    accepted_work: 1,
+    accepted_work_per_hour: 1,
+    accepted_work_per_uncached_million_tokens: 1333.333333,
+    coverage: {
+      time: "complete",
+      uncached_input_tokens: "complete",
+      output_tokens: "complete",
+      reasoning_tokens: "complete",
+      cache_ratio: "complete",
+      accepted_work: "partial",
+      accepted_work_per_hour: "partial",
+      accepted_work_per_uncached_million_tokens: "partial"
+    }
+  });
+  assert.equal(projection.hourly_trend[1].accepted_work_per_hour, null);
+  assert.equal(projection.hourly_trend[1].uncached_input_tokens, null);
+  assert.equal(projection.hourly_trend[1].coverage.accepted_work, "unknown");
+  assert.equal(projection.hourly_trend[1].coverage.uncached_input_tokens, "partial");
+
+  const quotaOnlyChanged = buildMetricsReport({
+    events: events.map((entry) => entry.type === "token.quota_snapshot"
+      ? { ...entry, used_percent: 99, window_minutes: 1 }
+      : entry),
+    days: 7,
+    now: NOW
+  });
+  assert.deepEqual(
+    quotaOnlyChanged.projects[0].agent_efficiency.efficiency_projection,
+    projection
+  );
+
+  const bounded = buildMetricsReport({
+    events: Array.from({ length: 25 }, (_, hour) => event(
+      "token.usage",
+      new Date(Date.parse("2026-07-26T00:00:00.000Z") + hour * 60 * 60 * 1000).toISOString(),
+      {
+        input_tokens: 1,
+        cached_input_tokens: 0,
+        output_tokens: 1,
+        reasoning_output_tokens: 0,
+        evidence_class: "observed",
+        evidence_authority: "runtime_metadata",
+        coverage_status: "complete"
+      }
+    )),
+    days: 7,
+    now: new Date("2026-07-28T00:00:00.000Z")
+  }).projects[0].agent_efficiency.efficiency_projection;
+  assert.equal(bounded.hourly_trend.length, 24);
+  assert.equal(bounded.truncated_bucket_count, 1);
 });
 
 test("orphan seat lifecycle and tooling fallbacks stay runtime diagnostics", () => {
@@ -783,6 +925,49 @@ test("seat efficiency requires declared complete intervals and respects stop-bef
   assert.equal(covered.agent_efficiency.parallelization_efficiency, 1);
 });
 
+test("paired worker intervals expose partial lower-bound diagnostics without filling complete KPIs", () => {
+  const project = buildMetricsReport({
+    events: [
+      event("task.started", "2026-07-26T00:00:00.000Z"),
+      event("seat.started", "2026-07-26T00:00:00.000Z", { seat_id: "1" }),
+      event("seat.stopped", "2026-07-26T01:00:00.000Z", { seat_id: "1" }),
+      event("seat.started", "2026-07-26T01:00:00.000Z", { seat_id: "2" }),
+      event("seat.stopped", "2026-07-26T02:00:00.000Z", { seat_id: "2" }),
+      event("task.result_usable", "2026-07-26T02:00:00.000Z"),
+      event("quality.acceptance", "2026-07-26T02:00:00.000Z", { first_pass: true }),
+      event("coverage.quality", "2026-07-26T02:00:00.000Z", { outcome: "complete" }),
+      event("task.completed", "2026-07-26T02:00:00.000Z")
+    ],
+    thread: "thread-1",
+    days: 7,
+    now: NOW
+  }).projects[0];
+  const task = project.tasks[0];
+  assert.equal(task.delegated_worker_count, null);
+  assert.equal(task.effective_seat_hours, null);
+  assert.equal(task.average_concurrent_seats, null);
+  assert.equal(task.peak_concurrent_seats, null);
+  assert.equal(task.parallelization_efficiency, null);
+  assert.deepEqual(task.views.utilization.observed_worker_diagnostics, {
+    coverage_status: "partial",
+    qualification: "lower_bound",
+    distinct_delegated_seats: 2,
+    paired_intervals: 2,
+    observed_active_seat_hours: 2,
+    observed_average_concurrent_seats_lower_bound: 1,
+    observed_peak_concurrent_seats_lower_bound: 1
+  });
+  assert.equal(project.comparison.average_delegated_worker_count, null);
+  assert.equal(project.comparison.observed_average_delegated_worker_count_lower_bound, 2);
+  assert.deepEqual(project.comparison.coverage.observed_delegated_worker_count, {
+    covered: 1,
+    eligible: 1,
+    missing: 0,
+    ratio: 1
+  });
+  assert.equal(project.comparison.coverage.observed_delegated_worker_count_qualification, "lower_bound");
+});
+
 test("seat zero is topology-only and never contributes to worker-seat metrics", () => {
   const report = buildMetricsReport({
     events: [
@@ -1025,6 +1210,8 @@ test("after-action projection is bounded and excludes raw task and thread identi
   assert.equal(report.semantics.governance_influence, "none");
   assert.equal(report.semantics.completion_effect, "none");
   assert.doesNotMatch(serialized, /private-task-ref|private-thread-ref/);
+  assert.equal(report.agent_efficiency.efficiency_projection.bucket_unit, "hour");
+  assert.equal(report.agent_efficiency.efficiency_projection.hourly_trend.length, 0);
   assert.equal("ledger" in report, false);
   assert.equal("filters" in report, false);
 });

@@ -124,6 +124,14 @@ schema-recognized `token.quota_snapshot`; they never include credits, balance,
 plan, or an inferred remaining percentage. Operator-reported quota facts use a
 separate `source: operator`, `evidence_class: user_report` ledger event.
 
+Provider UI quota percentages and quota snapshots are external operational
+constraints and diagnostics, not engineering-efficiency measurements. They
+must never be used as a KPI denominator or substituted for token usage,
+capacity, throughput, or accepted work. Quota/UI comparisons must segment a
+reset or material quota-window, plan, or provider change and label the
+boundary and coverage explicitly. That diagnostic segmentation never supplies
+KPI evidence or splits an observed token-efficiency trend.
+
 The only durable effect is an append-only, private local ledger event. Ingested
 events carry a stable bounded idempotency key, so replaying the same input
 produces no duplicate ledger fact. No event is rewritten or backfilled in
@@ -184,6 +192,37 @@ The after-action projection omits ledger diagnostics and raw task/thread IDs;
 it is the bounded payload supplied to the configured Agent System lane.
 
 ## Metric Semantics
+
+### Authoritative efficiency trends
+
+For an efficiency trend, retain the raw time series and report these
+authoritative measures for each comparable regime:
+
+- uncached input tokens per hour;
+- output tokens per hour;
+- reasoning tokens per hour;
+- cache ratio over time;
+- accepted work per hour; and
+- accepted work per uncached million tokens.
+
+The token measures use exact observed per-turn `last_token_usage` components
+only. Cache ratio is reported from its observed input and cached-token
+components over time; it is not inferred from a provider quota display.
+Accepted work requires explicit acceptance evidence for the reported scope.
+Do not infer it from a receipt, command success, completion narrative, or
+elapsed time. If acceptance, a token component, time coverage, cache inputs,
+or regime identity is missing, the affected measure is `null` and its coverage
+states the missing surface. Never fill it with zero, an estimate, a quota
+percentage, or data borrowed from another regime.
+
+Quota percentages and quota snapshots may appear beside a trend only as
+external operational diagnostics. They are not denominators, normalizers, or
+proof that a regime has equivalent capacity. Only comparisons among those
+quota/UI diagnostics must segment resets and material quota-window, plan, or
+provider changes. Observed token-efficiency trends remain independent of quota
+resets. Instead, label material model, rule-set, or runtime-accounting changes
+as comparison-regime boundaries; an unsegmented comparison across one of those
+boundaries is unavailable rather than comparable.
 
 - Delivery Compression = manual engineering hours estimate / observed
   wall-clock hours, using only tasks with both values.

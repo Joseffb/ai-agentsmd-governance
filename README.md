@@ -63,6 +63,15 @@ writes the session or task source files. It cannot inject context, create
 a handoff, send a task message, use the network, report automatically, or
 change execution from a metric. See the [runtime telemetry contract](docs/agent-metrics.md#runtime-telemetry-ingestion-contract).
 
+Efficiency trends use uncached input, output, and reasoning tokens per hour,
+cache ratio over time, accepted work per hour, and accepted work per uncached
+million tokens. Acceptance requires explicit evidence; missing values remain
+`null` with coverage. Provider UI quota percentages and quota snapshots are
+external operational diagnostics, never KPI denominators; only quota/UI
+comparisons segment resets, while efficiency trends label material model,
+rule-set, or runtime-accounting changes as regimes. See the
+[efficiency contract](docs/agent-metrics.md#authoritative-efficiency-trends).
+
 Older tasks do not automatically gain newly installed launch hooks through
 reload. When a task is authoritatively confirmed as pre-hook, `acg context
 adopt-current --operator-confirmed-pre-hook` returns the verified current
