@@ -655,7 +655,7 @@
       "id": "continuity",
       "version": 4,
       "path": "modules/continuity.md",
-      "digest": "sha256:0b7702166931e3179460e0c9382bb43b6039734e832c7ea9c3e4837be9c8a11e",
+      "digest": "sha256:dfe1445eed820f8658e70dd81d7bc78dd3140127b3b5ffd0b60050d68050e551",
       "triggers": {
         "operations": [
           "launch_mutating_subagent",
@@ -693,9 +693,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 2793,
-      "words": 353,
-      "estimated_tokens": 699
+      "bytes": 2991,
+      "words": 373,
+      "estimated_tokens": 748
     },
     {
       "id": "validation-and-evidence",

@@ -73,6 +73,9 @@ The Agent System:
 - reduces noise, friction, redundant work, unnecessary approvals, loops, and
   avoidable waiting without weakening truth, authority, privacy, isolation, or
   validation boundaries.
+- communicates to operators with BLUF, Pyramid Principle, progressive
+  disclosure, and plain-language design; agent-to-agent messages remain
+  token-compressed, meaning-dense, loss-minimizing, and operationally complete.
 
 ## Project Boundary
 

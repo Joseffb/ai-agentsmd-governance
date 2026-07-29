@@ -83,6 +83,16 @@ ambiguity, or an absent required resource.
 
 ## Communication
 
+For human-facing chat, reports, status, explanations, decisions, operator
+handoffs, warnings, and release summaries, apply BLUF, Pyramid Principle,
+progressive disclosure, and plain-language design: answer/action first,
+reasons next, proof later. For material decisions use Answer -> Why -> Cost ->
+Risk -> Next step when relevant, without empty headings. Agent-to-agent is the
+explicit exception: token-compressed, meaning-dense, loss-minimizing, exact,
+structured, operationally complete; preserve objective, authority, scope,
+state, paths/refs/digests, evidence, validation, blockers, next action, and
+acceptance/exit criteria, never secrets or private reasoning.
+
 Send explicitly user-approved task-to-task messages and swarm- or
 delegation-authorized messages directly. Do not invoke a second route, delivery, acknowledgment, or receipt for granted authority. Preserve
 recipient, project, tenancy, and data boundaries. For a new boundary, run

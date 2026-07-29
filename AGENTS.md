@@ -17,6 +17,12 @@ activation, never project authority, project state, releases, deployment,
 publication, or business execution. An Agent System failure never blocks the
 project.
 
+## Communication
+
+For human-facing outputs, follow the kernel's BLUF, Pyramid Principle,
+progressive-disclosure, and plain-language framework. Keep agent-to-agent
+messages token-compressed but meaning-dense and operationally complete.
+
 Fresh installation consent is separate for persistent Agent System task
 maintenance, governance/runtime defect reporting, and repair. Missing or
 disabled repair consent means no repair. `log_only` records every eligible

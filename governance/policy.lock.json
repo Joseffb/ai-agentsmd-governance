@@ -3,7 +3,7 @@
   "manifest": {
     "id": "ai-codex-governance",
     "version": 1,
-    "sha256": "sha256:cae9e0da80ee0863d5a7e6d5644925f2e4740dbdca7b4c66be116e68a5ea8a7a"
+    "sha256": "sha256:4d103917f6f8567ab526bf8d726aa8444b0f289e3c094fd4d5dfb7c6f01ffe26"
   },
   "estimator": {
     "id": "utf8-bytes-div-4-ceil",
@@ -15,17 +15,17 @@
   },
   "kernel": {
     "path": "kernel/AGENTS.md",
-    "sha256": "sha256:6b7d9566f75abd146107493a080b4fa1acc37ef1a661bb892153a64a120d9ca9",
-    "bytes": 8000,
-    "words": 992,
+    "sha256": "sha256:1442b17a29ffc4db4b61a23cbf7488e4bdd9d839b460b021025420d5328af14b",
+    "bytes": 7997,
+    "words": 925,
     "estimated_tokens": 2000
   },
   "skill": {
     "path": "skills/govern-codex-policy/SKILL.md",
-    "sha256": "sha256:ace4023ffd38e8f2990d00e3b7fb30d37702cd6a7aa33282510fdba79183e2e0",
-    "bytes": 23508,
-    "words": 3049,
-    "estimated_tokens": 5877
+    "sha256": "sha256:5183643a588218e799cb43013b733806cbd9ad28d7f41a30fd739341fdf500ed",
+    "bytes": 24176,
+    "words": 3127,
+    "estimated_tokens": 6044
   },
   "modules": [
     {
@@ -113,10 +113,10 @@
       "id": "continuity",
       "version": 4,
       "path": "modules/continuity.md",
-      "sha256": "sha256:0b7702166931e3179460e0c9382bb43b6039734e832c7ea9c3e4837be9c8a11e",
-      "bytes": 2793,
-      "words": 353,
-      "estimated_tokens": 699
+      "sha256": "sha256:dfe1445eed820f8658e70dd81d7bc78dd3140127b3b5ffd0b60050d68050e551",
+      "bytes": 2991,
+      "words": 373,
+      "estimated_tokens": 748
     },
     {
       "id": "validation-and-evidence",

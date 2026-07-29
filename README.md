@@ -2,7 +2,7 @@
 
 ![AI Coding Agent Governance workflow](docs/assets/ai-coding-agent-governance.png)
 
-> **Current release line:** RC-3.0 (`3.0.10`).
+> **Current release line:** RC-3.0 (`3.0.11`).
 > Immutable releases include the tracked source plugins, but bundling does not
 > prove that any host installed, loaded, or activated those plugins.
 
@@ -103,6 +103,14 @@ Node.js router verifies that contract and returns compact receipts.
 Agent System governs agent use and prompt activation. Project authority,
 project state, release, deployment, publication, and business execution remain
 with the project and operator. Agent System failure never blocks the project.
+
+### Audience-specific communication
+
+Human-facing chat, reports, status, decisions, operator handoffs, warnings, and
+release summaries follow BLUF, the Pyramid Principle, progressive disclosure,
+and plain-language design: answer first, concise reasons next, then proof.
+Agent-to-agent messages are token-compressed, meaning-dense, and
+loss-minimizing; they retain exact operational state and acceptance criteria.
 
 This is an unofficial community project. It is not affiliated with or endorsed
 by OpenAI, Anthropic, or another model provider.
