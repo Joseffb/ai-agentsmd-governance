@@ -70,7 +70,7 @@ test("conditional policies give bounded root and thread-tool recovery guidance",
   assert.match(delegationPolicy, /Purely informational messages requiring no action need no reply/);
   assert.match(delegationPolicy, /configured `approval_mode`/);
   assert.match(delegationPolicy, /pause only the affected action/);
-  assert.match(delegationPolicy, /reporting task does not wait for that lifecycle/);
+  assert.match(delegationPolicy, /reporting task\s+reports\/local-logs once and immediately continues/);
   assert.match(delegationPolicy, /not project-resume permission/);
   assert.match(delegationPolicy, /do not infer failure or loop/);
   assert.match(delegationPolicy, /responsive, user-facing orchestrator/);

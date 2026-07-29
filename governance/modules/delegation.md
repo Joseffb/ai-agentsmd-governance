@@ -111,9 +111,26 @@ cannot mutate the reporting project or any public branch. The source project
 never waits and continues through fallback. Host interception remains
 Unverified without authoritative runtime metadata.
 
+Every bounded governance/runtime incident is first privately appended to JSONL
+as `agent_system`, `worker_adherence`, `host_runtime`,
+`project_tool_side_effect`, `caller_error`, or `expected_fail_closed`. Deliver
+across tasks only for a new confirmed `agent_system` failure class, materially
+new repair-advancing evidence, or a true no-fallback P0/P1 core blocker;
+aggregate repeats by class and append corrections, including reclassification.
+The remaining categories are not Agent System defects unless separately
+confirmed as `agent_system`.
+
 Do not add delegation-specific confirmation gates. Apply the kernel's configured `approval_mode`; pause only the affected action.
 
-When the user authorizes cross-task governance repair, the receiving task owns triage, repair, validation, activation, and direct notification to the reporter. The reporting task does not wait for that lifecycle: after one report or local log it immediately continues with existing tool definitions or native tools within current authority. Agent System may reject an improper Seat `0` action, but it never blocks the project. After verified activation, send reload or changed-path guidance only when useful; it is not project-resume permission.
+With authorized cross-task governance repair, the receiver owns triage, repair,
+validation, activation, and direct reporter notification. The reporting task
+reports/local-logs once and immediately continues through existing tools or native
+tools within current authority; Agent System may reject an improper Seat `0`
+action but never blocks the project. After verified tracked edits release+activate,
+notify each known active project task once by current exact label to reload/adopt
+before its next governed operation. This is not project-resume permission, never
+forces handoff/compaction, claims retrofitted hooks, or stores thread IDs; app
+Reload is only for plugin/hook host refresh.
 ## Intent-oriented seat operations
 
 Prefer `acg.mjs seat inspect` for read-only seats and `seat assign`, `seat recover`, `seat continue`, and `seat finalize` for mutating seats. `seat inspect` owns catalog values, prior-receipt normalization, route/delivery/acknowledgment, a fresh child ledger, one corrected retry, exact reuse rules, one shell-free `seat preflight --assignment ...` command, and the exact native quarantine spawn request when the host path is ungated. Pass that returned `child_preflight` verbatim. Pass `native_quarantine.spawn_request` verbatim at its documented lifecycle point too; never construct either object's protocol fields manually. After native admission, the child runs it exactly once before source inspection and runs no other governance command. A replacement seat must also run its own returned preflight; skipping governance entirely is not a valid workaround. Never make the child discover raw lifecycle syntax, unsupported command-specific `--help`, or shell wrappers.

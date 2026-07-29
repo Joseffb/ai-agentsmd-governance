@@ -137,28 +137,48 @@ repair. Opted-in `auto_correct` is the active System Agent repair mode: it
 automatically repairs only a confirmed, locally actionable true Agent System
 blocker and logs every other issue without repair.
 
-In inactive or local-only mode, the sole supported disposition for a bounded
-governance/runtime issue is a quiet, bounded, secret-free append to a private
-untracked local JSONL issue ledger. The ledger is not a task message, does not
-wake or create a task, and remains private. There is no cross-task governance
-message and no background token spend in that mode.
+Every bounded governance/runtime incident is first appended to the private
+JSONL ledger and classified as `agent_system`, `worker_adherence`,
+`host_runtime`, `project_tool_side_effect`, `caller_error`, or
+`expected_fail_closed`. Ordinary project defects, caller mistakes, expected
+fail-closed results, and worker-adherence incidents are not Agent System
+defects. Repeats and addenda aggregate under the failure class; corrections are
+append-only and may reclassify an earlier incident. A non-`agent_system`
+incident crosses only after that separately confirmed reclassification.
 
-Record that private local-only disposition with:
+In inactive or local-only mode, the quiet, bounded, secret-free append to a private
+untracked local JSONL issue ledger is the sole disposition. The ledger is not a task
+message, does not wake or create a task, and remains private. There is no cross-task
+governance message and no background token spend in that mode.
+
+Record every bounded incident locally before any possible delivery with:
 
 ```text
-node ~/.codex/policies/bin/acg.mjs agent-system record-issue --project <slug> --issue-id <id> --severity P0|P1|P2|P3|P4 --summary <bounded-text> [--evidence-class Observed|Inferred|Proposed|Unknown|Unverified] [--evidence <bounded-text>]
+node ~/.codex/policies/bin/acg.mjs agent-system record-issue --project <slug> --issue-id <id> --severity P0|P1|P2|P3|P4 --category agent_system|worker_adherence|host_runtime|project_tool_side_effect|caller_error|expected_fail_closed --failure-class <stable-slug> --summary <bounded-text> [--evidence-class Observed|Verified|Inferred|Proposed|Unknown|Unverified] [--evidence <bounded-text>] [--core-capability --locally-actionable --private-agent-system-scope --repair-authority --complete-exclusions --supported-fallback no] [--delivery-unavailable]
 ```
 
-The command is permitted only when automatic reporting is not enabled. An
-active persistent task with automatic reporting declined remains local-only for
-reports.
+Active reporting uses the returned eligibility to decide at most one cross-task
+message; disabled reporting remains local-only. A `--delivery-unavailable`
+entry requires the explicit category and stable failure class, remains local,
+and never starts a resend loop.
+
+The structured blocker-proof flags are optional because most incidents are not
+repair candidates. `auto_correct` requires all six proof facts:
+`--core-capability`, `--locally-actionable`, `--private-agent-system-scope`,
+`--repair-authority`, `--complete-exclusions`, and
+`--supported-fallback no`, together with Observed/Verified P0/P1 evidence.
 
 Existing installations that are explicitly configured remain compatible. In
-active reporting mode, callers retain exact current-label lookup, duplicate
-resolution, auto-creation only when explicitly enabled, and immediate project
-continuation. Existing or unqualified automatic reporting uses `log_only`.
-This portable contract does not claim a background process or guaranteed host
-interception.
+active reporting mode, cross-task delivery is limited to a new confirmed
+`agent_system` failure class, materially new evidence that changes or advances
+repair, or a true Observed/Verified P0/P1 core blocker without a supported
+fallback. Callers retain exact current-label lookup, duplicate resolution,
+auto-creation only when explicitly enabled, and immediate project continuation.
+Existing or unqualified automatic reporting uses `log_only`. This portable
+contract does not claim a background process or guaranteed host interception.
+A confirmed append-only reclassification to `agent_system` may become eligible
+for one report, but it never authorizes `auto_correct` merely because it is a
+correction.
 
 The persistent Agent System task is an optional support lane, not a dependency
 of JIT orchestration. Declining or removing it leaves rule selection, scoped
@@ -202,6 +222,14 @@ For one bounded defect or improvement payload, the Agent System:
 4. releases and activates a local repair only with the required authority; and
 5. may return reload, retry, or changed-path guidance after the relevant
    evidence exists, without turning that reply into project-resume permission.
+
+After verified tracked Agent System edits are released and activated, notify
+each known active project task once to reload or adopt the current Agent System
+before its next governed operation. Resolve the task by its current exact label
+at delivery time and use a returned thread ID only for that delivery; never
+store it. The notice is nonblocking, never forces handoff or compaction, and
+never claims retrofitted hooks. App Reload is required only when a plugin or
+hook change needs host refresh; it never mixes receipt-pinned releases.
 
 The reporting project reports or local-logs unchanged evidence once, then
 continues immediately. Helper failure never grants Seat `0` implementation;

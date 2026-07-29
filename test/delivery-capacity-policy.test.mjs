@@ -23,9 +23,9 @@ test("policy accounting grows monotonically without imposing a context rollover"
   const skill = read("skills/govern-codex-policy/SKILL.md");
   const skillAgent = read("skills/govern-codex-policy/agents/openai.yaml");
   assert.match(kernel, /Policy context grows monotonically/);
-  assert.match(kernel, /never.*force\s+compaction, rollover, handoff, or a fresh task/s);
-  assert.match(kernel, /Only authoritative hosting-\s*runtime capacity failure can require a bounded\s+context transition/u);
-  assert.match(kernel, /Totals and closure targets are advisory telemetry:\s+never force\s+compaction, rollover, handoff, or a fresh task/);
+  assert.match(kernel, /never force compaction, rollover, handoff, or fresh task/i);
+  assert.match(kernel, /authoritative hosting-runtime capacity failure may require bounded transition/u);
+  assert.match(kernel, /Totals\/closure\s+targets never force compaction, rollover, handoff, or fresh task/);
   assert.match(skill, /Estimated policy totals never force rollover or handoff/);
   assert.match(skill, /Advisory context-growth targets never block an operation/);
   assert.doesNotMatch(skill, /policy context budget overflow/);

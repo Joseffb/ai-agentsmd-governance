@@ -162,8 +162,8 @@ test("legacy intent is retained in compact canonical owners", () => {
   const kernel = fs.readFileSync(path.join(policyRoot, "kernel", "AGENTS.md"), "utf8");
   const findings = fs.readFileSync(path.join(policyRoot, "modules", "findings.md"), "utf8");
   const release = fs.readFileSync(path.join(policyRoot, "modules", "release.md"), "utf8");
-  assert.match(kernel, /fix the in-scope failure class/);
-  assert.match(kernel, /decision-grade depth/);
+  assert.match(kernel, /in-scope failure class, not an instance/);
+  assert.match(kernel, /substantial work is decision-grade/);
   assert.match(kernel, /approval_mode/);
   assert.match(kernel, /approve_for_me/);
   assert.match(findings, /Developer Experience/);
@@ -313,6 +313,7 @@ test("machine profile bootstrap is explicit, idempotent, and private", () => {
     memoryPath,
     persistentTask: true,
     automaticDefectReport: true,
+    automaticRepair: false,
     reportedDefectAction: "log_only",
     acknowledgeTokenCost: true,
     authorizeProfileWrite: true
@@ -329,6 +330,7 @@ test("machine profile bootstrap is explicit, idempotent, and private", () => {
   assert.equal(profile.consent.source, "explicit");
   assert.equal(profile.consent.automatic_defect_reports, "granted");
   assert.equal(profile.consent.reported_defect_action, "log_only");
+  assert.equal(profile.consent.automatic_repair, "declined");
   assert.equal(profile.consent.token_cost_acknowledged, true);
   assert.equal(fs.statSync(profileFile).mode & 0o777, 0o600);
   assert.equal(profile.reporting_contract.automatic_reporting_enabled, true);
@@ -348,13 +350,23 @@ test("machine profile bootstrap is explicit, idempotent, and private", () => {
   assert.equal(profile.reporting_contract.target_lookup.replacement_workflow.pin_replacement_task, true);
   assert.equal(profile.reporting_contract.target_lookup.replacement_workflow.verify_exact_non_archived_match_count, 1);
   assert.match(profile.reporting_contract.target_lookup.replacement_workflow.pinned_ordering, /unverified/);
-  assert.equal(profile.reporting_contract.local_cli_transport, "agent-system record-issue --delivery-unavailable");
+  assert.equal(profile.reporting_contract.local_cli_transport, "agent-system record-issue");
   assert.equal(profile.reporting_contract.delivery_unavailable.flag, "agent_system_delivery_unavailable");
   assert.equal(profile.reporting_contract.delivery_unavailable.disposition, "record_bounded_private_jsonl_and_continue_safe_in_scope_project_work");
   assert.equal(profile.reporting_contract.persistent_task_creation.attempt_limit, 1);
   assert.equal(profile.reporting_contract.persistent_task_creation.exact_label, "Agent System");
   assert.equal(profile.reporting_contract.host_interception, "Unverified");
   assert.match(profile.reporting_contract.enforcement, /caller_required/);
+
+  const compatibilityWrite = configureAgentSystemProfile({
+    persistentTask: true,
+    automaticDefectReport: true,
+    reportedDefectAction: "log_only",
+    acknowledgeTokenCost: true,
+    authorizeProfileWrite: true
+  }, profileFile);
+  assert.equal(compatibilityWrite.agent_system.consent.automatic_repair, "declined");
+  assert.equal(compatibilityWrite.reporting_contract.automatic_repair_enabled, false);
 
   const legacyProfile = JSON.parse(fs.readFileSync(profileFile, "utf8"));
   legacyProfile.agent_system = {
@@ -380,7 +392,7 @@ test("machine profile bootstrap is explicit, idempotent, and private", () => {
   assert.equal(legacyNoCreate.consent.persistent_task, "granted");
   assert.equal(legacyNoCreate.consent.automatic_defect_reports, "granted");
   assert.equal(legacyNoCreate.consent.reported_defect_action, "log_only");
-  assert.equal(legacyNoCreate.consent.migration, "legacy_automatic_report_migrated_to_log_only");
+  assert.equal(legacyNoCreate.consent.migration, "legacy_automatic_report_migrated_to_log_only_and_repair_declined");
   assert.equal(legacyNoCreate.reporting_contract.mode, "active");
   assert.equal(legacyNoCreate.reporting_contract.target_lookup.label, "Agent System");
   assert.equal(legacyNoCreate.reporting_contract.target_lookup.no_match, "record_private_delivery_unavailable_and_continue_safe_in_scope_project_work");
@@ -396,6 +408,7 @@ test("machine profile bootstrap is explicit, idempotent, and private", () => {
   const legacyConsent = readAgentSystemProfile(profileFile);
   assert.equal(legacyConsent.consent.source, "legacy_consent_migrated");
   assert.equal(legacyConsent.consent.reported_defect_action, "log_only");
+  assert.equal(legacyConsent.consent.automatic_repair, "declined");
   assert.equal(legacyConsent.reporting_contract.disposition.repair_authorization, "none");
 
   const contradictoryConsentProfile = structuredClone(legacyProfile);
@@ -426,6 +439,7 @@ test("machine profile bootstrap is explicit, idempotent, and private", () => {
     memoryPath,
     persistentTask: true,
     automaticDefectReport: true,
+    automaticRepair: true,
     reportedDefectAction: "auto_correct",
     acknowledgeTokenCost: true,
     authorizeProfileWrite: true
@@ -438,6 +452,7 @@ test("machine profile bootstrap is explicit, idempotent, and private", () => {
       memoryPath,
       persistentTask: true,
       automaticDefectReport: false,
+      automaticRepair: false,
       acknowledgeTokenCost: true,
       authorizeProfileWrite: true
     }, profileFile),
@@ -458,6 +473,8 @@ test("machine profile bootstrap is explicit, idempotent, and private", () => {
     "yes",
     "--automatic-defect-report",
     "yes",
+    "--automatic-repair",
+    "no",
     "--reported-defect-action",
     "log_only",
     "--acknowledge-agent-system-token-cost",
@@ -474,6 +491,21 @@ test("machine profile bootstrap is explicit, idempotent, and private", () => {
   ], { encoding: "utf8", env: cliEnvironment }));
   assert.equal(cliRead.reporting_contract.target_lookup.label, "Agent System Current");
   assert.equal(cliRead.reporting_contract.target_lookup.current_task_rule, "resolve_at_delivery_time");
+
+  const compatibleCliWrite = JSON.parse(execFileSync(process.execPath, [
+    cli,
+    "profile",
+    "agent-system",
+    "--persistent-task",
+    "yes",
+    "--automatic-defect-report",
+    "yes",
+    "--reported-defect-action",
+    "log_only",
+    "--acknowledge-agent-system-token-cost",
+    "--authorize-profile-write"
+  ], { encoding: "utf8", env: cliEnvironment }));
+  assert.equal(compatibleCliWrite.agent_system.consent.automatic_repair, "declined");
 
   fs.rmSync(temporaryRoot, { recursive: true, force: true });
 });
@@ -524,8 +556,9 @@ test("Agent System requires explicit consent and records inactive issues private
   assert.equal(rows[0].severity, "P2");
   assert.equal(Object.hasOwn(record, "runtime_task_message_action"), false);
   const duplicate = recordLocalAgentSystemIssue({ project: "governance", issueId: "OPT-IN-1", severity: "P2", summary: "Bounded local issue with token cost" }, profileFile);
-  assert.equal(duplicate.recorded, false);
+  assert.equal(duplicate.recorded, true);
   assert.equal(duplicate.deduplicated, true);
+  assert.equal(duplicate.event_type, "repeat");
   assert.throws(
     () => recordLocalAgentSystemIssue({ project: "governance", issueId: "OPT-IN-2", severity: "P2", summary: "Bearer secret-value" }, profileFile),
     /prohibited/
@@ -546,43 +579,48 @@ test("Agent System requires explicit consent and records inactive issues private
 
   const cli = path.join(codeRoot, "bin", "acg.mjs");
   const environment = { ...process.env, ACG_MACHINE_PROFILE: profileFile };
-  const quiet = execFileSync(process.execPath, [cli, "agent-system", "record-issue", "--project", "governance", "--issue-id", "OPT-IN-4", "--severity", "P3", "--summary", "quiet local write"], { encoding: "utf8", env: environment });
-  assert.equal(quiet, "");
+  const cliRecord = JSON.parse(execFileSync(process.execPath, [cli, "agent-system", "record-issue", "--project", "governance", "--issue-id", "OPT-IN-4", "--failure-class", "cli-record-issue", "--category", "expected_fail_closed", "--severity", "P3", "--summary", "quiet local write"], { encoding: "utf8", env: environment }));
+  assert.equal(cliRecord.recorded, true);
+  assert.equal(cliRecord.category, "expected_fail_closed");
+  assert.equal(cliRecord.report_eligibility.cross_task_delivery_eligible, false);
   assert.throws(
-    () => configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: false, authorizeProfileWrite: true }, profileFile),
+    () => configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: false, automaticRepair: false, authorizeProfileWrite: true }, profileFile),
     /acknowledge-agent-system-token-cost/
   );
   assert.throws(
-    () => configureAgentSystemProfile({ persistentTask: false, automaticDefectReport: true, reportedDefectAction: "log_only", acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile),
+    () => configureAgentSystemProfile({ persistentTask: false, automaticDefectReport: true, automaticRepair: false, reportedDefectAction: "log_only", acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile),
     /require persistent/
   );
   assert.throws(
-    () => configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: true, acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile),
+    () => configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: true, automaticRepair: false, acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile),
     /requires --reported-defect-action log_only or auto_correct/
   );
   assert.throws(
-    () => configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: false, reportedDefectAction: "log_only", acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile),
+    () => configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: false, automaticRepair: false, reportedDefectAction: "log_only", acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile),
     /only allowed when automatic defect reporting is enabled/
   );
-  const autoCorrect = configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: true, reportedDefectAction: "auto_correct", acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile);
+  const autoCorrectWithoutRepair = configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: true, automaticRepair: false, reportedDefectAction: "auto_correct", acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile);
+  assert.equal(autoCorrectWithoutRepair.reporting_contract.automatic_repair_enabled, false);
+  assert.equal(autoCorrectWithoutRepair.reporting_contract.disposition.repair_authorization, "none");
+  const autoCorrect = configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: true, automaticRepair: true, reportedDefectAction: "auto_correct", acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile);
+  assert.equal(autoCorrect.reporting_contract.automatic_repair_enabled, true);
   assert.equal(autoCorrect.reporting_contract.disposition.repair_authorization, "bounded_private_agent_system_repair_only");
   assert.deepEqual(autoCorrect.reporting_contract.disposition.prohibited, ["reporting_project_mutation", "public_publication", "destructive_operation", "architecture_change", "schedules", "automatic_kpi_reporting"]);
-  const activeNoReport = configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: false, acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile);
+  const activeNoReport = configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: false, automaticRepair: false, acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile);
   assert.equal(activeNoReport.agent_system.memory_path, null);
   assert.equal(activeNoReport.reporting_contract.mode, "active_without_automatic_reports");
   assert.equal(activeNoReport.reporting_contract.target_lookup, null);
   assert.equal(activeNoReport.reporting_contract.local_cli_transport, "agent-system record-issue");
   assert.equal(recordLocalAgentSystemIssue({ project: "governance", issueId: "OPT-IN-5", severity: "P4", summary: "active local record" }, profileFile).recorded, true);
-  configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: true, reportedDefectAction: "log_only", memoryPath: path.join(codeRoot, "README.md"), acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile);
-  assert.equal(readAgentSystemProfile(profileFile).reporting_contract.local_cli_transport, "agent-system record-issue --delivery-unavailable");
-  const fallback = recordLocalAgentSystemIssue({ project: "governance", issueId: "OPT-IN-6-fallback", severity: "P1", summary: "task delivery unavailable", deliveryUnavailable: true }, profileFile);
+  configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: true, automaticRepair: false, reportedDefectAction: "log_only", memoryPath: path.join(codeRoot, "README.md"), acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile);
+  assert.equal(readAgentSystemProfile(profileFile).reporting_contract.local_cli_transport, "agent-system record-issue");
+  const fallback = recordLocalAgentSystemIssue({ project: "governance", issueId: "OPT-IN-6-fallback", failureClass: "task-delivery-unavailable", category: "host_runtime", severity: "P1", summary: "task delivery unavailable", deliveryUnavailable: true }, profileFile);
   assert.equal(fallback.mode, "delivery_unavailable_local_fallback");
   assert.equal(fallback.delivery_unavailable, true);
   assert.equal(fallback.disposition, "record_bounded_private_jsonl_and_continue_safe_in_scope_project_work");
-  assert.throws(
-    () => recordLocalAgentSystemIssue({ project: "governance", issueId: "OPT-IN-6", severity: "P1", summary: "automatic mode must reject" }, profileFile),
-    /automatic reporting/
-  );
+  const automaticRecord = recordLocalAgentSystemIssue({ project: "governance", issueId: "OPT-IN-6", severity: "P1", summary: "automatic mode still records locally" }, profileFile);
+  assert.equal(automaticRecord.recorded, true);
+  assert.equal(automaticRecord.report_eligibility.cross_task_delivery_eligible, false);
   assert.throws(
     () => execFileSync(process.execPath, [cli, "profile", "agent-system", "--persistent-task", "maybe"], { encoding: "utf8", env: environment }),
     /persistent-task must be yes or no/
@@ -594,9 +632,316 @@ test("Agent System requires explicit consent and records inactive issues private
   for (const deprecatedFlag of ["--automatic-report", "--auto-create", "--auto-report"]) {
     assert.throws(
       () => execFileSync(process.execPath, [cli, "profile", "agent-system", deprecatedFlag], { encoding: "utf8", env: environment }),
-      /deprecated; use --persistent-task yes\|no and --automatic-defect-report yes\|no/
+      /deprecated; use --persistent-task yes\|no --automatic-defect-report yes\|no --automatic-repair yes\|no/
     );
   }
+  fs.rmSync(temporaryRoot, { recursive: true, force: true });
+});
+
+test("Agent System incident stream is append-only and reports only eligible root causes", () => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "acg-agent-system-incidents-"));
+  const profileFile = path.join(temporaryRoot, "machine-profile.json");
+  configureAgentSystemProfile({
+    persistentTask: true,
+    automaticDefectReport: true,
+    automaticRepair: true,
+    reportedDefectAction: "auto_correct",
+    acknowledgeTokenCost: true,
+    authorizeProfileWrite: true
+  }, profileFile);
+
+  const bazel = recordLocalAgentSystemIssue({
+    project: "lcfe",
+    issueId: "LCFE-BAZEL-LOCK",
+    failureClass: "bazel.module-bazel-lock-dirty",
+    category: "project_tool_side_effect",
+    severity: "P2",
+    summary: "Bazel dirtied MODULE.bazel.lock",
+    evidenceClass: "Observed",
+    evidence: "Bazel changed the project lockfile during validation"
+  }, profileFile);
+  assert.equal(bazel.event_type, "new_class");
+  assert.equal(bazel.report_eligibility.cross_task_delivery_eligible, false);
+
+  const reconfirmation = recordLocalAgentSystemIssue({
+    project: "lcfe",
+    issueId: "LCFE-AUTHORITY",
+    failureClass: "standing-authority-reconfirmation",
+    category: "worker_adherence",
+    severity: "P2",
+    summary: "Worker asked to reconfirm standing authority",
+    evidenceClass: "Observed",
+    evidence: "Standing authority was already available"
+  }, profileFile);
+  assert.equal(reconfirmation.report_eligibility.eligible, false);
+
+  const routerClaim = recordLocalAgentSystemIssue({
+    project: "lcfe",
+    issueId: "LCFE-ROUTER-MODE",
+    failureClass: "router-mode-claim-without-exact-reproduction",
+    category: "agent_system",
+    severity: "P1",
+    summary: "Router mode was claimed without exact reproduction",
+    evidenceClass: "Unverified",
+    evidence: "No exact reproduction was supplied"
+  }, profileFile);
+  assert.equal(routerClaim.report_eligibility.eligible, false);
+
+  const nativeFallback = recordLocalAgentSystemIssue({
+    project: "lcfe",
+    issueId: "LCFE-REMOTE-ROOT",
+    failureClass: "remote-worktree-root-absent",
+    category: "host_runtime",
+    severity: "P1",
+    summary: "Remote worktree root was absent",
+    evidenceClass: "Observed",
+    evidence: "Native fallback remained available",
+    supportedFallback: true
+  }, profileFile);
+  assert.equal(nativeFallback.report_eligibility.eligible, false);
+
+  const callerMistake = recordLocalAgentSystemIssue({
+    project: "lcfe",
+    issueId: "LCFE-CALLER-SLUG",
+    failureClass: "caller-project-slug",
+    category: "caller_error",
+    severity: "P3",
+    summary: "Caller supplied an incorrect project slug"
+  }, profileFile);
+  const callerCorrection = recordLocalAgentSystemIssue({
+    project: "lcfe",
+    issueId: "LCFE-CALLER-SLUG",
+    failureClass: "caller-project-slug",
+    category: "caller_error",
+    severity: "P3",
+    summary: "Caller slug was corrected",
+    correctionOf: callerMistake.failure_class
+  }, profileFile);
+  assert.equal(callerCorrection.recorded, true);
+  assert.equal(callerCorrection.event_type, "correction");
+  assert.equal(callerCorrection.report_eligibility.eligible, false);
+
+  const confirmed = recordLocalAgentSystemIssue({
+    project: "lcfe",
+    issueId: "LCFE-CORE-GATE",
+    failureClass: "agent-system-core-gate-failure",
+    category: "agent_system",
+    severity: "P1",
+    summary: "Core Agent System gate failed",
+    evidenceClass: "Observed",
+    evidence: "Exact local reproduction proved the gate failure",
+    coreCapability: true,
+    locallyActionable: true,
+    privateAgentSystemScope: true,
+    repairAuthority: true,
+    exclusionsComplete: true,
+    supportedFallback: false
+  }, profileFile);
+  assert.equal(confirmed.report_eligibility.cross_task_delivery_eligible, true);
+  assert.deepEqual(confirmed.report_eligibility.reasons, [
+    "new_confirmed_agent_system_failure_class",
+    "true_p0_p1_core_blocker_without_supported_fallback"
+  ]);
+  assert.equal(confirmed.auto_correction_eligibility.eligible, true);
+  const repeat = recordLocalAgentSystemIssue({
+    project: "lcfe",
+    issueId: "LCFE-CORE-GATE",
+    failureClass: "agent-system-core-gate-failure",
+    category: "agent_system",
+    severity: "P2",
+    summary: "Core Agent System gate failed again",
+    evidenceClass: "Observed",
+    evidence: "Exact local reproduction proved the gate failure",
+    materialRepairEvidence: true
+  }, profileFile);
+  assert.equal(repeat.event_type, "repeat");
+  assert.equal(repeat.report_eligibility.eligible, false);
+  const addendum = recordLocalAgentSystemIssue({
+    project: "lcfe",
+    issueId: "LCFE-CORE-GATE",
+    failureClass: "agent-system-core-gate-failure",
+    category: "agent_system",
+    severity: "P2",
+    summary: "Core Agent System gate repair evidence",
+    evidenceClass: "Observed",
+    evidence: "A second reproduction isolated the repair boundary",
+    materialRepairEvidence: true
+  }, profileFile);
+  assert.equal(addendum.event_type, "addendum");
+  assert.deepEqual(addendum.report_eligibility.reasons, ["materially_new_repair_evidence"]);
+  assert.equal(addendum.report_eligibility.cross_task_delivery_eligible, true);
+  assert.match(addendum.auto_correction_eligibility.caller_action, /do_not_start_automatic_repair/);
+
+  const legacyLedger = bazel.local_ledger;
+  fs.appendFileSync(legacyLedger, `${JSON.stringify({ schema_version: 1, event_id: "legacy-row", issue_id: "LEGACY-ROUTER", project: "lcfe", severity: "P1", summary: "legacy local incident" })}\n`);
+  const legacyContinuation = recordLocalAgentSystemIssue({
+    project: "lcfe",
+    issueId: "LEGACY-ROUTER",
+    failureClass: "legacy.legacy-router",
+    category: "agent_system",
+    severity: "P1",
+    summary: "Current observation follows a schema-1 row",
+    evidenceClass: "Observed",
+    evidence: "Current reproduction is bounded"
+  }, profileFile);
+  assert.equal(legacyContinuation.event_type, "addendum");
+  assert.equal(legacyContinuation.report_eligibility.eligible, false);
+
+  const contentionLock = fs.openSync(`${legacyLedger}.lock`, "wx", 0o600);
+  const contended = recordLocalAgentSystemIssue({
+    project: "lcfe",
+    issueId: "LCFE-CONTENDED",
+    failureClass: "concurrent-first-observation",
+    category: "agent_system",
+    severity: "P1",
+    summary: "Concurrent first observation",
+    evidenceClass: "Observed",
+    evidence: "A concurrent writer owns first-observation classification"
+  }, profileFile);
+  fs.closeSync(contentionLock);
+  fs.unlinkSync(`${legacyLedger}.lock`);
+  assert.equal(contended.recorded, false);
+  assert.equal(contended.contention_deferred, true);
+  assert.equal(contended.report_eligibility.cross_task_delivery_eligible, false);
+
+  const rows = fs.readFileSync(bazel.local_ledger, "utf8").trim().split("\n").map(JSON.parse);
+  assert.equal(rows.length, 11);
+  assert.equal(rows.filter((row) => row.schema_version === 1).length, 1);
+  assert.equal(rows.filter((row) => row.schema_version === 2).length, 10);
+  assert.equal(rows.filter((row) => row.failure_class === "caller-project-slug").length, 2);
+  assert.equal(rows.find((row) => row.event_type === "correction").report_eligibility.eligible, false);
+  assert.match(rows.find((row) => row.event_type === "addendum").evidence_digest, /^sha256:[a-f0-9]{64}$/);
+  fs.rmSync(temporaryRoot, { recursive: true, force: true });
+});
+
+test("Agent System incident eligibility fails closed for implicit categories, laundering, repeats, and malformed JSONL", () => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "acg-agent-system-adversarial-"));
+  const profileFile = path.join(temporaryRoot, "machine-profile.json");
+  configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: true, automaticRepair: true, reportedDefectAction: "auto_correct", acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile);
+  const verified = recordLocalAgentSystemIssue({ project: "governance", issueId: "VERIFIED-1", failureClass: "verified-agent-system-class", category: "agent_system", severity: "P2", summary: "Verified Agent System failure class", evidenceClass: "Verified", evidence: "Bounded verification reproduced the failure" }, profileFile);
+  assert.equal(verified.report_eligibility.cross_task_delivery_eligible, true);
+  const implicit = recordLocalAgentSystemIssue({ project: "governance", issueId: "IMPLICIT-1", failureClass: "implicit-category-class", severity: "P1", summary: "Compatibility caller omitted category", evidenceClass: "Observed", evidence: "Bounded observation exists", coreCapability: true, locallyActionable: true, privateAgentSystemScope: true, repairAuthority: true, exclusionsComplete: true, supportedFallback: false }, profileFile);
+  assert.equal(implicit.category, null);
+  assert.equal(implicit.category_explicit, false);
+  assert.equal(implicit.classification_status, "unclassified_local_only");
+  assert.equal(implicit.report_eligibility.cross_task_delivery_eligible, false);
+  assert.equal(implicit.auto_correction_eligibility.eligible, false);
+  const classified = recordLocalAgentSystemIssue({ project: "governance", issueId: "CLASSIFIED-1", failureClass: "category-laundering-class", category: "agent_system", severity: "P2", summary: "Initial root cause category", evidenceClass: "Observed", evidence: "Initial bounded evidence" }, profileFile);
+  assert.throws(() => recordLocalAgentSystemIssue({ project: "governance", issueId: "CLASSIFIED-1", failureClass: "category-laundering-class", category: "caller_error", severity: "P2", summary: "Attempted category laundering" }, profileFile), /requires explicit reclassification from the current category/);
+  const reclassified = recordLocalAgentSystemIssue({ project: "governance", issueId: "CLASSIFIED-1", failureClass: "category-laundering-class", category: "caller_error", reclassifiedFromCategory: "agent_system", correctionOf: classified.failure_class, severity: "P2", summary: "Corrected root cause category" }, profileFile);
+  assert.equal(reclassified.event_type, "correction");
+  assert.equal(reclassified.category, "caller_error");
+  const followsCorrection = recordLocalAgentSystemIssue({ project: "governance", issueId: "CLASSIFIED-1", failureClass: "category-laundering-class", severity: "P2", summary: "Later entry follows corrected category" }, profileFile);
+  assert.equal(followsCorrection.category, "caller_error");
+  assert.equal(followsCorrection.category_explicit, false);
+  assert.equal(followsCorrection.classification_status, "unclassified_inherited_local_only");
+  assert.equal(followsCorrection.report_eligibility.eligible, false);
+
+  const nonAgentRoot = recordLocalAgentSystemIssue({ project: "governance", issueId: "RECLASSIFY-AGENT-1", failureClass: "confirmed-reclassification-class", category: "worker_adherence", severity: "P2", summary: "Initial non-Agent-System root cause", evidenceClass: "Observed", evidence: "Initial worker-adherence evidence" }, profileFile);
+  const confirmedReclassification = recordLocalAgentSystemIssue({ project: "governance", issueId: "RECLASSIFY-AGENT-1", failureClass: "confirmed-reclassification-class", category: "agent_system", reclassifiedFromCategory: "worker_adherence", correctionOf: nonAgentRoot.failure_class, severity: "P1", summary: "Evidence corrected the root cause to Agent System", evidenceClass: "Verified", evidence: "Verified evidence established the Agent System root cause", coreCapability: true, locallyActionable: true, privateAgentSystemScope: true, repairAuthority: true, exclusionsComplete: true, supportedFallback: false }, profileFile);
+  assert.equal(confirmedReclassification.event_type, "correction");
+  assert.deepEqual(confirmedReclassification.report_eligibility.reasons, ["confirmed_agent_system_reclassification"]);
+  assert.equal(confirmedReclassification.report_eligibility.cross_task_delivery_eligible, true);
+  assert.equal(confirmedReclassification.auto_correction_eligibility.eligible, false);
+  const strictBlockerAfterReclassification = recordLocalAgentSystemIssue({ project: "governance", issueId: "RECLASSIFY-AGENT-1", failureClass: "confirmed-reclassification-class", category: "agent_system", severity: "P1", summary: "Current entry satisfies strict blocker predicates", evidenceClass: "Verified", evidence: "Current blocker evidence is bounded", coreCapability: true, locallyActionable: true, privateAgentSystemScope: true, repairAuthority: true, exclusionsComplete: true, supportedFallback: false }, profileFile);
+  assert.deepEqual(strictBlockerAfterReclassification.report_eligibility.reasons, ["true_p0_p1_core_blocker_without_supported_fallback"]);
+  assert.equal(strictBlockerAfterReclassification.auto_correction_eligibility.eligible, true);
+  const strictBlockerRepeat = recordLocalAgentSystemIssue({ project: "governance", issueId: "RECLASSIFY-AGENT-1", failureClass: "confirmed-reclassification-class", category: "agent_system", severity: "P1", summary: "Strict blocker repeated", evidenceClass: "Verified", evidence: "Current blocker evidence is bounded", coreCapability: true, locallyActionable: true, privateAgentSystemScope: true, repairAuthority: true, exclusionsComplete: true, supportedFallback: false }, profileFile);
+  assert.equal(strictBlockerRepeat.report_eligibility.eligible, false);
+  assert.equal(strictBlockerRepeat.auto_correction_eligibility.eligible, false);
+  const reclassifiedAway = recordLocalAgentSystemIssue({ project: "governance", issueId: "RECLASSIFY-AGENT-1", failureClass: "confirmed-reclassification-class", category: "caller_error", reclassifiedFromCategory: "agent_system", correctionOf: confirmedReclassification.failure_class, severity: "P3", summary: "Later correction moved the root cause away" }, profileFile);
+  const secondAgentReclassification = recordLocalAgentSystemIssue({ project: "governance", issueId: "RECLASSIFY-AGENT-1", failureClass: "confirmed-reclassification-class", category: "agent_system", reclassifiedFromCategory: "caller_error", correctionOf: reclassifiedAway.failure_class, severity: "P2", summary: "Second confirmed Agent System reclassification", evidenceClass: "Observed", evidence: "A later observation returned to the same confirmed state" }, profileFile);
+  assert.equal(secondAgentReclassification.report_eligibility.eligible, false);
+
+  assert.throws(() => recordLocalAgentSystemIssue({ project: "governance", issueId: "DELIVERY-MISSING-CLASS", severity: "P1", summary: "Delivery unavailable omitted classification", deliveryUnavailable: true }, profileFile), /requires explicit --category and --failure-class/);
+  const deliveryUnavailable = recordLocalAgentSystemIssue({ project: "governance", issueId: "DELIVERY-LOCAL-1", failureClass: "delivery-unavailable-agent-system-class", category: "agent_system", severity: "P1", summary: "Delivery is unavailable after a confirmed incident", evidenceClass: "Observed", evidence: "The delivery attempt is unavailable", coreCapability: true, locallyActionable: true, privateAgentSystemScope: true, repairAuthority: true, exclusionsComplete: true, supportedFallback: false, deliveryUnavailable: true }, profileFile);
+  assert.equal(deliveryUnavailable.failure_class_explicit, true);
+  assert.equal(deliveryUnavailable.category_explicit, true);
+  assert.equal(deliveryUnavailable.report_eligibility.cross_task_delivery_eligible, false);
+  assert.equal(deliveryUnavailable.auto_correction_eligibility.eligible, false);
+  assert.match(deliveryUnavailable.next_action, /do_not_retry_or_resend/);
+  const deliveryRow = fs.readFileSync(deliveryUnavailable.local_ledger, "utf8").trim().split("\n").map((line) => { try { return JSON.parse(line); } catch { return null; } }).find((row) => row?.failure_class === "delivery-unavailable-agent-system-class");
+  assert.equal(deliveryRow.category, "agent_system");
+  assert.equal(deliveryRow.failure_class, "delivery-unavailable-agent-system-class");
+
+  const blocker = recordLocalAgentSystemIssue({ project: "governance", issueId: "BLOCKER-1", failureClass: "repeat-true-blocker-class", category: "agent_system", severity: "P1", summary: "Initial true blocker", evidenceClass: "Observed", evidence: "Initial true-blocker evidence", coreCapability: true, locallyActionable: true, privateAgentSystemScope: true, repairAuthority: true, exclusionsComplete: true, supportedFallback: false }, profileFile);
+  assert.equal(blocker.report_eligibility.cross_task_delivery_eligible, true);
+  const rewordedBlockerRepeat = recordLocalAgentSystemIssue({ project: "governance", issueId: "BLOCKER-1", failureClass: "repeat-true-blocker-class", category: "agent_system", severity: "P1", summary: "Reworded true blocker remains active", evidenceClass: "Observed", evidence: "Reworded but non-material true-blocker evidence", coreCapability: true, locallyActionable: true, privateAgentSystemScope: true, repairAuthority: true, exclusionsComplete: true, supportedFallback: false }, profileFile);
+  assert.equal(rewordedBlockerRepeat.true_core_blocker, true);
+  assert.equal(rewordedBlockerRepeat.report_eligibility.eligible, false);
+  assert.equal(rewordedBlockerRepeat.auto_correction_eligibility.eligible, false);
+  const ledger = verified.local_ledger;
+  fs.appendFileSync(ledger, "{malformed trailing row");
+  const recoveredTail = recordLocalAgentSystemIssue({ project: "governance", issueId: "RECOVERY-1", failureClass: "malformed-tail-recovery", category: "expected_fail_closed", severity: "P3", summary: "Malformed trailing row was preserved" }, profileFile);
+  assert.equal(recoveredTail.malformed_trailing_row_preserved, true);
+  const laterAppend = recordLocalAgentSystemIssue({ project: "governance", issueId: "RECOVERY-2", failureClass: "malformed-tail-later-append", category: "expected_fail_closed", severity: "P3", summary: "Later append remains available" }, profileFile);
+  assert.equal(laterAppend.recorded, true);
+  const recoveredText = fs.readFileSync(ledger, "utf8");
+  assert.match(recoveredText, /\{malformed trailing row/);
+  assert.match(recoveredText, /malformed_trailing_recovery/);
+  const malformedRoot = fs.mkdtempSync(path.join(os.tmpdir(), "acg-agent-system-malformed-nontail-"));
+  const malformedProfile = path.join(malformedRoot, "machine-profile.json");
+  configureAgentSystemProfile({ persistentTask: false, automaticDefectReport: false, automaticRepair: false, acknowledgeTokenCost: true, authorizeProfileWrite: true }, malformedProfile);
+  fs.writeFileSync(path.join(malformedRoot, "agent-system-local-issues.jsonl"), "{malformed non-tail row\n{\"schema_version\":2}\n");
+  assert.throws(() => recordLocalAgentSystemIssue({ project: "governance", issueId: "MALFORMED-NONTAIL", failureClass: "malformed-nontail", category: "expected_fail_closed", severity: "P3", summary: "Malformed non-tail rows fail closed" }, malformedProfile), /malformed non-tail JSONL row/);
+  fs.rmSync(malformedRoot, { recursive: true, force: true });
+  fs.rmSync(temporaryRoot, { recursive: true, force: true });
+});
+
+test("Agent System incident transitions preserve confirmation, proof, correction, and contention boundaries", () => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "acg-agent-system-transitions-"));
+  const profileFile = path.join(temporaryRoot, "machine-profile.json");
+  configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: true, automaticRepair: true, reportedDefectAction: "auto_correct", acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile);
+  const base = { project: "governance", issueId: "TRANSITION-1", failureClass: "transition-class", category: "agent_system", severity: "P1", summary: "Bounded incident", evidence: "Same bounded reproduction" };
+  const unverified = recordLocalAgentSystemIssue({ ...base, evidenceClass: "Unverified" }, profileFile);
+  assert.equal(unverified.report_eligibility.eligible, false);
+  const confirmed = recordLocalAgentSystemIssue({ ...base, evidenceClass: "Observed" }, profileFile);
+  assert.equal(confirmed.event_type, "addendum");
+  assert.deepEqual(confirmed.report_eligibility.reasons, ["new_confirmed_agent_system_failure_class"]);
+  assert.equal(confirmed.report_eligibility.cross_task_delivery_eligible, true);
+  const confirmedRepeat = recordLocalAgentSystemIssue({ ...base, evidenceClass: "Observed" }, profileFile);
+  assert.equal(confirmedRepeat.event_type, "repeat");
+  assert.equal(confirmedRepeat.report_eligibility.eligible, false);
+
+  const incompleteBlocker = recordLocalAgentSystemIssue({ ...base, issueId: "BOUNDARY-1", failureClass: "boundary-class", evidenceClass: "Verified", coreCapability: true, locallyActionable: true, supportedFallback: false }, profileFile);
+  assert.equal(incompleteBlocker.true_core_blocker, false);
+  assert.equal(incompleteBlocker.auto_correction_eligibility.eligible, false);
+  const proofTransition = recordLocalAgentSystemIssue({ ...base, issueId: "BOUNDARY-1", failureClass: "boundary-class", evidenceClass: "Verified", coreCapability: true, locallyActionable: true, supportedFallback: false, privateAgentSystemScope: true, repairAuthority: true, exclusionsComplete: true }, profileFile);
+  assert.equal(proofTransition.event_type, "addendum");
+  assert.equal(proofTransition.true_core_blocker, true);
+  assert.equal(proofTransition.auto_correction_eligibility.eligible, true);
+  const proofRepeat = recordLocalAgentSystemIssue({ ...base, issueId: "BOUNDARY-1", failureClass: "boundary-class", evidenceClass: "Verified", coreCapability: true, locallyActionable: true, supportedFallback: false, privateAgentSystemScope: true, repairAuthority: true, exclusionsComplete: true }, profileFile);
+  assert.equal(proofRepeat.event_type, "repeat");
+  assert.equal(proofRepeat.report_eligibility.eligible, false);
+  assert.equal(proofRepeat.auto_correction_eligibility.eligible, false);
+
+  const correction = recordLocalAgentSystemIssue({ ...base, issueId: "CORRECTION-1", failureClass: "correction-class", category: "worker_adherence", evidenceClass: "Observed" }, profileFile);
+  const reclassification = recordLocalAgentSystemIssue({ ...base, issueId: "CORRECTION-1", failureClass: "correction-class", category: "agent_system", reclassifiedFromCategory: "worker_adherence", correctionOf: correction.failure_class, evidenceClass: "Verified", coreCapability: true, locallyActionable: true, supportedFallback: false, privateAgentSystemScope: true, repairAuthority: true, exclusionsComplete: true }, profileFile);
+  assert.equal(reclassification.report_eligibility.cross_task_delivery_eligible, true);
+  assert.equal(reclassification.auto_correction_eligibility.eligible, false);
+  const correctionRepeat = recordLocalAgentSystemIssue({ ...base, issueId: "CORRECTION-1", failureClass: "correction-class", category: "agent_system", severity: "P1", evidenceClass: "Verified", coreCapability: true, locallyActionable: true, supportedFallback: false, privateAgentSystemScope: true, repairAuthority: true, exclusionsComplete: true }, profileFile);
+  assert.equal(correctionRepeat.event_type, "repeat");
+  assert.equal(correctionRepeat.report_eligibility.cross_task_delivery_eligible, false);
+  assert.equal(correctionRepeat.auto_correction_eligibility.eligible, false);
+  const materiallyChangedBlocker = recordLocalAgentSystemIssue({ ...base, issueId: "CORRECTION-1", failureClass: "correction-class", category: "agent_system", severity: "P1", evidenceClass: "Verified", evidence: "A materially changed bounded blocker reproduction", materialRepairEvidence: true, coreCapability: true, locallyActionable: true, supportedFallback: false, privateAgentSystemScope: true, repairAuthority: true, exclusionsComplete: true }, profileFile);
+  assert.equal(materiallyChangedBlocker.event_type, "addendum");
+  assert.equal(materiallyChangedBlocker.report_eligibility.cross_task_delivery_eligible, true);
+  assert.equal(materiallyChangedBlocker.auto_correction_eligibility.eligible, true);
+  const materiallyChangedBlockerRepeat = recordLocalAgentSystemIssue({ ...base, issueId: "CORRECTION-1", failureClass: "correction-class", category: "agent_system", severity: "P1", evidenceClass: "Verified", evidence: "A materially changed bounded blocker reproduction", materialRepairEvidence: true, coreCapability: true, locallyActionable: true, supportedFallback: false, privateAgentSystemScope: true, repairAuthority: true, exclusionsComplete: true }, profileFile);
+  assert.equal(materiallyChangedBlockerRepeat.event_type, "repeat");
+  assert.equal(materiallyChangedBlockerRepeat.report_eligibility.cross_task_delivery_eligible, false);
+  assert.equal(materiallyChangedBlockerRepeat.auto_correction_eligibility.eligible, false);
+
+  const ledger = unverified.local_ledger;
+  const descriptor = fs.openSync(`${ledger}.lock`, "wx", 0o600);
+  const contended = recordLocalAgentSystemIssue({ ...base, issueId: "CONTENTION-1", failureClass: "contention-class", evidenceClass: "Observed" }, profileFile);
+  fs.closeSync(descriptor);
+  fs.unlinkSync(`${ledger}.lock`);
+  assert.equal(contended.recorded, false);
+  assert.equal(contended.contention_deferred, true);
+  const serializedRetry = recordLocalAgentSystemIssue({ ...base, issueId: "CONTENTION-1", failureClass: "contention-class", evidenceClass: "Observed" }, profileFile);
+  assert.equal(serializedRetry.event_type, "new_class");
+  assert.equal(serializedRetry.report_eligibility.cross_task_delivery_eligible, true);
   fs.rmSync(temporaryRoot, { recursive: true, force: true });
 });
 
@@ -611,7 +956,7 @@ test("activation surfaces current machine-profile consent", () => {
     const undecided = activateRelease(source, releaseId, home);
     assert.equal(undecided.agent_system_activation.status, "decision_required");
     assert.equal(undecided.agent_system_activation.mode, "inactive_local_only");
-    configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: false, acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile);
+    configureAgentSystemProfile({ persistentTask: true, automaticDefectReport: false, automaticRepair: false, acknowledgeTokenCost: true, authorizeProfileWrite: true }, profileFile);
     const configured = activateRelease(source, releaseId, home);
     assert.equal(configured.agent_system_activation.status, "configured");
     assert.equal(configured.agent_system_activation.mode, "active_without_automatic_reports");

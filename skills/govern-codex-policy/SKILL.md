@@ -105,7 +105,7 @@ When operating or bootstrapping Agent System, load and adopt the canonical
 portable role at `../../docs/agent-system-role.md`. Private continuity may add
 machine-local state or help discover that file, but it is not the role owner.
 
-Agent System handles Codex governance/runtime defects, not project work. Keep project status, architecture, audit findings, and product failures in the project task. Use self-service commands first; report or local-log a registered-root, alias, stale-metadata, helper, or missing-repair defect once according to consent, preserve state, and immediately continue project work within existing authority using existing tool definitions or native tools. There is no wait-for-Agent-System state. Agent System may block an improper Seat `0` action, but it never blocks the project.
+Agent System handles Codex governance/runtime defects, not project work. Keep project status, architecture, audit findings, and product failures in the project task. Append every bounded governance/runtime incident privately to JSONL as `agent_system`, `worker_adherence`, `host_runtime`, `project_tool_side_effect`, `caller_error`, or `expected_fail_closed`. Deliver cross-task only for a new confirmed `agent_system` failure class, materially new evidence that changes or advances repair, or a true no-fallback P0/P1 core blocker. Aggregate repeats/addenda by failure class; append corrections and reclassifications. Ordinary project defects, caller mistakes, expected fail-closed results, and worker adherence are not Agent System defects; another category crosses only after separately confirmed reclassification to `agent_system`. Use self-service commands first, preserve state, and immediately continue project work within existing authority using existing tool definitions or native tools. There is no wait-for-Agent-System state. Agent System may block an improper Seat `0` action, but it never blocks the project.
 
 On fresh bootstrap, explicitly ask three separate decisions: whether to create
 and maintain a persistent Agent System task, whether to automatically send it
@@ -135,13 +135,23 @@ automatic KPI or after-action reports or automatic repair. `log_only` records
 every eligible Agent System/runtime issue and never starts repair. Opted-in
 `auto_correct` is the active System Agent repair mode: it automatically repairs
 only a confirmed, locally actionable true Agent System blocker and logs every
-other issue without repair. When automatic defect reporting is not enabled, write the
-local-only ledger entry only with:
+other issue without repair. Record every bounded incident locally before any
+possible delivery with:
 
-`node ~/.codex/policies/bin/acg.mjs agent-system record-issue --project <slug> --issue-id <id> --severity P0|P1|P2|P3|P4 --summary <bounded-text> [--evidence-class Observed|Inferred|Proposed|Unknown|Unverified] [--evidence <bounded-text>]`
+`node ~/.codex/policies/bin/acg.mjs agent-system record-issue --project <slug> --issue-id <id> --severity P0|P1|P2|P3|P4 --category agent_system|worker_adherence|host_runtime|project_tool_side_effect|caller_error|expected_fail_closed --failure-class <stable-slug> --summary <bounded-text> [--evidence-class Observed|Verified|Inferred|Proposed|Unknown|Unverified] [--evidence <bounded-text>] [--core-capability --locally-actionable --private-agent-system-scope --repair-authority --complete-exclusions --supported-fallback no] [--delivery-unavailable]`
 
-That command is permitted only when automatic reporting is not enabled; an
-active persistent task with reporting declined is local-only for reports.
+Active reporting uses the returned eligibility to decide at most one cross-task
+message; disabled reporting remains local-only. `--delivery-unavailable`
+requires explicit category and stable failure class, remains local, and never
+starts a resend loop. Confirmed append-only reclassification to `agent_system`
+may become eligible for one report but never authorizes `auto_correct` solely
+because it is a correction.
+
+The structured blocker-proof flags are optional because most incidents are not
+repair candidates. `auto_correct` requires all six proof facts:
+`--core-capability`, `--locally-actionable`, `--private-agent-system-scope`,
+`--repair-authority`, `--complete-exclusions`, and
+`--supported-fallback no`, together with Observed/Verified P0/P1 evidence.
 
 For an explicitly configured active lane, preserve state and run `acg.mjs
 profile agent-system`. Resolve the current target at delivery time from its
@@ -184,6 +194,14 @@ remains required on runtimes without that interception.
 Agent System owns triage through verified activation, but project continuation
 does not depend on triage, repair, activation, or a reply. Runtime-only defects
 remain findings; local tests do not prove hooks.
+
+After verified tracked Agent System edits are released and activated, notify
+each known active project task once to reload or adopt current policy before
+its next governed operation. Resolve each recipient by its current exact label,
+use a returned thread ID only for that delivery, and never store IDs. The notice
+is nonblocking: it does not force handoff or compaction and never claims
+retrofitted hooks. App Reload is required only when plugin/hook changes need a
+host refresh; never mix receipt-pinned releases.
 
 The persistent Agent System task is optional support, not a dependency.
 Declining or removing it leaves JIT rule selection, scoped prompt composition,

@@ -36,6 +36,21 @@ architecture/public-contract redesign, source-project mutation, public
 publication, and schedule. The source project continues through fallback and
 never waits. No repair disposition authorizes KPI automation.
 
+Every bounded governance/runtime incident is appended privately to local JSONL
+before any delivery and classified as `agent_system`, `worker_adherence`,
+`host_runtime`, `project_tool_side_effect`, `caller_error`, or
+`expected_fail_closed`. Only a new confirmed `agent_system` failure class,
+materially new repair-advancing evidence, or a true no-fallback P0/P1 core
+blocker crosses to the persistent Agent System; repeats aggregate by failure
+class and append-only corrections may reclassify them. The other categories are
+not Agent System defects unless separately confirmed as `agent_system`.
+
+After verified tracked Agent System edits are released and activated, notify
+each known active project task once to reload or adopt current policy before
+its next governed operation. The notice is nonblocking, resolves each task by
+its current exact label without stored thread IDs, and never claims retrofitted
+hooks; app Reload is required only when a plugin or hook needs host refresh.
+
 ## Change Contract
 
 Before changing policy:

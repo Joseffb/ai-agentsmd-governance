@@ -2,7 +2,7 @@
 
 ![AI Coding Agent Governance workflow](docs/assets/ai-coding-agent-governance.png)
 
-> **Current release line:** RC-3.0 (`3.0.11`).
+> **Current release line:** RC-3.0 (`3.0.12`).
 > Immutable releases include the tracked source plugins, but bundling does not
 > prove that any host installed, loaded, or activated those plugins.
 
@@ -11,6 +11,15 @@
 > scoped prompt composition. Agent-use enforcement is the necessary execution
 > control; dependency-aware scheduling is a thin launch-order layer. Optional
 > telemetry and defect/reporting support are secondary and never authority.
+
+> **Incident and adoption contract:** Each bounded governance/runtime incident
+> is privately appended to JSONL under a failure class. A persistent Agent
+> System receives only new confirmed `agent_system` classes, material
+> repair-advancing evidence, or true no-fallback P0/P1 core blockers; projects
+> continue through fallback. After verified tracked edits are released and
+> activated, known active project tasks receive one nonblocking exact-label
+> reload/adopt notice before their next governed operation. The notice never
+> retrofits hooks; app Reload is only needed for plugin/hook host refresh.
 
 <!-- agent-kpi-overview:start -->
 
@@ -259,8 +268,9 @@ Before first activation, ask the operator:
 7. Is there a private organization or project-policy index?
 8. Is global activation authorized now?
 9. Should this installation create and maintain a persistent private task labeled `Agent System`? Task operation can consume tokens.
-10. Should it automatically send that task bounded governance/runtime defect reports? Automatic reporting can consume tokens. If yes, use `log_only` or explicitly enable private Agent System `auto_correct`; the compatibility command below selects `log_only`.
-11. Which approval comfort level should Codex use: `ask`, `approve_for_me`, or `full`?
+10. Should it automatically send that task bounded governance/runtime defect reports? Automatic reporting can consume tokens. If yes, use `log_only` or explicitly enable private Agent System `auto_correct`.
+11. Should it automatically repair confirmed, locally actionable true Agent System blockers? Repair can consume tokens and requires reporting with the `auto_correct` disposition.
+12. Which approval comfort level should Codex use: `ask`, `approve_for_me`, or `full`?
 
 Approval levels:
 
@@ -274,11 +284,11 @@ Write answers only to the untracked machine-local file:
 ~/.codex/governance-machine-profile.json
 ```
 
-Record the two Agent System decisions with the portable command; do not guess
+Record the three Agent System decisions with the portable command; do not guess
 profile keys or hand-edit the profile:
 
 ```text
-node ~/.codex/policies/bin/acg.mjs profile agent-system --persistent-task yes|no --automatic-defect-report yes|no [--reported-defect-action log_only|auto_correct] --acknowledge-agent-system-token-cost --authorize-profile-write [--label <exact-title>] [--memory <optional-private-file>]
+node ~/.codex/policies/bin/acg.mjs profile agent-system --persistent-task yes|no --automatic-defect-report yes|no --automatic-repair yes|no [--reported-defect-action log_only|auto_correct] --acknowledge-agent-system-token-cost --authorize-profile-write [--label <exact-title>] [--memory <optional-private-file>]
 ```
 
 `--memory` is optional machine-local continuity only. The tracked
@@ -287,8 +297,10 @@ node ~/.codex/policies/bin/acg.mjs profile agent-system --persistent-task yes|no
 `--reported-defect-action` is required with `--automatic-defect-report yes` and
 rejected with `--automatic-defect-report no`. Legacy combined reporting consent
 migrates to `log_only` and never authorizes automatic KPI or after-action
-reports or automatic repair. `log_only` records or delivers one bounded defect
-and never starts repair.
+reports or automatic repair. Existing compatible callers that omit
+`--automatic-repair` migrate that missing decision to declined; fresh
+installations must make all three decisions explicitly. `log_only` records or
+delivers one bounded defect and never starts repair.
 
 Start from `fixtures/machine-profile.example.json`. Never commit the completed
 profile, private policy indexes, organization overlays, project identities,
@@ -535,27 +547,38 @@ mode, exact-label lookup, duplicate resolution, explicitly enabled auto-creation
 and immediate project continuation remain as described above. This contract
 does not claim a background process or guaranteed host interception.
 
-With `auto_report` enabled, a detecting project coordinator resolves the
-current non-archived exact-label task, sends one bounded report without another
-operator prompt, and immediately continues project work. The local CLI returns the private
-lookup contract but cannot invoke the host's task-message tool; host-level
-automatic interception remains `Unverified` unless the runtime attests it.
+With `auto_report` enabled, a detecting project coordinator first records the
+incident locally, then uses the returned eligibility to decide whether to send
+one bounded report to the current non-archived exact-label task without another
+operator prompt. It immediately continues project work. The local CLI returns
+the private lookup contract but cannot invoke the host's task-message tool;
+host-level automatic interception remains `Unverified` unless the runtime
+attests it.
 
 `auto_correct` is restricted to private Agent System code, configuration,
 isolated worktrees, and private release lanes under existing authority. It
 cannot mutate the reporting project, its continuity, or any public branch, and
 it does not grant merge, push, activation, publication, or release authority.
 
-When automatic reporting is not enabled, record a bounded local-only issue
-instead of sending a cross-task message:
+Record every bounded incident locally before any possible cross-task message:
 
 ```text
-node ~/.codex/policies/bin/acg.mjs agent-system record-issue --project <slug> --issue-id <id> --severity P0|P1|P2|P3|P4 --summary <bounded-text> [--evidence-class Observed|Inferred|Proposed|Unknown|Unverified] [--evidence <bounded-text>]
+node ~/.codex/policies/bin/acg.mjs agent-system record-issue --project <slug> --issue-id <id> --severity P0|P1|P2|P3|P4 --category agent_system|worker_adherence|host_runtime|project_tool_side_effect|caller_error|expected_fail_closed --failure-class <stable-slug> --summary <bounded-text> [--evidence-class Observed|Verified|Inferred|Proposed|Unknown|Unverified] [--evidence <bounded-text>] [--core-capability --locally-actionable --private-agent-system-scope --repair-authority --complete-exclusions --supported-fallback no] [--delivery-unavailable]
 ```
 
-This quiet private ledger command is permitted only when automatic reporting is
-not enabled. A configured active task with reporting declined is local-only for
-reports.
+Active reporting uses the returned eligibility for at most one cross-task
+message; disabled reporting remains local-only. `--delivery-unavailable` also
+requires the explicit category and stable failure class, remains local, and
+never starts a resend loop. A confirmed append-only reclassification to
+`agent_system` may become eligible for one report, but the correction alone
+never authorizes `auto_correct`.
+
+The structured blocker-proof flags are optional because most incidents are not
+repair candidates. For `auto_correct` eligibility, all six proof facts are
+required: `--core-capability`, `--locally-actionable`,
+`--private-agent-system-scope`, `--repair-authority`,
+`--complete-exclusions`, and `--supported-fallback no`; the incident must also
+be Observed/Verified and P0/P1.
 
 ## Claude Code Adapter
 

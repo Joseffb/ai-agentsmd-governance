@@ -138,10 +138,29 @@ function parseArgs(argv) {
       if (choice !== "yes" && choice !== "no") throw new Error("--automatic-defect-report must be yes or no");
       args.automaticDefectReport = choice === "yes";
     }
+    else if (value === "--automatic-repair") {
+      const choice = rest[++index];
+      if (choice !== "yes" && choice !== "no") throw new Error("--automatic-repair must be yes or no");
+      args.automaticRepair = choice === "yes";
+    }
     else if (value === "--reported-defect-action") args.reportedDefectAction = rest[++index];
     else if (value === "--delivery-unavailable") args.deliveryUnavailable = true;
     else if (value === "--acknowledge-agent-system-token-cost") args.acknowledgeTokenCost = true;
     else if (value === "--category") args.category = rest[++index];
+    else if (value === "--failure-class") args.failureClass = rest[++index];
+    else if (value === "--correction-of") args.correctionOf = rest[++index];
+    else if (value === "--reclassified-from-category") args.reclassifiedFromCategory = rest[++index];
+    else if (value === "--material-repair-evidence") args.materialRepairEvidence = true;
+    else if (value === "--core-capability") args.coreCapability = true;
+    else if (value === "--locally-actionable") args.locallyActionable = true;
+    else if (value === "--private-agent-system-scope") args.privateAgentSystemScope = true;
+    else if (value === "--repair-authority") args.repairAuthority = true;
+    else if (value === "--complete-exclusions") args.exclusionsComplete = true;
+    else if (value === "--supported-fallback") {
+      const choice = rest[++index];
+      if (choice !== "yes" && choice !== "no") throw new Error("--supported-fallback must be yes or no");
+      args.supportedFallback = choice === "yes";
+    }
     else if (value === "--summary") args.summary = rest[++index];
     else if (value === "--evidence") args.evidence = rest[++index];
     else if (value === "--evidence-class") args.evidenceClass = rest[++index];
@@ -149,7 +168,7 @@ function parseArgs(argv) {
     else if (value === "--severity") args.severity = rest[++index];
     else if (value === "--authorize-memory-write") args.authorizeMemoryWrite = true;
     else if (value === "--authorize-profile-write") args.authorizeProfileWrite = true;
-    else if (value === "--automatic-report" || value === "--auto-create" || value === "--auto-report") throw new Error(`${value} is deprecated; use --persistent-task yes|no and --automatic-defect-report yes|no with --reported-defect-action log_only|auto_correct and --acknowledge-agent-system-token-cost`);
+    else if (value === "--automatic-report" || value === "--auto-create" || value === "--auto-report") throw new Error(`${value} is deprecated; use --persistent-task yes|no --automatic-defect-report yes|no --automatic-repair yes|no with --reported-defect-action log_only|auto_correct and --acknowledge-agent-system-token-cost`);
     else if (value === "--operator-confirmed-pre-hook") args.operatorConfirmedPreHook = true;
     else if (value === "--allow-rollback") args.allowRollback = true;
     else if (value.startsWith("--")) throw new Error(`Unknown option: ${value}`);
@@ -194,21 +213,21 @@ try {
     });
   } else if (args.command === "profile" && args.positional[0] === "agent-system") {
     result =
-      args.label || args.thread || args.memory || args.authorizeProfileWrite || args.persistentTask !== undefined || args.automaticDefectReport !== undefined || args.reportedDefectAction !== undefined || args.acknowledgeTokenCost
+      args.label || args.thread || args.memory || args.authorizeProfileWrite || args.persistentTask !== undefined || args.automaticDefectReport !== undefined || args.automaticRepair !== undefined || args.reportedDefectAction !== undefined || args.acknowledgeTokenCost
         ? configureAgentSystemProfile({
             label: args.label,
             threadId: args.thread,
             memoryPath: args.memory,
             persistentTask: args.persistentTask,
             automaticDefectReport: args.automaticDefectReport,
+            automaticRepair: args.automaticRepair,
             reportedDefectAction: args.reportedDefectAction,
             acknowledgeTokenCost: args.acknowledgeTokenCost,
             authorizeProfileWrite: args.authorizeProfileWrite
           })
         : readAgentSystemProfile();
   } else if (args.command === "agent-system" && args.positional[0] === "record-issue") {
-    result = recordLocalAgentSystemIssue({ project: args.project, issueId: args.issueId, severity: args.severity, summary: args.summary, evidenceClass: args.evidenceClass, evidence: args.evidence, deliveryUnavailable: args.deliveryUnavailable });
-    quiet = true;
+    result = recordLocalAgentSystemIssue({ project: args.project, issueId: args.issueId, severity: args.severity, summary: args.summary, evidenceClass: args.evidenceClass, evidence: args.evidence, category: args.category, failureClass: args.failureClass, correctionOf: args.correctionOf, reclassifiedFromCategory: args.reclassifiedFromCategory, materialRepairEvidence: args.materialRepairEvidence, coreCapability: args.coreCapability, locallyActionable: args.locallyActionable, privateAgentSystemScope: args.privateAgentSystemScope, repairAuthority: args.repairAuthority, exclusionsComplete: args.exclusionsComplete, supportedFallback: args.supportedFallback, deliveryUnavailable: args.deliveryUnavailable });
   } else if (args.command === "context" && args.positional[0] === "legacy") {
     result = legacyContextGuidance({
       operatorConfirmedPreHook: args.operatorConfirmedPreHook === true
@@ -402,8 +421,8 @@ try {
         add_root: "profile add-root --project <slug> --path <absolute-path> --authorize-profile-write",
         remove_root: "profile remove-root --project <slug> --path <absolute-path> --authorize-profile-write",
         approval: "profile approval --mode ask|approve_for_me|full --authorize-profile-write",
-        agent_system: "profile agent-system --persistent-task yes|no --automatic-defect-report yes|no [--reported-defect-action log_only|auto_correct when reporting is enabled] --acknowledge-agent-system-token-cost --authorize-profile-write [--label <exact-task-title> --memory <absolute-path>]; both choices can consume tokens",
-        record_issue: "agent-system record-issue --project <slug> --issue-id <id> --severity P0|P1|P2|P3|P4 --summary <bounded-text> [--evidence-class Observed|Inferred|Proposed|Unknown|Unverified --evidence <bounded-text>] [--delivery-unavailable]"
+        agent_system: "profile agent-system --persistent-task yes|no --automatic-defect-report yes|no --automatic-repair yes|no [--reported-defect-action log_only|auto_correct when reporting is enabled] --acknowledge-agent-system-token-cost --authorize-profile-write [--label <exact-task-title> --memory <absolute-path>]; all three choices can consume tokens",
+        record_issue: "agent-system record-issue --project <slug> --issue-id <id> --severity P0|P1|P2|P3|P4 --summary <bounded-text> [--category agent_system|worker_adherence|host_runtime|project_tool_side_effect|caller_error|expected_fail_closed --failure-class <stable-lowercase-slug> --evidence-class Observed|Verified|Inferred|Proposed|Unknown|Unverified --evidence <bounded-text> --material-repair-evidence --core-capability --locally-actionable --private-agent-system-scope --repair-authority --complete-exclusions --supported-fallback yes|no --correction-of <event-or-class> --reclassified-from-category <category>] [--delivery-unavailable (requires explicit --category and --failure-class; always local-only and never resent)]"
       },
       context: {
         adopt_current: "context adopt-current --operator-confirmed-pre-hook",

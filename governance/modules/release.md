@@ -54,6 +54,18 @@ Verify before bootstrap or activation. If the intended valid release and all sta
 
 Activation applies to new tasks. Running tasks use their ledger release; reload cannot replace context or repair stale receipts.
 
+## Post-activation Adoption Notice
+
+After verified tracked Agent System edits are released and activated, notify
+each known active project task once that it must reload or adopt the current
+Agent System before its next governed operation. Resolve every recipient at
+delivery time by its current exact task label; use a runtime-returned ID only
+for that delivery and never store thread IDs. The notice is nonblocking: it
+does not force a handoff, compaction, or project pause, and it never claims
+that hooks were retrofitted. App Reload is required only when a plugin or hook
+change needs host refresh; otherwise policy reload/adoption follows the
+applicable current-context contract and never mixes receipt-pinned releases.
+
 Restarting an already-active agent system requires explicit counter-confirmation. State the active release and why restart is unnecessary, then ask: `The agent system is already active as <release>. Confirm restart anyway?` Proceed only after an unambiguous affirmative response to that question. A request to reload, verify, test, acknowledge, continue, or use the current policy is not restart authorization.
 
 Never combine terms such as `bootstrap reload`, and report activation, validation, rollback-test, and total workflow durations separately.

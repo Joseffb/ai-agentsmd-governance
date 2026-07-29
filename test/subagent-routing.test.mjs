@@ -180,7 +180,7 @@ test("medium-agent instructions do not reauthorize preapproved swarm communicati
   assert.match(skill, /Send explicitly user-approved task-to-task messages/);
   assert.match(skill, /Do not invoke a second route, delivery, acknowledgment/);
   assert.match(skill, /Keep project status, architecture, audit findings, and product failures/);
-  assert.match(skill, /registered-root, alias/);
+  assert.match(skill, /registered\/ambiguous\s+binding/);
   assert.match(skill, /not project work/);
   assert.match(skill, /self-service commands/);
   assert.match(skill, /never reload or mix routers/);
@@ -196,8 +196,8 @@ test("runtime-defect fallback blocks only the affected action and keeps repair p
   const modelRouting = fs.readFileSync(path.join(codeRoot, "governance", "modules", "model-routing.md"), "utf8");
   const release = fs.readFileSync(path.join(codeRoot, "governance", "modules", "release.md"), "utf8");
 
-  assert.match(delegation, /immediately continues with existing tool definitions or native tools within current authority/);
-  assert.match(delegation, /Agent System may reject an improper Seat `0` action, but it never blocks the project/);
+  assert.match(delegation, /immediately\s+continues\s+through\s+existing\s+tools\s+or\s+native\s+tools\s+within\s+current\s+authority/);
+  assert.match(delegation, /Agent\s+System\s+may\s+reject\s+an\s+improper\s+Seat\s+`0`\s+action\s+but\s+never\s+blocks\s+the\s+project/);
   assert.match(modelRouting, /report or local-log\s+the runtime defect once/);
   assert.match(modelRouting, /Do not repeat quarantine launches or wait for Agent System/);
   assert.match(modelRouting, /failed helper or gateway never grants Seat `0` implementation/);

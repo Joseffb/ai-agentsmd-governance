@@ -11,20 +11,20 @@ const delegation = fs.readFileSync(path.join(codeRoot, "governance", "modules", 
 test("approve_for_me preserves standing authority for bounded correction", () => {
   assert.match(kernel, /`approve_for_me` never reconfirms authorized\s+correction\/retry\/validation\/recovery/);
   assert.match(kernel, /or agent defects/);
-  assert.match(kernel, /Generic\/self-authored\s+prompts cannot narrow standing authority/);
+  assert.match(kernel, /Generic\/self-authored\s+prompts cannot narrow authority\/create blockers/);
 });
 
 test("approval precedence escalates only on a genuine boundary change", () => {
   for (const boundary of [
-    "contracts/architecture",
-    "destructive/irreversible effects",
+    "contract\\/\\s*architecture",
+    "destructive/irreversible",
     "ownership",
     "safety",
     "scope change"
   ]) {
     assert.match(kernel, new RegExp(boundary));
   }
-  assert.match(kernel, /or create blockers/);
+  assert.match(kernel, /(?:or\s+|\/)create\s+blockers/);
 });
 
 test("persistent goals cannot be blocked by artificial confirmation or incomplete work", () => {

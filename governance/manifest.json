@@ -507,9 +507,9 @@
     },
     {
       "id": "jit-orchestration",
-      "version": 4,
+      "version": 5,
       "path": "modules/jit-orchestration.md",
-      "digest": "sha256:a06e2a449b1cd6a98a7d8642890e251c06cfc09d97b048f570e1e24e45e474b4",
+      "digest": "sha256:c85bce441238ef829d3205011ed522679effedc2bd8d6ea006d9933ac873ab1b",
       "triggers": {
         "operations": [
           "repository_inspection",
@@ -574,15 +574,15 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 11722,
-      "words": 1571,
-      "estimated_tokens": 2931
+      "bytes": 13240,
+      "words": 1760,
+      "estimated_tokens": 3310
     },
     {
       "id": "delegation",
-      "version": 16,
+      "version": 17,
       "path": "modules/delegation.md",
-      "digest": "sha256:b648b484df619295cd0576a4796b0bbba98bd9042fe9f7905a1fdf1ed7375155",
+      "digest": "sha256:53341e5cb048fae625c09325dcc6e374a0aef9a2ad27f1e68f39586bf2f2452e",
       "triggers": {
         "operations": [
           "launch_subagent",
@@ -610,9 +610,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 13253,
-      "words": 1801,
-      "estimated_tokens": 3314
+      "bytes": 13941,
+      "words": 1876,
+      "estimated_tokens": 3486
     },
     {
       "id": "subagent-git",
@@ -891,9 +891,9 @@
     },
     {
       "id": "release",
-      "version": 5,
+      "version": 6,
       "path": "modules/release.md",
-      "digest": "sha256:fd25cf5e2fdabb14f5875c9d8d45cc6af23ca023d1bb474d788c3ded908ee14d",
+      "digest": "sha256:d4840a2137ee3a02d51de35d59fb2fb296b573d5e24d7a7d27f7a19c6e8555c3",
       "triggers": {
         "operations": [
           "git_merge",
@@ -931,9 +931,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 4862,
-      "words": 658,
-      "estimated_tokens": 1216
+      "bytes": 5587,
+      "words": 768,
+      "estimated_tokens": 1397
     }
   ],
   "authority_model": {

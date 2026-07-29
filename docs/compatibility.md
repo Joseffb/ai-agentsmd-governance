@@ -25,3 +25,9 @@ Removal in major 4 remains a future compatibility decision, not an automatic
 removal schedule. Consumers must treat host enforcement, runtime model
 attestation, and chained-action interception as **Unverified** unless the host
 provides authoritative metadata.
+
+Within major 3, existing `profile agent-system` callers that omit the newer
+`--automatic-repair` argument remain valid: the missing repair consent migrates
+to `declined`. Fresh installations must explicitly decide task maintenance,
+automatic defect reporting, and automatic repair; the compatibility migration
+does not grant repair authority.

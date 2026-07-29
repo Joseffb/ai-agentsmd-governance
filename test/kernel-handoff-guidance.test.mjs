@@ -11,16 +11,16 @@ test("always-loaded kernel is a bounded JIT bootstrap with monotonic context", a
   const text = await readFile(kernel, "utf8");
 
   assert.ok(Math.ceil(Buffer.byteLength(text, "utf8") / 4) <= 2000);
-  assert.match(text, /Always-loaded Agent System boot for JIT orchestration and agent use/i);
-  assert.match(text, /Agent System selects the smallest applicable rule set/i);
-  assert.match(text, /Classify only immediate intent\/effects/i);
-  assert.match(text, /Future plans trigger nothing/i);
+  assert.match(text, /Always-loaded JIT Agent System boot/i);
+  assert.match(text, /Agent System selects smallest applicable rules/i);
+  assert.match(text, /Classify immediate intent\/effects/i);
+  assert.match(text, /future plans trigger nothing/i);
   assert.match(text, /Policy context grows monotonically/i);
-  assert.match(text, /never force\s+compaction, rollover, handoff, or a fresh task/i);
-  assert.match(text, /Only authoritative hosting-\s*runtime capacity failure/i);
-  assert.match(text, /use the `govern-codex-policy` skill and an\s+available\s+high-level command/i);
-  assert.match(text, /For governed handoffs use `acg\.mjs handoff verify` before `handoff accept`/);
-  assert.match(text, /Never\s+use global ad-hoc memory as canonical project continuity/i);
+  assert.match(text, /never force compaction, rollover, handoff, or fresh task/i);
+  assert.match(text, /authoritative hosting-runtime capacity failure/i);
+  assert.match(text, /Before\s+governed\s+work\s+use\s+the\s+`govern-codex-policy`\s+skill\s+and\s+a\s+high-level\s+command/i);
+  assert.match(text, /For\s+governed\s+handoffs\s+verify\s+before\s+accept/i);
+  assert.match(text, /Never\s+use\s+global\s+ad-hoc\s+memory\s+as\s+continuity/i);
 });
 
 test("context handoffs require host capacity rejection, not policy-fit estimates", async () => {
@@ -42,18 +42,18 @@ test("kernel keeps Seat 0 high-level and uses nonblocking native recovery", asyn
   const text = await readFile(kernel, "utf8");
 
   assert.match(text, /Seat `0` is the responsive high-level orchestrator/i);
-  assert.match(text, /excluded from every\s+unqualified\s+agent\/worker-seat count/i);
+  assert.match(text, /excluded from unqualified agent\/worker-seat counts/i);
   assert.match(text, /Target: <=2,000 estimated tokens/i);
-  assert.match(text, /explicitly atomic and low-risk; remedy-known; delegation\s+overhead-dominant/i);
-  assert.match(text, /at most five AI-active minutes/i);
-  assert.match(text, /exactly one source-mutation\s+surface/i);
+  assert.match(text, /explicitly\s+atomic\s+and\s+low-risk,\s+remedy-known,\s+delegation-overhead-dominant/i);
+  assert.match(text, /<=five AI-active minutes/i);
+  assert.match(text, /one source-mutation surface/i);
   assert.match(text, /“Seat 0 does not implement” removes this exception/i);
-  assert.match(text, /same-seat retry only\s+after changed conditions\/transience/i);
-  assert.match(text, /replacement\/rescoped worker/i);
-  assert.match(text, /bounded\s+manual worker prompt/i);
-  assert.match(text, /Do not impose a fixed retry\s+count, repeat an unchanged launch/i);
+  assert.match(text, /same-seat retry only after changed\/transient conditions/i);
+  assert.match(text, /replacement\/(?:rescope|rescoped)(?:\s+worker)?/i);
+  assert.match(text, /bounded\s+manual(?:\s+worker)?\s+prompt/i);
+  assert.match(text, /No fixed retry\/\s*unchanged relaunch/i);
   assert.match(text, /never blocks the project/i);
-  assert.match(text, /wait-for-Agent-System state/i);
+  assert.match(text, /wait(?:-for-Agent-System)?\s+state/i);
 });
 
 test("kernel preserves standing approval precedence without repeated confirmation", async () => {
@@ -61,18 +61,17 @@ test("kernel preserves standing approval precedence without repeated confirmatio
 
   assert.match(text, /Honor configured `approval_mode`/);
   assert.match(text, /`approve_for_me` never reconfirms authorized\s+correction\/retry\/validation\/recovery or agent defects/);
-  assert.match(text, /Generic\/self-authored\s+prompts cannot narrow standing authority or create blockers/);
-  assert.match(text, /contracts\/architecture/);
-  assert.match(text, /destructive\/irreversible effects/);
-  assert.match(text, /irreversible\s+effects/);
+  assert.match(text, /Generic\/self-authored\s+prompts cannot narrow authority\/create blockers/);
+  assert.match(text, /contract\/\s*architecture/);
+  assert.match(text, /destructive\/irreversible/);
   assert.match(text, /ownership,\s+safety, or scope change/);
 });
 
 test("kernel preserves failure-class correction and decision-grade depth", async () => {
   const text = await readFile(kernel, "utf8");
 
-  assert.match(text, /fix the in-scope failure class/);
-  assert.match(text, /decision-grade depth/);
+  assert.match(text, /in-scope failure class, not an instance/);
+  assert.match(text, /substantial\s+work\s+is\s+decision-grade/);
 });
 
 test("JIT module keeps the optional support lane out of project completion", async () => {

@@ -90,9 +90,9 @@ test("Agent System automation requires explicit separate consent and has a local
   assert.match(role, /disposition must be `log_only`\s+or `auto_correct`/i);
   assert.match(role, /can\s+consume\s+tokens/i);
   assert.match(role, /quiet, bounded,\s+secret-free append to a private\s+untracked local JSONL issue ledger/i);
-  assert.match(role, /not a task message, does not\s+wake or create a task/i);
-  assert.match(role, /no cross-task governance\s+message and no background token spend/i);
-  assert.match(readme, /fresh installation must ask the two separate decisions/i);
+  assert.match(role, /ledger is not a task\s+message, does not wake or create a task/i);
+  assert.match(role, /no\s+cross-task\s+governance\s+message\s+and\s+no\s+background\s+token\s+spend/i);
+  assert.match(readme, /fresh\s+installation\s+must\s+ask\s+the\s+(?:two\s+)?separate\s+decisions/i);
   assert.match(skill, /Task maintenance, reporting, and repair each require their own explicit active\s+consent/i);
   assert.match(kernel, /Without\s+repair\s+consent, no repair/i);
 });
@@ -102,7 +102,7 @@ test("Agent System consent and local-only logging use portable no-guess commands
   const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
   const skill = fs.readFileSync(path.join(root, "skills", "govern-codex-policy", "SKILL.md"), "utf8");
   const consent = /profile agent-system --persistent-task yes\|no --automatic-defect-report yes\|no --automatic-repair yes\|no \[--reported-defect-action log_only\|auto_correct\] --acknowledge-agent-system-token-cost --authorize-profile-write \[--label <exact-title>\] \[--memory <optional-private-file>\]/;
-  const record = /agent-system record-issue --project <slug> --issue-id <id> --severity P0\|P1\|P2\|P3\|P4 --summary <bounded-text> \[--evidence-class Observed\|Inferred\|Proposed\|Unknown\|Unverified\] \[--evidence <bounded-text>\]/;
+  const record = /agent-system record-issue --project <slug> --issue-id <id> --severity P0\|P1\|P2\|P3\|P4 --category agent_system\|worker_adherence\|host_runtime\|project_tool_side_effect\|caller_error\|expected_fail_closed --failure-class <stable-slug> --summary <bounded-text> \[--evidence-class Observed\|Verified\|Inferred\|Proposed\|Unknown\|Unverified\] \[--evidence <bounded-text>\] \[--core-capability --locally-actionable --private-agent-system-scope --repair-authority --complete-exclusions --supported-fallback no\] \[--delivery-unavailable\]/;
   for (const text of [role, skill]) {
     assert.match(text, consent);
     assert.match(text, /`--reported-defect-action` is required (?:with|when) `--automatic-defect-report yes`/i);
@@ -114,8 +114,12 @@ test("Agent System consent and local-only logging use portable no-guess commands
   assert.match(role, record);
   assert.match(skill, record);
   assert.match(role, /`--memory` is optional machine-local continuity/i);
-  assert.match(role, /permitted only when automatic reporting is not enabled/i);
-  assert.match(role, /active persistent task with automatic reporting declined remains local-only for\s+reports/i);
+  assert.match(role, /entry requires the explicit category and stable failure class, remains local/i);
+  assert.match(role, /disabled reporting remains local-only/i);
+  for (const text of [readme, role, skill]) {
+    assert.match(text, /structured blocker-proof flags are optional/i);
+    assert.match(text, /all six proof facts/i);
+  }
 });
 
 test("auto_correct is an opted-in true-blocker-only repair mode", () => {
@@ -137,8 +141,8 @@ test("auto_correct is an opted-in true-blocker-only repair mode", () => {
   assert.match(kernel, /gets separate consent: task, reporting, repair/i);
   assert.match(kernel, /Without\s+repair\s+consent, no repair/i);
   assert.match(kernel, /`log_only` logs every eligible issue/i);
-  assert.match(kernel, /`auto_correct` repairs only confirmed locally actionable private-Agent-\s+System Observed\/Verified P0\/P1 core-capability blockers/i);
-  assert.match(kernel, /it logs all others/i);
+  assert.match(kernel, /`auto_correct`\s+repairs?\s+only\s+confirmed\s+locally\s+actionable\s+private-Agent(?:-|\s+)System\s+Observed\/Verified\s+P0\/P1\s+core-capability\s+blockers/i);
+  assert.match(kernel, /it\s+logs\s+all\s+others/i);
   assert.match(kernel, /Projects\s+never wait/i);
   for (const text of [role, skill, jit, delegation]) {
     assert.match(text, /`log_only`\s+records\s+every\s+eligible\s+Agent\s+System\/runtime\s+issue\s+and\s+never\s+(?:starts\s+)?repair/i);
@@ -166,9 +170,9 @@ test("RC consent continues projects immediately and bounds legacy migration", ()
   for (const text of [role, skill]) {
     assert.match(text, /`log_only` records\s+every eligible Agent System\/runtime issue and never\s+starts\s+repair/i);
   }
-  assert.match(kernel, /wait-for-Agent-System state/i);
-  assert.match(kernel, /Agent System failure\s+never blocks the project/i);
-  assert.match(kernel, /no KPI, project, or public-branch mutation/i);
+  assert.match(kernel, /(?:no|or)\s+wait(?:-for-Agent-System)?\s+state/i);
+  assert.match(kernel, /Agent\s+System\s+never\s+blocks\s+the\s+project/i);
+  assert.match(kernel, /no\s+KPI\s*\/\s*project\s*\/\s*public-branch\s+mutation/i);
   assert.match(role, /Helper failure never grants Seat `0` implementation/i);
   assert.match(readme, /missing or failed helper never grants Seat `0` implementation/i);
   assert.match(skill, /helper failure grants no Seat `0` implementation/i);

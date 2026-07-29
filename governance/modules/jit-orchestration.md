@@ -173,6 +173,31 @@ non-archived exact-label target, sends unchanged evidence once, and continues
 the project immediately. Do not claim background interception without
 authoritative runtime evidence.
 
+## Incident Filter and Aggregation
+
+Append every bounded governance/runtime incident to the private JSONL ledger
+first, regardless of reporting disposition. Classify it as `agent_system`,
+`worker_adherence`, `host_runtime`, `project_tool_side_effect`, `caller_error`,
+or `expected_fail_closed`. Ordinary project defects, caller mistakes, expected
+fail-closed results, and worker-adherence incidents are not Agent System
+defects. A non-`agent_system` incident may cross only after a separately
+confirmed append-only reclassification to `agent_system`.
+
+Cross-task delivery to a persistent Agent System is permitted only for a new
+confirmed `agent_system` failure class, materially new evidence that advances
+or changes repair, or a true Observed/Verified P0/P1 core blocker with no
+supported fallback. Aggregate repeats and addenda under their failure class;
+append corrections rather than rewriting history, including corrections that
+reclassify an earlier incident. The reporting project immediately continues
+through its fallback after the local append or any permitted delivery.
+
+The local append returns delivery eligibility. Active reporting sends at most
+one cross-task message only when eligible; disabled reporting stays local-only.
+Delivery-unavailable entries require explicit category and stable failure class,
+stay local, and never create a resend loop. A confirmed append-only
+reclassification to `agent_system` may report once when eligible, but correction
+status alone never authorizes `auto_correct`.
+
 The persistent task is an optional support lane, never a JIT dependency.
 Removing or declining it leaves rule selection, prompt composition,
 delegation, native recovery, project-native tooling, and project completion
