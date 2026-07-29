@@ -217,6 +217,14 @@ test("topology remains a bounded planning aid and helper failure preserves worke
   }
 });
 
+test("canonical role makes worktree, branch, work, test, merge the mutating-worker first principle", () => {
+  const role = fs.readFileSync(rolePath, "utf8");
+  const loop = /decompose[\s\S]{0,900}?reserve[\s\S]{0,900}?(?:independent|non-overlapping)\s+lanes[\s\S]{0,900}?(?:isolated\s+(?:branch\s*\/\s*)?worktree|branch\s*\/\s*worktree)[\s\S]{0,900}?(?:worker|mutating\s+worker)[\s\S]{0,900}?(?:implement|work)[\s\S]{0,900}?(?:local\s+tests?|test)[\s\S]{0,900}?Seat\s*`?0`?[\s\S]{0,900}?(?:integrat|accept)[\s\S]{0,900}?(?:authoritative|project-authoritative)\s+validation[\s\S]{0,900}?(?:integrated\s+candidate|integration)/i;
+  assert.match(role, loop);
+  assert.match(role, /(?:read-only|equivalent\s+non-Git)[\s\S]{0,700}?(?:does not|never)\s+weaken[\s\S]{0,700}?mutating[\s\S]{0,400}?(?:Git\s+)?isolation/i);
+  assert.match(role, /(?:disjoint\s+(?:files?|branches?)|branch\s+disjointness)[\s\S]{0,500}?(?:does\s+not|never)\s+(?:prove|imply)[\s\S]{0,500}?PARALLEL/i);
+});
+
 test("complete tracked distribution contains no machine-private identity", () => {
   const trackedFiles = execFileSync("git", [
     "-C", root, "ls-files", "-z", "--cached", "--others", "--exclude-standard"

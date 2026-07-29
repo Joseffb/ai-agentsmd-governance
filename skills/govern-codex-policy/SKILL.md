@@ -44,14 +44,16 @@ the exception.
 
 For substantial work, choose `PARALLEL`, `PIPELINED`, `SERIAL`, or
 `EXPLORATORY` from logical dependencies and integration contracts; file
-disjointness and isolated branches do not prove independent contracts. Create
-one verified branch/worktree for each mutating worker before launch. Workers
-never merge, integrate, or touch the shared primary worktree. Seat `0` accepts
-and integrates candidates, and authoritative validation runs against the
-integrated candidate. Constrain parallelism only for genuinely tiny or tightly coupled
-work, unsafe overlap, unavailable capacity or tooling, ordered dependencies, or
-coordination cost that truly erases benefit; state a material constraint when
-useful capacity remains idle.
+disjointness and isolated branches do not prove independent contracts. Default
+delivery is: decompose, reserve independent lanes, give each mutating worker a
+verified branch/worktree, have workers implement and locally test, then have
+Seat `0` integrate and run authoritative validation on the integrated
+candidate. Workers never merge, integrate, or touch the shared primary
+worktree. Truly read-only workers need no new worktree; non-Git mutation needs
+equivalent isolated mutable state. Constrain parallelism only for genuinely
+tiny or tightly coupled work, unsafe overlap, unavailable capacity or tooling,
+ordered dependencies, or coordination cost that truly erases benefit; state a
+material constraint when useful capacity remains idle.
 
 Topology is JIT launch-order metadata: never load broader context or create a
 persistent workflow state machine for it. Uncertainty yields `SERIAL` or

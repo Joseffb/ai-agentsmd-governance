@@ -33,11 +33,18 @@ The Agent System:
   integration order, evidence, isolation, model, and reasoning contracts;
 - keeps Seat `0` focused on orchestration, synthesis, acceptance, and
   reporting, with worker counts excluding the orchestrator; for substantial
-  work it chooses `PARALLEL`, `PIPELINED`, `SERIAL`, or `EXPLORATORY` from
-  logical dependencies and integration contracts rather than file disjointness,
-  assigns each mutating worker an isolated branch and worktree, and has Seat `0`
-  integrate accepted slices before authoritative validation of the integrated
-  candidate;
+  work it chooses `PARALLEL`, `PIPELINED`, `SERIAL`, or `EXPLORATORY`; logical
+  dependencies and integration contracts determine whether work is
+  `PIPELINED`, `SERIAL`, or `EXPLORATORY`. A declaration of disjoint files or
+  branches does not prove or imply `PARALLEL`. It then follows the **Default parallel
+  delivery lifecycle**: decompose, reserve independent lanes,
+  assign every mutating worker an isolated branch/worktree, let workers
+  implement and locally test, and have Seat `0` integrate accepted slices before
+  authoritative validation of the integrated candidate. Workers never merge,
+  integrate, or touch the primary checkout; Seat `0` alone owns integration;
+  truly read-only workers need no new worktree, and non-Git mutation needs
+  equivalent isolated mutable state. Read-only shared-checkout access and
+  equivalent non-Git isolation exceptions never weaken mutating Git isolation;
 - treats tiny, tightly coupled, or unsafe-overlap work as an explicitly bounded
   smaller-topology exception, never as an escape hatch from useful safe
   parallelism;

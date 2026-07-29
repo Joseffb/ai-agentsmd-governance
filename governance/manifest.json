@@ -509,7 +509,7 @@
       "id": "jit-orchestration",
       "version": 4,
       "path": "modules/jit-orchestration.md",
-      "digest": "sha256:21bd86eba5bc3cf8a26538167b197f8b934fbf5fa65e110c6ba1ca859067db57",
+      "digest": "sha256:a06e2a449b1cd6a98a7d8642890e251c06cfc09d97b048f570e1e24e45e474b4",
       "triggers": {
         "operations": [
           "repository_inspection",
@@ -574,15 +574,15 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 11553,
-      "words": 1548,
-      "estimated_tokens": 2889
+      "bytes": 11722,
+      "words": 1571,
+      "estimated_tokens": 2931
     },
     {
       "id": "delegation",
       "version": 16,
       "path": "modules/delegation.md",
-      "digest": "sha256:63931c8574556d7bfad7d3f508492d92ea7dd3f486c21424e118ed0473020831",
+      "digest": "sha256:b648b484df619295cd0576a4796b0bbba98bd9042fe9f7905a1fdf1ed7375155",
       "triggers": {
         "operations": [
           "launch_subagent",
@@ -610,9 +610,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 12690,
-      "words": 1720,
-      "estimated_tokens": 3173
+      "bytes": 13253,
+      "words": 1801,
+      "estimated_tokens": 3314
     },
     {
       "id": "subagent-git",

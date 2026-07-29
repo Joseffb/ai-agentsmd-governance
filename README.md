@@ -2,7 +2,7 @@
 
 ![AI Coding Agent Governance workflow](docs/assets/ai-coding-agent-governance.png)
 
-> **Current release line:** RC-3.0 (`3.0.3`).
+> **Current release line:** RC-3.0 (`3.0.9`).
 > Immutable releases include the tracked source plugins, but bundling does not
 > prove that any host installed, loaded, or activated those plugins.
 
@@ -176,13 +176,16 @@ handoff.
 
 For substantial work, select `PARALLEL`, `PIPELINED`, `SERIAL`, or
 `EXPLORATORY` from logical dependencies and integration contracts, not file
-disjointness: isolated branches do not prove independent contracts. Give every
-mutating worker an isolated branch and worktree, then have Seat `0` integrate
-accepted slices and run authoritative validation on the integrated candidate.
-Worker contracts state the expected artifact, upstream assumptions, validation,
-and integration order; shared-resource exclusions are only for non-file mutable
-state such as schemas, migrations, lockfiles, ports, databases, generated
-registries, or mutable fixtures.
+disjointness: isolated branches do not prove independent contracts. The default
+delivery loop is **decompose -> reserve independent lanes -> isolated
+branch/worktree per mutating worker -> worker implementation and local tests ->
+Seat `0` integration -> authoritative final validation on the integrated
+candidate**. Workers never merge, integrate, or touch the primary checkout.
+Truly read-only workers need no new worktree; non-Git mutation uses equivalent
+isolated mutable state. Worker contracts state the expected artifact, upstream
+assumptions, validation, and integration order; shared-resource exclusions are
+only for non-file mutable state such as schemas, migrations, lockfiles, ports,
+databases, generated registries, or mutable fixtures.
 
 Topology is JIT launch-order metadata, not broader context or a persistent
 workflow state machine. Uncertainty yields `SERIAL` or `EXPLORATORY`; a

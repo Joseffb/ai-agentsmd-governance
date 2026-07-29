@@ -62,6 +62,38 @@ test("delegation defaults to the largest useful isolated lifecycle without rewar
   assert.match(policy, /dependency confidence is\s+insufficient[\s\S]*?SERIAL[\s\S]*?EXPLORATORY/i);
 });
 
+test("default mutating delivery loop is decompose, reserve, isolate, work, integrate, then validate", () => {
+  const policy = read("governance/modules/delegation.md");
+  const role = read("docs/agent-system-role.md");
+  const requiredLoop = /decompose[\s\S]{0,900}?reserve[\s\S]{0,900}?(?:independent|non-overlapping)\s+lanes[\s\S]{0,900}?(?:isolated\s+(?:branch\s*\/\s*)?worktree|branch\s*\/\s*worktree)[\s\S]{0,900}?(?:worker|mutating\s+worker)[\s\S]{0,900}?(?:implement|work)[\s\S]{0,900}?(?:local\s+tests?|test)[\s\S]{0,900}?Seat\s*`?0`?[\s\S]{0,900}?(?:integrat|accept)[\s\S]{0,900}?(?:authoritative|project-authoritative)\s+validation[\s\S]{0,900}?(?:integrated\s+candidate|integration)/i;
+  assert.match(policy, requiredLoop);
+  assert.match(role, requiredLoop);
+});
+
+test("mutating worker isolation remains mandatory despite read-only or equivalent non-Git exceptions", () => {
+  const policy = read("governance/modules/delegation.md");
+  const jit = read("governance/modules/jit-orchestration.md");
+  const role = read("docs/agent-system-role.md");
+  for (const text of [policy, jit, role]) {
+    assert.match(text, /mutating\s+worker[\s\S]{0,500}?(?:isolated\s+(?:branch\s*\/\s*)?worktree|branch\s*\/\s*worktree)/i);
+    assert.match(text, /(?:never|cannot)\s+merge[\s\S]{0,180}?(?:integrat|shared\s+primary\s+worktree)/i);
+    assert.match(text, /Seat\s*`?0`?[\s\S]{0,260}?(?:alone|owns)[\s\S]{0,260}?integrat/i);
+  }
+  for (const text of [policy, jit]) {
+    assert.match(text, /read-only[\s\S]{0,700}?(?:exception|non-Git|equivalent)[\s\S]{0,700}?(?:does not|never)\s+weaken[\s\S]{0,700}?mutating[\s\S]{0,400}?(?:Git\s+)?isolation/i);
+  }
+});
+
+test("branch disjointness is not a parallelism proof", () => {
+  const policy = read("governance/modules/delegation.md");
+  const jit = read("governance/modules/jit-orchestration.md");
+  const role = read("docs/agent-system-role.md");
+  for (const text of [policy, jit, role]) {
+    assert.match(text, /(?:disjoint\s+(?:files?|branches?)|branch\s+disjointness)[\s\S]{0,500}?(?:does\s+not|never)\s+(?:prove|imply)[\s\S]{0,500}?PARALLEL/i);
+    assert.match(text, /(?:logical\s+dependenc(?:y|ies)|integration\s+contract)[\s\S]{0,400}?(?:PIPELINED|SERIAL|EXPLORATORY)/i);
+  }
+});
+
 test("Seat 0 permits only a pre-estimated atomic five-minute correction", () => {
   const policy = read("governance/modules/delegation.md");
   assert.match(policy, /cannot receive a worker assignment/);

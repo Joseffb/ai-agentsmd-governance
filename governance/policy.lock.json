@@ -3,7 +3,7 @@
   "manifest": {
     "id": "ai-codex-governance",
     "version": 1,
-    "sha256": "sha256:ab137ffdf6250961c8bdf85f723f7d7d975382f8e0ece544546c153f7f203ae3"
+    "sha256": "sha256:29eac0e16a088e15e3e1c480586c9ce86c5dfcff24339ae630d2bf2c5ebd201b"
   },
   "estimator": {
     "id": "utf8-bytes-div-4-ceil",
@@ -15,17 +15,17 @@
   },
   "kernel": {
     "path": "kernel/AGENTS.md",
-    "sha256": "sha256:1751fa94bd84a64fba365876cc836095de0dcd46166d6184d9a1231beab315fe",
-    "bytes": 7995,
-    "words": 984,
-    "estimated_tokens": 1999
+    "sha256": "sha256:6b7d9566f75abd146107493a080b4fa1acc37ef1a661bb892153a64a120d9ca9",
+    "bytes": 8000,
+    "words": 992,
+    "estimated_tokens": 2000
   },
   "skill": {
     "path": "skills/govern-codex-policy/SKILL.md",
-    "sha256": "sha256:30e70b66c427030c1f05fc44a93e76f3f7f6202a7ed799a25cab8bbfbcd18362",
-    "bytes": 22605,
-    "words": 2927,
-    "estimated_tokens": 5652
+    "sha256": "sha256:b7f559a0fc5e19521c920f23042d9ac014d396440329a71ee515959689a7f1d3",
+    "bytes": 22766,
+    "words": 2950,
+    "estimated_tokens": 5692
   },
   "modules": [
     {
@@ -86,19 +86,19 @@
       "id": "jit-orchestration",
       "version": 4,
       "path": "modules/jit-orchestration.md",
-      "sha256": "sha256:21bd86eba5bc3cf8a26538167b197f8b934fbf5fa65e110c6ba1ca859067db57",
-      "bytes": 11553,
-      "words": 1548,
-      "estimated_tokens": 2889
+      "sha256": "sha256:a06e2a449b1cd6a98a7d8642890e251c06cfc09d97b048f570e1e24e45e474b4",
+      "bytes": 11722,
+      "words": 1571,
+      "estimated_tokens": 2931
     },
     {
       "id": "delegation",
       "version": 16,
       "path": "modules/delegation.md",
-      "sha256": "sha256:63931c8574556d7bfad7d3f508492d92ea7dd3f486c21424e118ed0473020831",
-      "bytes": 12690,
-      "words": 1720,
-      "estimated_tokens": 3173
+      "sha256": "sha256:b648b484df619295cd0576a4796b0bbba98bd9042fe9f7905a1fdf1ed7375155",
+      "bytes": 13253,
+      "words": 1801,
+      "estimated_tokens": 3314
     },
     {
       "id": "subagent-git",

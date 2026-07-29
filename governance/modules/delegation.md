@@ -2,19 +2,22 @@
 
 ## Dependency-aware launch topology
 
-Default parallel delivery lifecycle: decompose before launch; reserve the
-largest useful set of non-overlapping independent lanes within available
-capacity; create and verify one isolated branch/worktree for that worker; and
-Run separable implementation, test, and review lanes concurrently. Keep only
-ordered dependencies and shared-contract decisions serial.
-Default scheduling must keep only ordered dependencies and shared-contract decisions serial.
+**Default parallel delivery lifecycle:** decompose before launch -> reserve the
+largest useful set of non-overlapping independent lanes within available capacity -> isolated
+branch/worktree per mutating worker -> worker implementation and local tests
+-> Seat `0` integration -> authoritative final validation on the integrated
+candidate**. Reserve the largest useful independent set within available
+capacity; keep only ordered dependencies and shared-contract decisions serial.
+Run separable implementation, test, and review lanes concurrently when their
+logical dependencies and integration contracts permit it.
 
 Choose launch order from logical dependencies and integration contracts, not
-file disjointness alone. Isolated, disjoint branches do not prove that their
-contracts are independent. Use only these topology classes:
+file or branch disjointness alone. A declaration of disjoint files or branches
+does not prove or imply `PARALLEL`: isolated branches prevent Git collisions, not logical
+dependencies. Use only these topology classes:
 
-- `PARALLEL`: workers can independently implement, test, commit, and integrate
-  in any order.
+- `PARALLEL`: workers can independently implement, test, and commit; Seat `0`
+  may integrate accepted candidates in any order.
 - `PIPELINED`: separate workers proceed in dependency order because a downstream
   worker consumes an upstream artifact or commit.
 - `SERIAL`: one worker owns the coherent implementation chain.
@@ -22,12 +25,14 @@ contracts are independent. Use only these topology classes:
   decomposition before implementation lanes launch.
 
 For substantial decomposable work, choose the smallest topology that preserves
-the real dependency order. Before launching each mutating worker, create and
-verify one isolated branch/worktree. Workers never merge, integrate, or touch
-the shared primary worktree. Seat `0` accepts and integrates candidate work,
-then runs authoritative validation against that integrated candidate.
-
-Seat `0` accepts and integrates candidate work, then runs authoritative validation against that integrated candidate.
+the real dependency order. Before launching each mutating worker, create and verify one isolated branch/worktree
+for that worker. Workers implement, run their assigned
+local tests, and return an integrable candidate; they never merge, integrate,
+or touch the shared primary worktree. Seat `0` alone owns integration; Seat `0` accepts and integrates candidate work, then runs
+authoritative validation against that integrated candidate. A truly read-only worker needs no new worktree. For non-Git
+mutation, establish equivalent isolated mutable state; do not pretend a Git
+worktree boundary applies. Read-only shared-checkout access and equivalent
+non-Git isolation exceptions never weaken mutating Git isolation.
 
 Topology is JIT launch-order metadata: it does not load broader context or
 create a persistent workflow state machine. When dependency confidence is

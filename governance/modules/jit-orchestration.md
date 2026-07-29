@@ -19,8 +19,9 @@ For the immediate intent:
 3. select only rules whose intent/effect predicates apply now;
 4. preserve every previously entered policy digest and estimated cost in the
    monotonic context ledger, including prior versions;
-5. choose `PARALLEL`, `PIPELINED`, `SERIAL`, or `EXPLORATORY` from logical
-   dependencies and integration contracts, not file disjointness alone;
+5. from logical dependencies and integration contracts, choose `PARALLEL`,
+   `PIPELINED`, `SERIAL`, or `EXPLORATORY`; a declaration of disjoint files or
+   branches does not prove or imply `PARALLEL`;
 6. select the lowest model family and raw reasoning level that reliably meets
    each seat's requirements;
 7. compose a bounded worker prompt and, for mutation, bind it to verified
@@ -100,9 +101,10 @@ Each mutating worker receives its own receipt-verified branch/worktree before
 source inspection or mutation; it never merges, integrates, or touches the
 shared primary worktree. Read-only workers cannot mutate source, Git,
 continuity, generated tracked files, packages, caches, or external systems.
-Returned work is advisory until Seat `0` reconciles and integrates the accepted
-candidates, scope, and evidence; project-authoritative validation runs against
-that integrated candidate.
+Read-only shared-checkout access and equivalent non-Git isolation exceptions
+never weaken mutating Git isolation. Returned work is advisory until Seat `0`
+alone owns integration of the accepted candidates, scope, and evidence;
+project-authoritative validation runs against that integrated candidate.
 
 Choose the lowest-capability model and raw reasoning level that reliably
 handles the assigned reasoning and validation. Record the request before
