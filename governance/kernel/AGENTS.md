@@ -115,13 +115,13 @@ ambiguity, or absent resources. Agent System failure never blocks the project.
 
 ## 5. Reporting, Continuity, and Completion
 
-Fresh setup asks separately for active consent to maintain a persistent Agent
-System task and send governance/runtime defect reports; either can spend
-tokens. Missing, undecided, inactive, or local-only consent enables neither
-task creation nor messaging; use only the quiet private local issue ledger.
-Enabled reporting uses its bounded disposition, sends unchanged evidence once,
-and never authorizes automatic KPI/after-action reports, repair, project, or
-public-branch mutation.
+Fresh setup gets separate consent: task, reporting, repair. Without repair
+consent, no repair. `log_only` logs every eligible issue.
+Opted-in `auto_correct` repairs only confirmed locally actionable private-Agent-
+System Observed/Verified P0/P1 core-capability blockers without a supported
+restoration path; it logs all others. Excludes project/caller defects, runtime
+limits, and destructive, public, source-project, or schedule changes. Projects
+never wait; no KPI, project, or public-branch mutation.
 
 KPI lifecycle events are silent private JSONL. Metrics are downstream-only:
 `Kernel -> Receipts -> Events -> Metrics`. They never route, authorize, block,

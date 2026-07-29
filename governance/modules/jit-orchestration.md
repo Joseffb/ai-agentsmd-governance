@@ -141,19 +141,27 @@ project-resume permission.
 
 ## Agent System Defect Consent
 
-A fresh installation asks two separate questions: whether to create and
-maintain a persistent Agent System task, and whether to automatically send it
-bounded governance/runtime defect reports. State that both capabilities can
-consume tokens. Task maintenance requires its own active consent; automatic
-reporting requires its own active consent and active task lane.
+A fresh installation asks three separate questions: whether to create and
+maintain a persistent Agent System task, whether to automatically send it
+bounded governance/runtime defect reports, and whether to repair true Agent
+System blockers. State that task operation, reporting, and repair can consume
+tokens. Task maintenance, reporting, and repair each require their own active
+consent; automatic reporting also requires an active task lane.
 
-Enabled defect reporting requires `log_only` or `auto_correct`. Legacy or
-unqualified reporting consent maps to `log_only`; it never authorizes
+Enabled defect reporting requires `log_only` or `auto_correct`. Missing,
+disabled, undecided, inactive, or local-only repair consent means no repair.
+Legacy or unqualified reporting consent maps to `log_only`; it never authorizes
 automatic KPI or after-action reports, automatic repair, project mutation, or
-public-branch mutation. `log_only` records or delivers one bounded defect and
-never starts repair. `auto_correct` is restricted to private Agent System code,
-configuration, isolated worktrees, and private release lanes under separately
-established authority.
+public-branch mutation. `log_only` records every eligible Agent System/runtime
+issue and never starts repair. Opted-in `auto_correct` is the active System
+Agent repair mode: it automatically repairs only a confirmed, locally
+actionable true Agent System blocker and logs every other issue without repair.
+A true blocker is an Observed/Verified P0/P1 defect that disables a required
+core Agent System capability, is locally actionable within private Agent System
+scope, and has no equivalent supported repair path restoring that capability.
+It is not a project defect, caller syntax error, external runtime-only
+limitation, destructive/irreversible change, architecture/public-contract
+redesign, source-project mutation, public publication, or schedule.
 
 Absent, undecided, inactive, declined, or local-only reporting consent permits
 only a quiet bounded secret-free append to the private untracked local JSONL

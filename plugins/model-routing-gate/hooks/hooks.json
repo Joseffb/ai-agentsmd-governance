@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$PLUGIN_ROOT/scripts/model-routing-gate.mjs\" hook",
+            "command": "/bin/sh \"$PLUGIN_ROOT/scripts/model-routing-gate-hook.sh\" hook",
             "timeout": 10,
             "statusMessage": "Checking subagent model assignment"
           }
@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$PLUGIN_ROOT/scripts/model-routing-gate.mjs\" hook",
+            "command": "/bin/sh \"$PLUGIN_ROOT/scripts/model-routing-gate-hook.sh\" hook",
             "timeout": 10,
             "statusMessage": "Binding subagent model evidence"
           }
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$PLUGIN_ROOT/scripts/model-routing-gate.mjs\" hook",
+            "command": "/bin/sh \"$PLUGIN_ROOT/scripts/model-routing-gate-hook.sh\" hook",
             "timeout": 10,
             "statusMessage": "Attesting subagent runtime model"
           }
@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$PLUGIN_ROOT/scripts/model-routing-gate.mjs\" hook",
+            "command": "/bin/sh \"$PLUGIN_ROOT/scripts/model-routing-gate-hook.sh\" hook",
             "timeout": 10,
             "statusMessage": "Checking subagent output admissibility"
           }

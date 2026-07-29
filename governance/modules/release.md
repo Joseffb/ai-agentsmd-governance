@@ -12,11 +12,18 @@ Never bypass protected branches, ownership, review, approval, security, release 
 
 An `auto_correct` defect-reporting disposition may change only private Agent
 System code, configuration, isolated worktrees, and private release lanes under
-existing authority. It cannot mutate the reporting project, its worktrees or
-continuity, or any public branch. Reporting never implies merge, push,
-activation, publication, or release authority. A repair may later produce
-optional reload or changed-path guidance, but the reporting project never waits
-for that repair or activation.
+existing authority, and requires separate explicit active repair consent. It may
+repair only a confirmed, locally actionable true Agent System blocker: an
+Observed/Verified P0/P1 defect disabling a required core Agent System capability
+that is locally actionable within private Agent System scope and has no
+equivalent supported repair path restoring it. It cannot repair a
+project defect, caller syntax error, external runtime-only limitation,
+destructive/irreversible change, architecture/public-contract redesign,
+source-project mutation, public publication, or schedule. It cannot mutate the reporting project, its worktrees or
+continuity, or any public branch. Reporting
+never implies merge, push, activation, publication, or release authority. A
+repair may later produce optional reload or changed-path guidance, but the
+reporting project never waits for that repair or activation.
 
 ## System Version
 

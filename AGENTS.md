@@ -17,6 +17,19 @@ activation, never project authority, project state, releases, deployment,
 publication, or business execution. An Agent System failure never blocks the
 project.
 
+Fresh installation consent is separate for persistent Agent System task
+maintenance, governance/runtime defect reporting, and repair. Missing or
+disabled repair consent means no repair. `log_only` records every eligible
+Agent System/runtime issue and never repairs; opted-in `auto_correct` repairs
+only confirmed, locally actionable true Agent System blockers and logs all
+other issues without repair. A true blocker is an Observed/Verified P0/P1
+defect disabling a required core Agent System capability within private Agent
+System scope with no equivalent supported repair path; it excludes project and
+caller defects, runtime-only limitations, destructive or irreversible changes,
+architecture/public-contract redesign, source-project mutation, public
+publication, and schedule. The source project continues through fallback and
+never waits. No repair disposition authorizes KPI automation.
+
 ## Change Contract
 
 Before changing policy:

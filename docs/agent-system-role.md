@@ -100,27 +100,32 @@ completion, authorize or block execution, or absorb ordinary project work.
 ## Consent and Inactive Operation
 
 A fresh installation must explicitly ask, separately, whether to create and
-maintain a persistent Agent System task and whether to automatically send it
-governance/runtime defect reports. Task operation and automatic reporting can
-consume tokens. Neither capability is enabled by an absent, undecided, or
-inactive answer. When automatic defect reporting is enabled, its disposition
-must be `log_only` or `auto_correct`.
+maintain a persistent Agent System task, whether to automatically send it
+governance/runtime defect reports, and whether to permit repair of true Agent
+System blockers. Task operation, automatic reporting, and repair can consume
+tokens. None is enabled by an absent, disabled, undecided, or inactive answer.
+When automatic defect reporting is enabled, its disposition must be `log_only`
+or `auto_correct`; repair also requires explicit active repair consent.
 
 Installers and legacy tasks record those decisions only through this portable
 command:
 
 ```text
-node ~/.codex/policies/bin/acg.mjs profile agent-system --persistent-task yes|no --automatic-defect-report yes|no [--reported-defect-action log_only|auto_correct] --acknowledge-agent-system-token-cost --authorize-profile-write [--label <exact-title>] [--memory <optional-private-file>]
+node ~/.codex/policies/bin/acg.mjs profile agent-system --persistent-task yes|no --automatic-defect-report yes|no --automatic-repair yes|no [--reported-defect-action log_only|auto_correct] --acknowledge-agent-system-token-cost --authorize-profile-write [--label <exact-title>] [--memory <optional-private-file>]
 ```
 
 `--memory` is optional machine-local continuity. It does not define the role:
 this tracked document remains canonical.
 
 `--reported-defect-action` is required with `--automatic-defect-report yes` and
-rejected with `--automatic-defect-report no`. Legacy combined reporting consent
-migrates to `log_only` and never authorizes automatic KPI or after-action
-reports or automatic repair. `log_only` records or delivers one bounded defect
-and never starts repair.
+rejected with `--automatic-defect-report no`. `--automatic-repair` records a
+separate repair decision: missing, disabled, or inactive repair consent never
+starts repair. Legacy combined reporting consent migrates to `log_only` and
+never authorizes automatic KPI or after-action reports or automatic repair.
+`log_only` records every eligible Agent System/runtime issue and never starts
+repair. Opted-in `auto_correct` is the active System Agent repair mode: it
+automatically repairs only a confirmed, locally actionable true Agent System
+blocker and logs every other issue without repair.
 
 In inactive or local-only mode, the sole supported disposition for a bounded
 governance/runtime issue is a quiet, bounded, secret-free append to a private
@@ -151,10 +156,18 @@ prompt composition, delegation, native fallback, project-native tooling, and
 project completion available. Only cross-task defect reporting disappears;
 the quiet local issue disposition remains.
 
-`auto_correct` may change only private Agent System code, configuration,
-isolated worktrees, and private release lanes under existing authority. It
-cannot mutate the reporting project, its continuity, or any public branch. It
-does not imply merge, push, activation, publication, or release authority.
+For this contract, a true blocker is an Observed/Verified P0/P1 defect that
+disables a required core Agent System capability, is locally actionable within
+private Agent System scope, and has no equivalent supported repair path that
+restores that capability. It excludes a project defect, caller syntax error,
+external runtime-only limitation, destructive/irreversible change,
+architecture/public-contract redesign, source-project mutation, public
+publication, or schedule. `auto_correct` may change only private Agent System
+code, configuration, isolated worktrees, and private release lanes under
+existing authority. It cannot mutate the reporting project, its continuity, or
+any public branch. It does not imply merge, push, activation, publication, or
+release authority. The reporting project never waits for repair and continues
+through its existing fallback.
 
 ## Defect and Continuation Contract
 

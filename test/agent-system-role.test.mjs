@@ -86,23 +86,24 @@ test("Agent System automation requires explicit separate consent and has a local
   const kernel = fs.readFileSync(path.join(root, "governance", "kernel", "AGENTS.md"), "utf8");
   assert.match(role, /explicitly ask, separately, whether to create and\s+maintain a persistent Agent System task/i);
   assert.match(role, /automatically send it\s+governance\/runtime defect reports/i);
-  assert.match(role, /must be `log_only` or `auto_correct`/i);
-  assert.match(role, /can\s+consume tokens/i);
+  assert.match(role, /whether to permit repair of true Agent\s+System blockers/i);
+  assert.match(role, /disposition must be `log_only`\s+or `auto_correct`/i);
+  assert.match(role, /can\s+consume\s+tokens/i);
   assert.match(role, /quiet, bounded,\s+secret-free append to a private\s+untracked local JSONL issue ledger/i);
   assert.match(role, /not a task message, does not\s+wake or create a task/i);
   assert.match(role, /no cross-task governance\s+message and no background token spend/i);
   assert.match(readme, /fresh installation must ask the two separate decisions/i);
-  assert.match(skill, /automatic defect reporting additionally requires its own explicit active\s+consent, an active task lane, and a `log_only` or `auto_correct` disposition/i);
-  assert.match(kernel, /Missing, undecided, inactive, or local-only consent enables neither\s+task creation nor messaging/i);
+  assert.match(skill, /Task maintenance, reporting, and repair each require their own explicit active\s+consent/i);
+  assert.match(kernel, /Without\s+repair\s+consent, no repair/i);
 });
 
 test("Agent System consent and local-only logging use portable no-guess commands", () => {
   const role = fs.readFileSync(rolePath, "utf8");
   const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
   const skill = fs.readFileSync(path.join(root, "skills", "govern-codex-policy", "SKILL.md"), "utf8");
-  const consent = /profile agent-system --persistent-task yes\|no --automatic-defect-report yes\|no \[--reported-defect-action log_only\|auto_correct\] --acknowledge-agent-system-token-cost --authorize-profile-write \[--label <exact-title>\] \[--memory <optional-private-file>\]/;
+  const consent = /profile agent-system --persistent-task yes\|no --automatic-defect-report yes\|no --automatic-repair yes\|no \[--reported-defect-action log_only\|auto_correct\] --acknowledge-agent-system-token-cost --authorize-profile-write \[--label <exact-title>\] \[--memory <optional-private-file>\]/;
   const record = /agent-system record-issue --project <slug> --issue-id <id> --severity P0\|P1\|P2\|P3\|P4 --summary <bounded-text> \[--evidence-class Observed\|Inferred\|Proposed\|Unknown\|Unverified\] \[--evidence <bounded-text>\]/;
-  for (const text of [readme, role, skill]) {
+  for (const text of [role, skill]) {
     assert.match(text, consent);
     assert.match(text, /`--reported-defect-action` is required (?:with|when) `--automatic-defect-report yes`/i);
     assert.match(text, /rejected (?:with|when) (?:it is )?`?(?:--automatic-defect-report )?no`?/i);
@@ -117,6 +118,38 @@ test("Agent System consent and local-only logging use portable no-guess commands
   assert.match(role, /active persistent task with automatic reporting declined remains local-only for\s+reports/i);
 });
 
+test("auto_correct is an opted-in true-blocker-only repair mode", () => {
+  const role = fs.readFileSync(rolePath, "utf8");
+  const skill = fs.readFileSync(path.join(root, "skills", "govern-codex-policy", "SKILL.md"), "utf8");
+  const kernel = fs.readFileSync(path.join(root, "governance", "kernel", "AGENTS.md"), "utf8");
+  const jit = fs.readFileSync(path.join(root, "governance", "modules", "jit-orchestration.md"), "utf8");
+  const delegation = fs.readFileSync(path.join(root, "governance", "modules", "delegation.md"), "utf8");
+  const release = fs.readFileSync(path.join(root, "governance", "modules", "release.md"), "utf8");
+  for (const text of [role, skill, jit, delegation, release]) {
+    assert.match(text, /Observed\/Verified P0\/P1 defect/i);
+    assert.match(text, /required\s+core\s+Agent\s+System\s+capability/i);
+    assert.match(text, /locally actionable within\s+private\s+Agent\s+System\s+scope/i);
+    assert.match(text, /no\s+equivalent\s+supported\s+repair\s+path/i);
+    assert.match(text, /project defect, caller syntax error,\s+external\s+runtime-only\s+limitation/i);
+    assert.match(text, /destructive\/irreversible change,\s+architecture\/public-contract\s+redesign/i);
+    assert.match(text, /source-project mutation,\s+public\s+publication, or schedule/i);
+  }
+  assert.match(kernel, /gets separate consent: task, reporting, repair/i);
+  assert.match(kernel, /Without\s+repair\s+consent, no repair/i);
+  assert.match(kernel, /`log_only` logs every eligible issue/i);
+  assert.match(kernel, /`auto_correct` repairs only confirmed locally actionable private-Agent-\s+System Observed\/Verified P0\/P1 core-capability blockers/i);
+  assert.match(kernel, /it logs all others/i);
+  assert.match(kernel, /Projects\s+never wait/i);
+  for (const text of [role, skill, jit, delegation]) {
+    assert.match(text, /`log_only`\s+records\s+every\s+eligible\s+Agent\s+System\/runtime\s+issue\s+and\s+never\s+(?:starts\s+)?repair/i);
+    assert.match(text, /`auto_correct`.*(?:automatically\s+)?repair.*only\s+a\s+confirmed,\s+locally\s+actionable\s+true\s+Agent\s+System\s+blocker/is);
+    assert.match(text, /logs\s+every\s+other\s+issue\s+without\s+repair/i);
+  }
+  assert.match(release, /requires separate explicit active\s+repair consent/i);
+  assert.match(role, /reporting project never waits for repair and continues/i);
+  assert.match(skill, /source project never waits and continues through fallback/i);
+});
+
 test("RC consent continues projects immediately and bounds legacy migration", () => {
   const role = fs.readFileSync(rolePath, "utf8");
   const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
@@ -128,12 +161,14 @@ test("RC consent continues projects immediately and bounds legacy migration", ()
     assert.match(text, /existing tool definitions or native tools/i);
     assert.match(text, /legacy combined\s+reporting.*`log_only`/is);
     assert.match(text, /never authorizes?\s+automatic KPI or\s+after-action\s+reports or\s+automatic repair/i);
-    assert.match(text, /`log_only` records or delivers\s+one\s+bounded defect\s+and never\s+starts repair/i);
     assert.match(text, /cannot mutate\s+the\s+reporting project.*public branch/is);
+  }
+  for (const text of [role, skill]) {
+    assert.match(text, /`log_only` records\s+every eligible Agent System\/runtime issue and never\s+starts\s+repair/i);
   }
   assert.match(kernel, /wait-for-Agent-System state/i);
   assert.match(kernel, /Agent System failure\s+never blocks the project/i);
-  assert.match(kernel, /never authorizes automatic KPI\/after-action\s+reports, repair, project, or\s+public-branch mutation/i);
+  assert.match(kernel, /no KPI, project, or public-branch mutation/i);
   assert.match(role, /Helper failure never grants Seat `0` implementation/i);
   assert.match(readme, /missing or failed helper never grants Seat `0` implementation/i);
   assert.match(skill, /helper failure grants no Seat `0` implementation/i);

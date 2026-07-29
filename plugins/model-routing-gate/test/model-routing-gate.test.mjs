@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import test from "node:test";
 
 import {
@@ -13,11 +14,28 @@ import {
 } from "../scripts/model-routing-gate.mjs";
 
 const sessionId = "thread-model-gate-test";
+const pluginRoot = path.resolve(import.meta.dirname, "..");
+const hookLauncher = path.join(pluginRoot, "scripts", "model-routing-gate-hook.sh");
 
 function root(t) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "model-routing-gate-"));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   return directory;
+}
+
+function fakeNode(directory, name, behavior = "healthy") {
+  const file = path.join(directory, name);
+  const probe = {
+    healthy: "printf '%s\\n' 22.0.0; exit 0",
+    versionOnly: "exit 0",
+    malformed: "printf '%s\\n' invalid; exit 0",
+    old: "printf '%s\\n' 18.20.0; exit 0",
+    dyld: "printf '%s\\n' dyld-failure >&2; exit 1",
+    broken: "exit 1"
+  }[behavior];
+  fs.writeFileSync(file, `#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then\n  printf '%s\\n' v22.0.0\n  exit 0\nfi\nif [ \"$1\" = \"-p\" ] && [ \"$2\" = \"process.versions.node\" ]; then\n  ${probe}\nfi\nprintf '%s\\n' \"$0|$*\" > \"$MODEL_ROUTING_GATE_TEST_LOG\"\nprintf '%s\\n' fake-node-stdout\nprintf '%s\\n' fake-node-stderr >&2\ncat\nexit \"\${MODEL_ROUTING_GATE_TEST_EXIT:-0}\"\n`);
+  fs.chmodSync(file, 0o755);
+  return file;
 }
 
 function message(seat, options = {}) {
@@ -289,4 +307,146 @@ test("launch lifecycle appends private metadata without prompt or output", (t) =
   assert.match(text, /"event_type":"runtime_attestation"/);
   assert.match(text, /"event_type":"seat_stopped"/);
   assert.doesNotMatch(text, /SECRET_PROMPT_TEXT|ignored|Perform only/);
+});
+
+test("hook launcher falls through a broken PATH node to healthy Volta", (t) => {
+  const directory = root(t);
+  const pathBin = path.join(directory, "path-bin");
+  const voltaBin = path.join(directory, "volta", "bin");
+  fs.mkdirSync(pathBin, { recursive: true });
+  fs.mkdirSync(voltaBin, { recursive: true });
+  fakeNode(pathBin, "node", "broken");
+  const healthy = fakeNode(voltaBin, "node");
+  const log = path.join(directory, "node.log");
+  const result = spawnSync("/bin/sh", [hookLauncher, "hook", "argument"], {
+    input: "hook-input",
+    encoding: "utf8",
+    env: { ...process.env, HOME: directory, PATH: `${pathBin}:/usr/bin:/bin`, VOLTA_HOME: path.join(directory, "volta"), MODEL_ROUTING_GATE_TEST_LOG: log }
+  });
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, "fake-node-stdout\nhook-input");
+  assert.equal(result.stderr, "fake-node-stderr\n");
+  assert.match(fs.readFileSync(log, "utf8"), new RegExp(`^${healthy.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\|.*model-routing-gate\\.mjs hook argument`));
+});
+
+test("hook launcher falls through a broken explicit override", (t) => {
+  const directory = root(t);
+  const voltaBin = path.join(directory, "volta", "bin");
+  fs.mkdirSync(voltaBin, { recursive: true });
+  const broken = fakeNode(directory, "broken-node", "broken");
+  const healthy = fakeNode(voltaBin, "node");
+  const log = path.join(directory, "node.log");
+  const result = spawnSync("/bin/sh", [hookLauncher, "hook"], {
+    encoding: "utf8",
+    env: { ...process.env, HOME: directory, PATH: "/usr/bin:/bin", MODEL_ROUTING_GATE_NODE: broken, VOLTA_HOME: path.join(directory, "volta"), MODEL_ROUTING_GATE_TEST_LOG: log }
+  });
+  assert.equal(result.status, 0);
+  assert.match(fs.readFileSync(log, "utf8"), new RegExp(`^${healthy.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\|`));
+});
+
+test("hook launcher gives a healthy explicit override priority", (t) => {
+  const directory = root(t);
+  const voltaBin = path.join(directory, "volta", "bin");
+  fs.mkdirSync(voltaBin, { recursive: true });
+  const explicit = fakeNode(directory, "explicit-node");
+  fakeNode(voltaBin, "node");
+  const log = path.join(directory, "node.log");
+  const result = spawnSync("/bin/sh", [hookLauncher, "hook"], {
+    encoding: "utf8",
+    env: { ...process.env, HOME: directory, PATH: "/usr/bin:/bin", MODEL_ROUTING_GATE_NODE: explicit, VOLTA_HOME: path.join(directory, "volta"), MODEL_ROUTING_GATE_TEST_LOG: log }
+  });
+  assert.equal(result.status, 0);
+  assert.match(fs.readFileSync(log, "utf8"), new RegExp(`^${explicit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\|`));
+});
+
+test("hook launcher rejects semantically invalid candidates and falls through", (t) => {
+  const directory = root(t);
+  const voltaBin = path.join(directory, "volta", "bin");
+  fs.mkdirSync(voltaBin, { recursive: true });
+  const healthy = fakeNode(voltaBin, "node");
+  const candidates = [
+    ["/usr/bin/true", "true"],
+    [fakeNode(directory, "version-only", "versionOnly"), "version-only"],
+    [fakeNode(directory, "malformed", "malformed"), "malformed"],
+    [fakeNode(directory, "old", "old"), "old"],
+    [fakeNode(directory, "dyld", "dyld"), "dyld"]
+  ];
+  const nonExecutable = fakeNode(directory, "non-executable");
+  fs.chmodSync(nonExecutable, 0o644);
+  candidates.push([nonExecutable, "non-executable"]);
+  for (const [candidate, label] of candidates) {
+    const log = path.join(directory, `${label}.log`);
+    const result = spawnSync("/bin/sh", [hookLauncher, "hook"], {
+      encoding: "utf8",
+      env: { ...process.env, HOME: directory, PATH: "/usr/bin:/bin", MODEL_ROUTING_GATE_NODE: candidate, VOLTA_HOME: path.join(directory, "volta"), MODEL_ROUTING_GATE_TEST_LOG: log }
+    });
+    assert.equal(result.status, 0, label);
+    assert.match(fs.readFileSync(log, "utf8"), new RegExp(`^${healthy.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\|`), label);
+  }
+});
+
+test("hook launcher prefers Volta, then NVM, then PATH in order", (t) => {
+  const directory = root(t);
+  const voltaBin = path.join(directory, "volta", "bin");
+  const nvmBin = path.join(directory, "nvm", "bin");
+  const pathBin = path.join(directory, "path-bin");
+  fs.mkdirSync(voltaBin, { recursive: true });
+  fs.mkdirSync(nvmBin, { recursive: true });
+  fs.mkdirSync(pathBin, { recursive: true });
+  const volta = fakeNode(voltaBin, "node");
+  const nvm = fakeNode(nvmBin, "node");
+  const pathNode = fakeNode(pathBin, "node");
+  for (const [label, environment, expected] of [
+    ["volta", {}, volta],
+    ["nvm", { VOLTA_HOME: path.join(directory, "missing-volta") }, nvm],
+    ["path", { VOLTA_HOME: path.join(directory, "missing-volta"), NVM_BIN: path.join(directory, "missing-nvm") }, pathNode]
+  ]) {
+    const log = path.join(directory, `${label}.log`);
+    const result = spawnSync("/bin/sh", [hookLauncher, "hook"], {
+      encoding: "utf8",
+      env: { ...process.env, HOME: path.join(directory, "no-home-volta"), PATH: pathBin, VOLTA_HOME: path.join(directory, "volta"), NVM_BIN: nvmBin, MODEL_ROUTING_GATE_TEST_LOG: log, ...environment }
+    });
+    assert.equal(result.status, 0, label);
+    assert.match(fs.readFileSync(log, "utf8"), new RegExp(`^${expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\|`), label);
+  }
+});
+
+test("hook launcher preserves quoting and the gate process standard streams and exit status", (t) => {
+  const directory = root(t);
+  const voltaBin = path.join(directory, "volta path with spaces", "bin");
+  fs.mkdirSync(voltaBin, { recursive: true });
+  const node = fakeNode(voltaBin, "node");
+  const log = path.join(directory, "node.log");
+  const result = spawnSync("/bin/sh", [hookLauncher, "hook", "argument with spaces", "$(not-expanded)"], {
+    input: "stdin-through-launcher",
+    encoding: "utf8",
+    env: { ...process.env, HOME: path.join(directory, "no-home-volta"), PATH: "/usr/bin:/bin", VOLTA_HOME: path.join(directory, "volta path with spaces"), NVM_BIN: path.join(directory, "missing-nvm"), MODEL_ROUTING_GATE_TEST_LOG: log, MODEL_ROUTING_GATE_TEST_EXIT: "37" }
+  });
+  assert.equal(result.status, 37);
+  assert.equal(result.stdout, "fake-node-stdout\nstdin-through-launcher");
+  assert.equal(result.stderr, "fake-node-stderr\n");
+  assert.match(fs.readFileSync(log, "utf8"), new RegExp(`^${node.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\|.*model-routing-gate\\.mjs hook argument with spaces \\$\\(not-expanded\\)`));
+});
+
+test("hook launcher fails closed without a healthy runtime", (t) => {
+  const directory = root(t);
+  const pathBin = path.join(directory, "path-bin");
+  fs.mkdirSync(pathBin);
+  const broken = fakeNode(pathBin, "node", "broken");
+  const result = spawnSync("/bin/sh", [hookLauncher, "hook"], {
+    encoding: "utf8",
+    env: { ...process.env, HOME: directory, PATH: pathBin, MODEL_ROUTING_GATE_NODE: broken, VOLTA_HOME: path.join(directory, "missing-volta"), NVM_BIN: path.join(directory, "missing-nvm") }
+  });
+  assert.equal(result.status, 127);
+  assert.equal(result.stderr, "model-routing-gate: no healthy Node runtime available\n");
+});
+
+test("every hook calls the launcher and no hook invokes bare node", () => {
+  const hooks = JSON.parse(fs.readFileSync(path.join(pluginRoot, "hooks", "hooks.json"), "utf8"));
+  const commands = Object.values(hooks.hooks).flatMap((entries) => entries.flatMap((entry) => entry.hooks.map((hook) => hook.command)));
+  assert.equal(commands.length, 4);
+  for (const command of commands) {
+    assert.equal(command, "/bin/sh \"$PLUGIN_ROOT/scripts/model-routing-gate-hook.sh\" hook");
+    assert.doesNotMatch(command, /(^|\s)node(\s|$)/);
+  }
 });

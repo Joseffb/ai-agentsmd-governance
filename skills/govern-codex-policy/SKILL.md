@@ -84,29 +84,35 @@ machine-local state or help discover that file, but it is not the role owner.
 
 Agent System handles Codex governance/runtime defects, not project work. Keep project status, architecture, audit findings, and product failures in the project task. Use self-service commands first; report or local-log a registered-root, alias, stale-metadata, helper, or missing-repair defect once according to consent, preserve state, and immediately continue project work within existing authority using existing tool definitions or native tools. There is no wait-for-Agent-System state. Agent System may block an improper Seat `0` action, but it never blocks the project.
 
-On fresh bootstrap, explicitly ask two separate decisions: whether to create
-and maintain a persistent Agent System task, and whether to automatically send
-it governance/runtime defect reports. State that task operation and reporting
-can consume tokens. Task maintenance requires its own explicit active consent;
-automatic defect reporting additionally requires its own explicit active
-consent, an active task lane, and a `log_only` or `auto_correct` disposition.
-With either required consent absent, undecided, inactive, or local-only, do not
-perform that capability or spend background tokens. For an inactive or
+On fresh bootstrap, explicitly ask three separate decisions: whether to create
+and maintain a persistent Agent System task, whether to automatically send it
+governance/runtime defect reports, and whether to repair true Agent System
+blockers. State that task operation, reporting, and repair can consume tokens.
+Task maintenance, reporting, and repair each require their own explicit active
+consent. Automatic reporting additionally requires an active task lane and a
+`log_only` or `auto_correct` disposition. Missing, disabled, undecided,
+inactive, or local-only repair consent means no repair. With any required
+consent absent, undecided, inactive, or local-only, do not perform that
+capability or spend background tokens. For an inactive or
 local-only reporting disposition, use only a quiet bounded secret-free append
 to a private untracked local JSONL issue ledger; it is not a message and never
 wakes or creates a task.
 
 Record fresh or legacy consent only with:
 
-`node ~/.codex/policies/bin/acg.mjs profile agent-system --persistent-task yes|no --automatic-defect-report yes|no [--reported-defect-action log_only|auto_correct] --acknowledge-agent-system-token-cost --authorize-profile-write [--label <exact-title>] [--memory <optional-private-file>]`
+`node ~/.codex/policies/bin/acg.mjs profile agent-system --persistent-task yes|no --automatic-defect-report yes|no --automatic-repair yes|no [--reported-defect-action log_only|auto_correct] --acknowledge-agent-system-token-cost --authorize-profile-write [--label <exact-title>] [--memory <optional-private-file>]`
 
 `--memory` is optional machine-local continuity; the tracked
 `../../docs/agent-system-role.md` remains canonical.
 `--reported-defect-action` is required when `--automatic-defect-report yes` and
-rejected when it is `no`. Legacy combined reporting consent migrates to
-`log_only` and never authorizes automatic KPI or after-action reports or
-automatic repair. `log_only` records or delivers one bounded defect and never
-starts repair. When automatic defect reporting is not enabled, write the
+rejected when it is `no`. `--automatic-repair` records a distinct repair
+decision; missing, disabled, or inactive repair consent never starts repair.
+Legacy combined reporting consent migrates to `log_only` and never authorizes
+automatic KPI or after-action reports or automatic repair. `log_only` records
+every eligible Agent System/runtime issue and never starts repair. Opted-in
+`auto_correct` is the active System Agent repair mode: it automatically repairs
+only a confirmed, locally actionable true Agent System blocker and logs every
+other issue without repair. When automatic defect reporting is not enabled, write the
 local-only ledger entry only with:
 
 `node ~/.codex/policies/bin/acg.mjs agent-system record-issue --project <slug> --issue-id <id> --severity P0|P1|P2|P3|P4 --summary <bounded-text> [--evidence-class Observed|Inferred|Proposed|Unknown|Unverified] [--evidence <bounded-text>]`
@@ -127,10 +133,17 @@ never wait for Agent System or resend unchanged evidence. Existing explicitly
 configured installations remain compatible through `log_only`. Failing to send
 when configured is an Agent System adherence defect, not a project blocker.
 
-`auto_correct` can act only on private Agent System code, configuration,
-worktrees, and private release lanes under existing authority. It cannot mutate
-the reporting project, its continuity, or any public branch. It never grants
-merge, push, activation, publication, or release authority.
+A true blocker is an Observed/Verified P0/P1 defect that disables a required
+core Agent System capability, is locally actionable within private Agent System
+scope, and has no equivalent supported repair path that restores that
+capability. It is not a project defect, caller syntax error, external
+runtime-only limitation, destructive/irreversible change,
+architecture/public-contract redesign, source-project mutation, public
+publication, or schedule. `auto_correct` can act only on private Agent System
+code, configuration, worktrees, and private release lanes under existing
+authority. It cannot mutate the reporting project, its continuity, or any
+public branch. It never grants merge, push, activation, publication, or release
+authority. The source project never waits and continues through fallback.
 
 When intentionally replacing the Agent System task, stage the replacement
 under a temporary noncanonical title such as `Agent System - Incoming`. Keep

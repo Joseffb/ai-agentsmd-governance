@@ -3,7 +3,7 @@
   "manifest": {
     "id": "ai-codex-governance",
     "version": 1,
-    "sha256": "sha256:4f2033a03bae384508e66943e3fa5539310814b16c725bf59dbf178cd376ecbe"
+    "sha256": "sha256:e6d06f528cdbdfd57bfd268e40fbf7991443ef92722e3bc4c49f162a8a2bade0"
   },
   "estimator": {
     "id": "utf8-bytes-div-4-ceil",
@@ -15,17 +15,17 @@
   },
   "kernel": {
     "path": "kernel/AGENTS.md",
-    "sha256": "sha256:cb258486a40d739de870df90a8e22e763a071c272850d91f519126b4331b4cf0",
-    "bytes": 7974,
-    "words": 987,
-    "estimated_tokens": 1994
+    "sha256": "sha256:1751fa94bd84a64fba365876cc836095de0dcd46166d6184d9a1231beab315fe",
+    "bytes": 7995,
+    "words": 984,
+    "estimated_tokens": 1999
   },
   "skill": {
     "path": "skills/govern-codex-policy/SKILL.md",
-    "sha256": "sha256:cef941bf953e6e00e034f03f011c88dafdff5f123d719ae5053f0a717db1a49b",
-    "bytes": 21153,
-    "words": 2731,
-    "estimated_tokens": 5289
+    "sha256": "sha256:4763cebf123cba6121378e17465802010e026393d77667c2cb09935c08630afb",
+    "bytes": 22152,
+    "words": 2859,
+    "estimated_tokens": 5538
   },
   "modules": [
     {
@@ -84,21 +84,21 @@
     },
     {
       "id": "jit-orchestration",
-      "version": 3,
+      "version": 4,
       "path": "modules/jit-orchestration.md",
-      "sha256": "sha256:10fb2558f715cf7fefb9b80b26d360fc2ee9808ecb35bec16b539d1190197ac0",
-      "bytes": 10895,
-      "words": 1461,
-      "estimated_tokens": 2724
+      "sha256": "sha256:21bd86eba5bc3cf8a26538167b197f8b934fbf5fa65e110c6ba1ca859067db57",
+      "bytes": 11553,
+      "words": 1548,
+      "estimated_tokens": 2889
     },
     {
       "id": "delegation",
-      "version": 15,
+      "version": 16,
       "path": "modules/delegation.md",
-      "sha256": "sha256:725160374ade6223042f94044ac175571c73bc178863035950773feeddb87c10",
-      "bytes": 11924,
-      "words": 1625,
-      "estimated_tokens": 2981
+      "sha256": "sha256:63931c8574556d7bfad7d3f508492d92ea7dd3f486c21424e118ed0473020831",
+      "bytes": 12690,
+      "words": 1720,
+      "estimated_tokens": 3173
     },
     {
       "id": "subagent-git",
@@ -165,12 +165,12 @@
     },
     {
       "id": "release",
-      "version": 4,
+      "version": 5,
       "path": "modules/release.md",
-      "sha256": "sha256:8d970d1e11b46ae84b1603b9de143d0d506ebfa9ea512272668012c548f9334b",
-      "bytes": 4307,
-      "words": 588,
-      "estimated_tokens": 1077
+      "sha256": "sha256:fd25cf5e2fdabb14f5875c9d8d45cc6af23ca023d1bb474d788c3ded908ee14d",
+      "bytes": 4862,
+      "words": 658,
+      "estimated_tokens": 1216
     }
   ]
 }

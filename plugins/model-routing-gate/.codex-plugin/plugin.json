@@ -1,6 +1,6 @@
 {
   "name": "model-routing-gate",
-  "version": "1.0.3+codex.20260726204413",
+  "version": "1.0.4+codex.20260728235728",
   "description": "Fail-closed model assignment and runtime model attestation for Codex subagents",
   "author": {
     "name": "AI Codex Governance"

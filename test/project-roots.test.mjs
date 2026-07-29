@@ -78,13 +78,13 @@ test("conditional policies give bounded root and thread-tool recovery guidance",
   assert.match(delegationPolicy, /lowest capable family and reasoning tier/);
   assert.match(delegationPolicy, /Ask once only when the coordinator is below the task's demonstrated requirement/);
   assert.match(delegationPolicy, /Agent System defect delivery is not implied by delegation/);
-  assert.match(delegationPolicy, /separately obtain explicit consent to maintain a persistent Agent System\s+task and to automatically report governance\/runtime defects to it/);
-  assert.match(delegationPolicy, /automatic defect reporting requires its own active consent, an\s+active task lane, and a `log_only` or `auto_correct` disposition/);
-  assert.match(delegationPolicy, /Without the consent required for a capability, do not\s+perform it or\s+spend\s+background tokens/);
+  assert.match(delegationPolicy, /separately obtain explicit consent to maintain a persistent Agent System\s+task, automatically report governance\/runtime defects to it, and repair true\s+Agent System blockers/);
+  assert.match(delegationPolicy, /Each capability requires its own active consent; automatic reporting\s+also requires an active task lane and a `log_only` or `auto_correct`\s+disposition/);
+  assert.match(delegationPolicy, /Without the consent\s+required for a capability, do not\s+perform it or\s+spend\s+background tokens/);
   assert.match(delegationPolicy, /private untracked local\s+JSONL issue\s+ledger/);
   assert.match(delegationPolicy, /helper never grants Seat `0` implementation\s+authority/);
-  assert.match(delegationPolicy, /legacy or unqualified automatic reporting to\s+`log_only`/);
-  assert.match(delegationPolicy, /`log_only` records or delivers one bounded defect and never starts\s+repair/);
+  assert.match(delegationPolicy, /legacy or unqualified\s+automatic reporting to `log_only`/);
+  assert.match(delegationPolicy, /`log_only` records\s+every eligible Agent System\/runtime issue and never starts repair/);
   assert.match(delegationPolicy, /cannot mutate the reporting project or any public branch/);
 });
 

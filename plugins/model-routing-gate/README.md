@@ -15,6 +15,10 @@ The repository copy is canonical. Runtime receipts are private and untracked.
 
 The ledger defaults to `~/.codex/plugin-data/model-routing-gate/model-routing-events.jsonl`. It excludes prompts, source, subagent output, secrets, and hidden reasoning. Use the governance CLI's `model-audit` command to backfill native launches that bypass hooks and summarize a task or time window.
 
+## Hook runtime resolution
+
+Every hook invokes the bundled POSIX launcher rather than a bare `node` command. The launcher probes candidates by evaluating `process.versions.node`, accepting only a numeric three-part SemVer on Node 20 or later, and uses the first healthy executable in this fixed order: `MODEL_ROUTING_GATE_NODE` (an explicit plugin-specific override), `$VOLTA_HOME/bin/node`, `$HOME/.volta/bin/node`, `$NVM_BIN/node`, then `node` resolved from `PATH`. It does not change `PATH`, install or configure Node, or modify machine profiles. A broken candidate falls through to the next candidate; if none is healthy, the launcher emits one bounded diagnostic and exits nonzero. Once selected, it `exec`s the hook entrypoint with the original arguments and inherited standard streams.
+
 ## Compatibility boundary
 
 Some Codex collaboration paths bypass local-function `PreToolUse` and `PostToolUse` hooks while still emitting `SubagentStart`. On those paths the plugin can observe the actual model but cannot prove the requested-to-actual binding or technically block output. Treat model-critical delegation as inadmissible until a negative canary proves interception for the active runtime.

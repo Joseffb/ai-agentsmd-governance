@@ -80,21 +80,31 @@ For any authorized task-to-task exchange, the receiving task replies directly wh
 
 Agent System defect delivery is not implied by delegation. A fresh installation
 must separately obtain explicit consent to maintain a persistent Agent System
-task and to automatically report governance/runtime defects to it; both task
-operation and reporting can consume tokens. Task maintenance requires its own
-active consent; automatic defect reporting requires its own active consent, an
-active task lane, and a `log_only` or `auto_correct` disposition. The
-compatibility profile maps enabled legacy or unqualified automatic reporting to
-`log_only`; it never enables automatic KPI or after-action reports or automatic
-repair. `log_only` records or delivers one bounded defect and never starts
-repair. Without the consent required for a capability, do not perform it or
-spend background tokens. In inactive or local-only reporting mode, use only a
+task, automatically report governance/runtime defects to it, and repair true
+Agent System blockers; task operation, reporting, and repair can consume
+tokens. Each capability requires its own active consent; automatic reporting
+also requires an active task lane and a `log_only` or `auto_correct`
+disposition. The compatibility profile maps enabled legacy or unqualified
+automatic reporting to `log_only`; it never enables automatic KPI or
+after-action reports or automatic repair. Missing, disabled, undecided,
+inactive, or local-only repair consent means no repair. `log_only` records
+every eligible Agent System/runtime issue and never starts repair. Opted-in
+`auto_correct` automatically repairs only a confirmed, locally actionable true
+Agent System blocker and logs every other issue without repair. A true blocker
+is an Observed/Verified P0/P1 defect that disables a required core Agent System
+capability, is locally actionable within private Agent System scope, has no
+equivalent supported repair path restoring that capability, and is not a
+project defect, caller syntax error, external runtime-only limitation,
+destructive/irreversible change, architecture/public-contract redesign,
+source-project mutation, public publication, or schedule. Without the consent
+required for a capability, do not perform it or spend background tokens. In inactive or local-only reporting mode, use only a
 quiet bounded secret-free append to the private untracked local JSONL issue
 ledger. In configured reporting mode, preserve exact current-label lookup,
 duplicate resolution, explicitly enabled auto-creation, and immediate project
 continuation. `auto_correct` is limited to private Agent System surfaces and
-cannot mutate the reporting project or any public branch. Host interception
-remains Unverified without authoritative runtime metadata.
+cannot mutate the reporting project or any public branch. The source project
+never waits and continues through fallback. Host interception remains
+Unverified without authoritative runtime metadata.
 
 Do not add delegation-specific confirmation gates. Apply the kernel's configured `approval_mode`; pause only the affected action.
 

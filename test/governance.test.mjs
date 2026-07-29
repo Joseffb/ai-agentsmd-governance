@@ -64,7 +64,7 @@ test("complete policy tree verifies", () => {
   assert.equal(result.module_count, 16);
   assert.equal(result.traceability_rules, 0);
   assert.equal(result.traceability, "optional_local_migration_provenance");
-  assert.equal(result.system_version, "3.0.4");
+  assert.equal(result.system_version, "3.0.5");
   assert.equal(result.display_channel, "RC-3.0");
 });
 
