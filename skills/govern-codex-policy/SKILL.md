@@ -25,6 +25,17 @@ Never preload future phases or scan policy trees. Accounting is monotonic. A
 matching local index may add only the router-returned organization policy and
 one project policy; repository `AGENTS.md` remains most specific.
 
+For inspect-only work, `--project null` is the unbound
+`projectless_unbound` sentinel, not a configured project alias. It is permitted
+only for a narrow generated directory with no overlap or ancestor/descendant
+relation to a registered or sensitive root. A missing project, or `null` on
+any non-inspect command, remains invalid. Suppress only the expected
+unregistered-root absence after that check; registered/ambiguous binding,
+privacy denial, mutation, and independent runtime defects remain governed and
+reportable. Do not modify the machine profile or wait. Immediately send a
+direct native read-only prompt with the exact directory and inspection scope;
+accept observations-only results and label actual model/reasoning `Unverified`.
+
 ## JIT Orchestration
 
 Classify only the immediate intent. Select the smallest verified rule delta,

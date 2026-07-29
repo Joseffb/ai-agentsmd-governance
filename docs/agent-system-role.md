@@ -163,6 +163,18 @@ prompt composition, delegation, native fallback, project-native tooling, and
 project completion available. Only cross-task defect reporting disappears;
 the quiet local issue disposition remains.
 
+For inspect-only work, explicit CLI `--project null` selects only the unbound
+`projectless_unbound` sentinel; it never aliases a configured project. It is
+eligible only for a narrow generated directory with no overlap or
+ancestor/descendant relation to any registered or sensitive root. Missing
+project and `null` on any non-inspect command are invalid. Suppress only the
+expected unregistered-root absence. Agent System does not add a machine root,
+mutate a machine profile, or wait: the coordinator immediately sends a direct
+native read-only prompt specifying the exact directory and inspection scope,
+then accepts observations-only results with actual model/reasoning marked
+`Unverified`. Registered/ambiguous binding, privacy denial, mutation, and
+independent runtime defects stay governed and reportable.
+
 For this contract, a true blocker is an Observed/Verified P0/P1 defect that
 disables a required core Agent System capability, is locally actionable within
 private Agent System scope, and has no equivalent supported repair path that

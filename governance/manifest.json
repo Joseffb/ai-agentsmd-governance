@@ -822,7 +822,7 @@
       "id": "project-overlays",
       "version": 2,
       "path": "modules/project-overlays.md",
-      "digest": "sha256:a808e551be94a9004b4428e0a0086c99df242c7bbc41937ce7ff070ca6aacb45",
+      "digest": "sha256:b57ed1cb85a47a3e76c8ca050988e3dcc01b78fae43c7f08b0bf41df34c5725a",
       "triggers": {
         "operations": [
           "implementation",
@@ -850,9 +850,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 1726,
-      "words": 221,
-      "estimated_tokens": 432
+      "bytes": 2715,
+      "words": 356,
+      "estimated_tokens": 679
     },
     {
       "id": "mobile-review",

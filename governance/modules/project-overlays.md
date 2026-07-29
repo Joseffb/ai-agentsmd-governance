@@ -15,3 +15,22 @@ Any explicit publisher must preserve unrelated state, refuse unexplained drift, 
 The router reads `~/.codex/governance-machine-profile.json` by default; `ACG_MACHINE_PROFILE` overrides it. Store exact mutation-capable roots in `project_roots` and exact inspection-only dependency or reuse roots in `project_read_roots`.
 
 Use `profile add-root` for an authorized repository or worktree where project mutation may occur. Use `profile add-read-root` for an authorized external repository that may only be inspected. Read roots never authorize mutation mode; add only that root and retry once. Never authorize a broad parent for convenience.
+
+## Explicit Projectless Read-Only Fallback
+
+`--project null` is an inspect-only `projectless_unbound` sentinel, never an
+alias for a configured project or canonical projectless identity. It is
+available only for a narrow generated directory that has no overlap or
+ancestor/descendant relation with any registered or sensitive root. Missing
+`--project`, and `--project null` on every command other than inspect, are
+invalid.
+
+Suppress reporting only for the expected absence of a registered root after
+that eligibility check. Do not automatically add a machine-profile root,
+mutate machine configuration, or wait for Agent System recovery. Immediately
+issue a direct native read-only prompt naming the exact directory and requested
+inspection; its result is limited to observations and labels actual model and
+reasoning `Unverified`.
+
+Registered or ambiguous binding, privacy denial, mutation, and independent
+runtime defects remain governed and reportable through their normal treatment.

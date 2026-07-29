@@ -171,6 +171,9 @@ let quiet = false;
 
 try {
   args = parseArgs(process.argv.slice(2));
+  if (args.project === "null" && !(args.command === "seat" && args.positional[0] === "inspect")) {
+    throw new Error("--project null is permitted only for seat inspect");
+  }
   let result;
   if (args.command === "profile" && args.positional[0] === "add-root") {
     result = addMachineProjectRoot({

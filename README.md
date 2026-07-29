@@ -2,7 +2,7 @@
 
 ![AI Coding Agent Governance workflow](docs/assets/ai-coding-agent-governance.png)
 
-> **Current release line:** RC-3.0 (`3.0.9`).
+> **Current release line:** RC-3.0 (`3.0.10`).
 > Immutable releases include the tracked source plugins, but bundling does not
 > prove that any host installed, loaded, or activated those plugins.
 
@@ -307,6 +307,19 @@ After collecting answers, the installation agent must:
 Do not load all policy modules. Read the kernel and loader skill, classify only
 the immediate operation, then use a documented high-level command when one
 exists.
+
+### Projectless generated read-only workspaces
+
+For inspect-only work, explicit `--project null` means only the unbound
+`projectless_unbound` sentinel, never a configured-project alias. It applies
+only to a narrow generated directory with no overlap or ancestor/descendant
+relation to a registered or sensitive root. A missing project, or `null` on a
+non-inspect command, is invalid. Suppress only this expected unregistered-root
+absence; do not change the machine profile or wait for recovery. Immediately
+send a direct native read-only prompt with the exact directory and inspection
+scope, accepting observations-only results with actual model/reasoning
+`Unverified`. Registered or ambiguous binding, privacy denial, mutation, and
+independent runtime defects remain governed and reportable.
 
 For an audit:
 

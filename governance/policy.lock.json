@@ -3,7 +3,7 @@
   "manifest": {
     "id": "ai-codex-governance",
     "version": 1,
-    "sha256": "sha256:29eac0e16a088e15e3e1c480586c9ce86c5dfcff24339ae630d2bf2c5ebd201b"
+    "sha256": "sha256:cae9e0da80ee0863d5a7e6d5644925f2e4740dbdca7b4c66be116e68a5ea8a7a"
   },
   "estimator": {
     "id": "utf8-bytes-div-4-ceil",
@@ -22,10 +22,10 @@
   },
   "skill": {
     "path": "skills/govern-codex-policy/SKILL.md",
-    "sha256": "sha256:b7f559a0fc5e19521c920f23042d9ac014d396440329a71ee515959689a7f1d3",
-    "bytes": 22766,
-    "words": 2950,
-    "estimated_tokens": 5692
+    "sha256": "sha256:ace4023ffd38e8f2990d00e3b7fb30d37702cd6a7aa33282510fdba79183e2e0",
+    "bytes": 23508,
+    "words": 3049,
+    "estimated_tokens": 5877
   },
   "modules": [
     {
@@ -149,10 +149,10 @@
       "id": "project-overlays",
       "version": 2,
       "path": "modules/project-overlays.md",
-      "sha256": "sha256:a808e551be94a9004b4428e0a0086c99df242c7bbc41937ce7ff070ca6aacb45",
-      "bytes": 1726,
-      "words": 221,
-      "estimated_tokens": 432
+      "sha256": "sha256:b57ed1cb85a47a3e76c8ca050988e3dcc01b78fae43c7f08b0bf41df34c5725a",
+      "bytes": 2715,
+      "words": 356,
+      "estimated_tokens": 679
     },
     {
       "id": "mobile-review",
