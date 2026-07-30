@@ -64,7 +64,7 @@ test("complete policy tree verifies", () => {
   assert.equal(result.module_count, 16);
   assert.equal(result.traceability_rules, 0);
   assert.equal(result.traceability, "optional_local_migration_provenance");
-  assert.equal(result.system_version, "3.0.12");
+  assert.equal(result.system_version, "3.1.0");
   assert.equal(result.display_channel, "RC-3.0");
 });
 
@@ -72,6 +72,30 @@ test("canary routing contract passes", () => {
   const result = runCanary(policyRoot);
   assert.equal(result.passed, true);
   assert.ok(result.cases.every((entry) => entry.passed));
+});
+
+test("portable Spark guidance preserves deterministic mechanics and exact fail-closed fallback", () => {
+  const readme = fs.readFileSync(path.join(codeRoot, "README.md"), "utf8");
+  const role = fs.readFileSync(path.join(codeRoot, "docs", "agent-system-role.md"), "utf8");
+  const orchestration = fs.readFileSync(path.join(policyRoot, "modules", "jit-orchestration.md"), "utf8");
+  const modelRouting = fs.readFileSync(path.join(policyRoot, "modules", "model-routing.md"), "utf8");
+  const skill = fs.readFileSync(path.join(codeRoot, "skills", "govern-codex-policy", "SKILL.md"), "utf8");
+  for (const source of [readme, role, orchestration, modelRouting, skill]) {
+    assert.match(source, /`orchestrate next` ->\s+`orchestrate launch --bundle <path> --seat <N>`/i);
+    assert.match(source, /`native_quarantine\.spawn_request` verbatim -> attest -> send (?:the\s+)?(?:returned\s+)?`admitted_assignment\.message` verbatim/i);
+    assert.match(source, /`unknown_or_unexposed`/);
+    assert.match(source, /`availability_evidence` (?:is|set to|equal to) `Unverified`/i);
+    assert.match(source, /`authoritatively_unavailable`[\s\S]*`separate_pool_exhausted`[\s\S]*reserved/i);
+    assert.match(source, /fail\s+closed[\s\S]*supported\s+host\s+(?:capability\s+)?receipt/i);
+  }
+  for (const source of [role, orchestration, modelRouting, skill]) {
+    assert.match(source, /composer(?:-derived|'s exact| classifies as|-classified) `mechanical`/i);
+    assert.match(source, /integrity-bound (?:Model\s+Routing )?gate/i);
+    assert.match(source, /inventory (?:retrieval|collection).*test execution.*validation/is);
+    assert.match(source, /Terra|gpt-5\.6-terra/i);
+    assert.match(source, /never\s+move\s+the\s+work\s+to\s+Seat\s+`0`|moving\s+the\s+work\s+to\s+Seat\s+`0`|do\s+not\s+move\s+work\s+to\s+Seat\s+`0`/i);
+    assert.match(source, /block(?:ing|s)? only (?:that|the affected) launch/i);
+  }
 });
 
 test("future operations do not trigger policy", () => {

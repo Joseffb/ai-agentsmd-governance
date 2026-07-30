@@ -63,6 +63,7 @@ import {
   verifyAll
 } from "../lib/core.mjs";
 import {
+  orchestrateLaunch,
   orchestrateNext,
   readOrchestrationFacts,
   verifyPersistedOrchestrationBundle
@@ -254,6 +255,11 @@ try {
     });
   } else if (args.command === "orchestrate" && args.positional[0] === "verify") {
     result = verifyPersistedOrchestrationBundle(args.bundle);
+  } else if (args.command === "orchestrate" && args.positional[0] === "launch") {
+    result = orchestrateLaunch({
+      bundlePath: args.bundle,
+      seat: args.seat
+    });
   } else if (args.command === "seat" && args.positional[0] === "inspect") {
     const priorReceipt = args.priorReceipt ? await readInput(args.priorReceipt) : null;
     result = inspectSeat(
@@ -402,11 +408,12 @@ try {
     result = listPolicyCatalog(args.positional[0] ?? "all", resolvePolicyRoot(args.policyRoot));
   } else {
     result = {
-      commands: ["audit", "orchestrate next", "orchestrate verify", "seat inspect", "seat preflight", "seat assign", "seat recover", "seat continue", "seat finalize", "seat explain", "metrics report", "metrics after-action", "metrics record", "metrics ingest-runtime", "context adopt-current", "context legacy", "profile add-root", "profile remove-root", "profile approval", "profile agent-system", "agent-system record-issue", "handoff verify", "handoff accept", "handoff communicate", "communicate", "route", "deliver", "acknowledge", "attest-native-model", "model-audit", "list", "lock", "local-lock", "local-verify", "traceability", "verify", "canary", "build-release", "activate", "publish-overlays"],
+      commands: ["audit", "orchestrate next", "orchestrate verify", "orchestrate launch", "seat inspect", "seat preflight", "seat assign", "seat recover", "seat continue", "seat finalize", "seat explain", "metrics report", "metrics after-action", "metrics record", "metrics ingest-runtime", "context adopt-current", "context legacy", "profile add-root", "profile remove-root", "profile approval", "profile agent-system", "agent-system record-issue", "handoff verify", "handoff accept", "handoff communicate", "communicate", "route", "deliver", "acknowledge", "attest-native-model", "model-audit", "list", "lock", "local-lock", "local-verify", "traceability", "verify", "canary", "build-release", "activate", "publish-overlays"],
       audit: "audit --project <slug> --path <absolute-root> [--prior-receipt <file|->]",
       orchestrate: {
         next: "orchestrate next --project <slug> --path <absolute-root> --intent <intent> --facts <json-file|-> [--prior-bundle <absolute-path>]",
-        verify: "orchestrate verify --bundle <absolute-path>"
+        verify: "orchestrate verify --bundle <absolute-path>",
+        launch: "orchestrate launch --bundle <private-v5-bundle> --seat <1..N>"
       },
       seat: {
         inspect: "seat inspect --project <slug> --path <absolute-root> --seat <name> --model <id> --reasoning <value> [--attempt 1|2] [--objective <text>] [--prior-receipt <file|->]",

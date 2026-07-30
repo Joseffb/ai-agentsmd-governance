@@ -3,6 +3,7 @@
 A narrow Codex plugin that, on hook-covered subagent paths:
 
 - rejects inherited, missing, or unsupported per-seat assignments;
+- binds optional composer-derived assignment and Spark-eligibility metadata to launch receipts;
 - records requested model and raw reasoning before launch;
 - correlates `tool_use_id` with runtime `agent_id`;
 - verifies the actual model from `SubagentStart`;
@@ -14,6 +15,19 @@ A narrow Codex plugin that, on hook-covered subagent paths:
 The repository copy is canonical. Runtime receipts are private and untracked.
 
 The ledger defaults to `~/.codex/plugin-data/model-routing-gate/model-routing-events.jsonl`. It excludes prompts, source, subagent output, secrets, and hidden reasoning. Use the governance CLI's `model-audit` command to backfill native launches that bypass hooks and summarize a task or time window.
+
+Composer v5 Spark and Terra/low mechanical launches require the exact
+`composer_assignment` emitted with the launch. The gate reads its owner-private
+`bundle_path` beneath `ACG_ORCHESTRATION_BUNDLE_ROOT` (defaulting to the
+private Codex orchestration store), recomputes the bounded v5 bundle's
+canonical digest, and verifies the selected worker seat, assignment IDs,
+prompt-envelope digest, model/reasoning, and complete Spark gate. Selectable
+work requires exact Spark/low. With `availability_evidence:"Unverified"`, only
+`unknown_or_unexposed` may use conservative Terra/low; unavailable or exhausted
+claims require a future supported host receipt and currently fail closed.
+Receipts exclude the private bundle path and retain only bounded binding
+metadata. Legacy ordinary non-Spark envelopes remain supported. Hook
+interception and actual routing remain `Unverified` without runtime evidence.
 
 ## Hook runtime resolution
 

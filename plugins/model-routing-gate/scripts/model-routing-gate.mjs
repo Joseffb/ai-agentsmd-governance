@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import process from "node:process";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const ENVELOPE_PREFIX = "MODEL_ROUTING_GATE_V1 ";
 export const UNVERIFIED = "Unverified";
@@ -16,6 +16,52 @@ const MODEL_REASONING = new Map([
   ["gpt-5.3-codex-spark", new Set(["low", "medium", "high", "xhigh"])],
   ["gpt-5.6-sol", new Set(["low", "medium", "high", "xhigh", "max", "ultra"])]
 ]);
+const SPARK_MODEL = "gpt-5.3-codex-spark";
+const SPARK_REASONING = "low";
+const TERRA_MODEL = "gpt-5.6-terra";
+const SPARK_WORK_KINDS = new Set(["bounded_ai_transformation", "mechanical_edit"]);
+const COMPOSER_WORK_KINDS = new Set([...SPARK_WORK_KINDS, "unexposed"]);
+const SPARK_AVAILABILITY = new Set([
+  "selectable",
+  "authoritatively_unavailable",
+  "separate_pool_exhausted",
+  "unknown_or_unexposed"
+]);
+const MAX_BUNDLE_BYTES = 128 * 1024;
+const BUNDLE_FIELDS = new Set([
+  "schema_version",
+  "bundle_type",
+  "bundle_digest",
+  "release_identity",
+  "project_identity",
+  "predecessor_digest",
+  "immediate_intent",
+  "classification",
+  "seat0_decision",
+  "rule_selection",
+  "topology",
+  "model_recommendation",
+  "contracts",
+  "native_fallback"
+]);
+const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
+
+let validateSharedOrchestrationBundle = null;
+for (const candidate of [
+  path.resolve(SCRIPT_DIRECTORY, "../../../lib/orchestration.mjs"),
+  path.join(os.homedir(), ".codex", "policies", "lib", "orchestration.mjs")
+]) {
+  try {
+    if (!fs.existsSync(candidate)) continue;
+    const module = await import(pathToFileURL(candidate).href);
+    if (typeof module.validateOrchestrationBundle === "function") {
+      validateSharedOrchestrationBundle = module.validateOrchestrationBundle;
+      break;
+    }
+  } catch {
+    // Composer-bound launches fail closed below when the shared validator is unavailable.
+  }
+}
 
 function digest(value) {
   return crypto.createHash("sha256").update(String(value)).digest("hex");
@@ -180,6 +226,303 @@ function cleanString(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function exactObject(value, fields, label) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+  const unknown = Object.keys(value).filter((key) => !fields.has(key));
+  if (unknown.length) throw new Error(`Unknown ${label} field: ${unknown.join(", ")}`);
+  const missing = [...fields].filter((key) => !Object.hasOwn(value, key));
+  if (missing.length) throw new Error(`Missing ${label} field: ${missing.join(", ")}`);
+}
+
+function canonicalJson(value) {
+  if (value === null || typeof value === "boolean" || typeof value === "string") return JSON.stringify(value);
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) throw new Error("Canonical JSON does not support non-finite numbers");
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
+  }
+  throw new Error("Canonical JSON supports only plain JSON values");
+}
+
+function sha256(value) {
+  return `sha256:${digest(value)}`;
+}
+
+function configuredBundleRoot() {
+  const configured = process.env.ACG_ORCHESTRATION_BUNDLE_ROOT;
+  const root = configured || path.join(os.homedir(), ".codex", "governance", "orchestration-bundles");
+  if (!path.isAbsolute(root)) throw new Error("ACG_ORCHESTRATION_BUNDLE_ROOT must be an absolute path");
+  let stat;
+  try {
+    stat = fs.lstatSync(root);
+  } catch {
+    throw new Error("Configured orchestration bundle root does not exist");
+  }
+  if (stat.isSymbolicLink() || !stat.isDirectory() || (stat.mode & 0o077) !== 0) {
+    throw new Error("Configured orchestration bundle root must be an owner-private directory");
+  }
+  if (typeof process.getuid === "function" && stat.uid !== process.getuid()) {
+    throw new Error("Configured orchestration bundle root must be owned by the current user");
+  }
+  return fs.realpathSync(root);
+}
+
+function readBoundV5Bundle(bundlePath) {
+  if (typeof bundlePath !== "string" || !path.isAbsolute(bundlePath) || path.normalize(bundlePath) !== bundlePath) {
+    throw new Error("composer_assignment bundle_path must be a normalized absolute path");
+  }
+  const root = configuredBundleRoot();
+  let stat;
+  try {
+    stat = fs.lstatSync(bundlePath);
+  } catch {
+    throw new Error("composer_assignment bundle_path does not exist");
+  }
+  if (stat.isSymbolicLink() || !stat.isFile() || (stat.mode & 0o077) !== 0 || (stat.mode & 0o400) === 0) {
+    throw new Error("composer_assignment bundle_path must be an owner-private regular non-symlink file");
+  }
+  if (typeof process.getuid === "function" && stat.uid !== process.getuid()) {
+    throw new Error("composer_assignment bundle_path must be owned by the current user");
+  }
+  if (stat.size <= 0 || stat.size > MAX_BUNDLE_BYTES) {
+    throw new Error(`composer_assignment bundle exceeds the ${MAX_BUNDLE_BYTES}-byte limit`);
+  }
+  const real = fs.realpathSync(bundlePath);
+  const relative = path.relative(root, real);
+  if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error("composer_assignment bundle_path is outside ACG_ORCHESTRATION_BUNDLE_ROOT");
+  }
+  if (real !== bundlePath) throw new Error("composer_assignment bundle_path may not traverse symbolic links");
+
+  const noFollow = fs.constants.O_NOFOLLOW || 0;
+  const handle = fs.openSync(bundlePath, fs.constants.O_RDONLY | noFollow);
+  let text;
+  try {
+    const opened = fs.fstatSync(handle);
+    if (!opened.isFile() || opened.dev !== stat.dev || opened.ino !== stat.ino || opened.size !== stat.size) {
+      throw new Error("composer_assignment bundle_path changed during verification");
+    }
+    text = fs.readFileSync(handle, "utf8");
+  } finally {
+    fs.closeSync(handle);
+  }
+  let bundle;
+  try {
+    bundle = JSON.parse(text);
+  } catch {
+    throw new Error("composer_assignment bundle is not valid JSON");
+  }
+  if (!validateSharedOrchestrationBundle) {
+    throw new Error("composer_assignment cannot be authenticated because the shared orchestration validator is unavailable");
+  }
+  try {
+    validateSharedOrchestrationBundle(bundle);
+  } catch (error) {
+    throw new Error(`composer_assignment failed full orchestration semantic validation: ${error.message}`);
+  }
+  exactObject(bundle, BUNDLE_FIELDS, "composer_assignment bundle");
+  if (bundle.schema_version !== 5 || bundle.bundle_type !== "jit_orchestration") {
+    throw new Error("composer_assignment bundle must be an exact v5 orchestration bundle");
+  }
+  const unsigned = { ...bundle };
+  delete unsigned.bundle_digest;
+  const recomputed = sha256(canonicalJson(unsigned));
+  if (bundle.bundle_digest !== recomputed) throw new Error("composer_assignment bundle canonical digest is invalid");
+  if (path.basename(real) !== `${recomputed.slice("sha256:".length)}.json`) {
+    throw new Error("composer_assignment bundle_path is not content-addressed by its digest");
+  }
+  return bundle;
+}
+
+function validateExpectedModel(model, reasoning, label) {
+  const normalizedModel = cleanString(model);
+  const normalizedReasoning = cleanString(reasoning);
+  if (!normalizedModel || !normalizedReasoning) throw new Error(`${label} model and reasoning must be explicit`);
+  const supportedReasoning = MODEL_REASONING.get(normalizedModel);
+  if (!supportedReasoning || !supportedReasoning.has(normalizedReasoning)) {
+    throw new Error(`${label} contains an unsupported model/reasoning assignment`);
+  }
+  return { model: normalizedModel, reasoning: normalizedReasoning };
+}
+
+function validateComposerAssignment(value, assignment, seatId) {
+  const sparkSensitive = assignment.model === SPARK_MODEL ||
+    (assignment.model === TERRA_MODEL && assignment.reasoning === SPARK_REASONING);
+  if (value === undefined) {
+    if (sparkSensitive) throw new Error("Spark and Terra/low mechanical launches require a verified composer_assignment");
+    return null;
+  }
+  exactObject(value, new Set([
+    "schema_version",
+    "bundle_path",
+    "bundle_digest",
+    "worker_seat",
+    "worker_assignment_ids",
+    "worker_prompt_envelope_sha256",
+    "requested_model",
+    "requested_reasoning_raw",
+    "spark_gate",
+    "availability_evidence"
+  ]), "composer_assignment");
+  if (value.schema_version !== 1) throw new Error("Unsupported composer_assignment version");
+  if (value.availability_evidence !== UNVERIFIED) {
+    throw new Error("composer_assignment availability_evidence must remain Unverified without a supported host receipt");
+  }
+  if (typeof value.bundle_digest !== "string" || !/^sha256:[a-f0-9]{64}$/.test(value.bundle_digest)) {
+    throw new Error("composer_assignment bundle_digest must be an exact SHA-256 digest");
+  }
+  if (!Number.isInteger(value.worker_seat) || value.worker_seat < 1) {
+    throw new Error("composer_assignment worker_seat must be a positive integer");
+  }
+  if (seatId !== `seat-${value.worker_seat}`) {
+    throw new Error("Model Routing Gate seat_id does not match composer_assignment worker_seat");
+  }
+  if (!Array.isArray(value.worker_assignment_ids) || !value.worker_assignment_ids.length ||
+    value.worker_assignment_ids.some((id) => typeof id !== "string" || !/^[a-z0-9][a-z0-9._:-]{0,127}$/i.test(id))) {
+    throw new Error("composer_assignment worker_assignment_ids must contain safe identifiers");
+  }
+  if (typeof value.worker_prompt_envelope_sha256 !== "string" ||
+    !/^sha256:[a-f0-9]{64}$/.test(value.worker_prompt_envelope_sha256)) {
+    throw new Error("composer_assignment worker_prompt_envelope_sha256 must be an exact SHA-256 digest");
+  }
+  const expected = validateExpectedModel(
+    value.requested_model,
+    value.requested_reasoning_raw,
+    "composer_assignment"
+  );
+  const bundle = readBoundV5Bundle(value.bundle_path);
+  if (bundle.bundle_digest !== value.bundle_digest) {
+    throw new Error("composer_assignment bundle_digest differs from the verified bundle");
+  }
+  const recommendation = bundle.model_recommendation;
+  if (!recommendation || typeof recommendation !== "object" || Array.isArray(recommendation)) {
+    throw new Error("composer_assignment bundle model_recommendation is invalid");
+  }
+  const workers = bundle.topology?.workers;
+  if (!Array.isArray(workers) || value.worker_seat > workers.length) {
+    throw new Error("composer_assignment worker_seat is absent from the verified bundle");
+  }
+  const worker = workers[value.worker_seat - 1];
+  if (!worker || worker.seat !== value.worker_seat) {
+    throw new Error("composer_assignment worker_seat does not match the verified bundle topology");
+  }
+  if (canonicalJson(worker.assignment_ids) !== canonicalJson(value.worker_assignment_ids)) {
+    throw new Error("composer_assignment worker_assignment_ids differ from the verified bundle worker");
+  }
+  if (sha256(canonicalJson(worker.prompt_envelope)) !== value.worker_prompt_envelope_sha256) {
+    throw new Error("composer_assignment worker_prompt_envelope_sha256 differs from the verified bundle worker");
+  }
+  if (
+    recommendation.model !== expected.model ||
+    recommendation.reasoning !== expected.reasoning ||
+    worker.requested_model !== expected.model ||
+    worker.requested_reasoning_raw !== expected.reasoning ||
+    worker.prompt_envelope?.requested_model !== expected.model ||
+    worker.prompt_envelope?.requested_reasoning_raw !== expected.reasoning
+  ) {
+    throw new Error("composer_assignment model/reasoning differs from the verified bundle and selected worker");
+  }
+  if (canonicalJson(recommendation.spark_gate) !== canonicalJson(value.spark_gate)) {
+    throw new Error("composer_assignment spark_gate differs from the verified bundle");
+  }
+  exactObject(value.spark_gate, new Set([
+    "work_kind",
+    "requires_judgment",
+    "availability",
+    "actual_availability",
+    "worker_required",
+    "excluded_effects"
+  ]), "composer_assignment spark_gate");
+  const gate = value.spark_gate;
+  if (!COMPOSER_WORK_KINDS.has(gate.work_kind)) throw new Error("composer_assignment spark_gate work_kind is invalid");
+  if (typeof gate.requires_judgment !== "boolean") throw new Error("composer_assignment spark_gate requires_judgment must be boolean");
+  if (!SPARK_AVAILABILITY.has(gate.availability)) throw new Error("composer_assignment spark_gate availability is invalid");
+  if (gate.actual_availability !== UNVERIFIED) {
+    throw new Error("composer_assignment spark_gate actual_availability must remain Unverified");
+  }
+  if (typeof gate.worker_required !== "boolean") throw new Error("composer_assignment spark_gate worker_required must be boolean");
+  if (!Array.isArray(gate.excluded_effects) || gate.excluded_effects.some((effect) =>
+    typeof effect !== "string" || !/^[a-z][a-z0-9_-]{0,63}$/.test(effect)
+  )) {
+    throw new Error("composer_assignment spark_gate excluded_effects must contain safe effect identifiers");
+  }
+  const normalizedEffects = [...new Set(gate.excluded_effects)].sort();
+  if (JSON.stringify(normalizedEffects) !== JSON.stringify(gate.excluded_effects)) {
+    throw new Error("composer_assignment spark_gate excluded_effects must be sorted and unique");
+  }
+
+  const unexposed = gate.work_kind === "unexposed";
+  if (unexposed && gate.availability !== "unknown_or_unexposed") {
+    throw new Error("Composer unexposed assignment requires unknown_or_unexposed availability");
+  }
+  if (unexposed && !gate.requires_judgment) {
+    throw new Error("Composer unexposed assignment must preserve unproven judgment");
+  }
+  const eligible = !unexposed &&
+    gate.worker_required &&
+    !gate.requires_judgment &&
+    gate.excluded_effects.length === 0;
+  const sparkRequired = eligible && gate.availability === "selectable";
+  const conservativeFallback = !unexposed &&
+    !gate.requires_judgment &&
+    gate.excluded_effects.length === 0 &&
+    gate.availability === "unknown_or_unexposed";
+  const fallbackAuthorized = eligible && conservativeFallback;
+  if (["authoritatively_unavailable", "separate_pool_exhausted"].includes(gate.availability)) {
+    throw new Error("Composer availability label lacks a supported authoritative host capability receipt");
+  }
+  if (sparkRequired && (expected.model !== SPARK_MODEL || expected.reasoning !== SPARK_REASONING)) {
+    throw new Error("Composer Spark-required assignment must request exact Spark/low");
+  }
+  if (!sparkRequired && expected.model === SPARK_MODEL) {
+    throw new Error("Composer assignment may request Spark only when the Spark gate requires it");
+  }
+  if (fallbackAuthorized && (expected.model !== TERRA_MODEL || expected.reasoning !== SPARK_REASONING)) {
+    throw new Error("Composer unknown/unexposed assignment must request exact Terra/low");
+  }
+  if (assignment.model !== expected.model || assignment.reasoning !== expected.reasoning) {
+    throw new Error("Launch model/reasoning differs from the composer-derived expected assignment");
+  }
+
+  const bindingPayload = {
+    schema_version: 1,
+    bundle_path: value.bundle_path,
+    bundle_digest: value.bundle_digest,
+    worker_seat: value.worker_seat,
+    worker_assignment_ids: value.worker_assignment_ids,
+    worker_prompt_envelope_sha256: value.worker_prompt_envelope_sha256,
+    requested_model: expected.model,
+    requested_reasoning_raw: expected.reasoning,
+    spark_gate: {
+      work_kind: gate.work_kind,
+      requires_judgment: gate.requires_judgment,
+      availability: gate.availability,
+      actual_availability: UNVERIFIED,
+      worker_required: gate.worker_required,
+      excluded_effects: normalizedEffects
+    },
+    availability_evidence: UNVERIFIED
+  };
+  return {
+    bundle_digest: value.bundle_digest,
+    worker_seat: value.worker_seat,
+    worker_assignment_ids: value.worker_assignment_ids,
+    worker_prompt_envelope_sha256: value.worker_prompt_envelope_sha256,
+    requested_model: expected.model,
+    requested_reasoning_raw: expected.reasoning,
+    spark_gate: bindingPayload.spark_gate,
+    availability_evidence: UNVERIFIED,
+    binding_sha256: sha256(canonicalJson(bindingPayload)),
+    spark_required: sparkRequired,
+    spark_fallback_authorized: fallbackAuthorized
+  };
+}
+
 export function parseEnvelope(message) {
   if (typeof message !== "string") throw new Error("Governed launches require a string message");
   const firstLine = message.split(/\r?\n/, 1)[0];
@@ -200,7 +543,8 @@ export function parseEnvelope(message) {
     "objective",
     "routing_reason",
     "weaker_insufficient",
-    "stronger_unnecessary"
+    "stronger_unnecessary",
+    "composer_assignment"
   ]);
   const unknown = Object.keys(envelope).filter((key) => !allowed.has(key));
   if (unknown.length) throw new Error(`Unknown Model Routing Gate envelope field: ${unknown.join(", ")}`);
@@ -232,6 +576,20 @@ function validateAssignment(toolInput) {
   return { model, reasoning };
 }
 
+function composerBinding(request) {
+  return {
+    composer_bundle_digest: request?.composer_bundle_digest || null,
+    composer_assignment_sha256: request?.composer_assignment_sha256 || null,
+    composer_worker_seat: request?.composer_worker_seat ?? null,
+    composer_worker_assignment_ids: request?.composer_worker_assignment_ids || null,
+    composer_worker_prompt_envelope_sha256: request?.composer_worker_prompt_envelope_sha256 || null,
+    spark_availability_evidence: request?.spark_availability_evidence || null,
+    spark_required: request?.spark_required ?? null,
+    spark_fallback_authorized: request?.spark_fallback_authorized ?? null,
+    spark_gate: request?.spark_gate || null
+  };
+}
+
 function attemptReceipt(input, request, status, reason) {
   return {
     schema_version: 1,
@@ -246,6 +604,7 @@ function attemptReceipt(input, request, status, reason) {
     reasoning_critical: request?.reasoning_critical ?? null,
     requested_model: request?.requested_model || null,
     requested_reasoning_raw: request?.requested_reasoning_raw || null,
+    ...composerBinding(request),
     objective: request?.objective || null,
     routing_reason: request?.routing_reason || null,
     weaker_insufficient: request?.weaker_insufficient || null,
@@ -266,6 +625,7 @@ function recordDeniedAttempt(root, input, request, reason) {
     seat_id: request?.seat_id || null,
     requested_model: request?.requested_model || cleanString(input.tool_input?.model),
     requested_reasoning_raw: request?.requested_reasoning_raw || cleanString(input.tool_input?.reasoning_effort),
+    ...composerBinding(request),
     status: "rejected_before_launch",
     reason
   });
@@ -378,6 +738,7 @@ function reconcileAgent(root, sessionId, agentId) {
       seat_id: request.seat_id,
       requested_model: request.requested_model,
       requested_reasoning_raw: request.requested_reasoning_raw,
+      ...composerBinding(request),
       status: "accepted_reuse",
       reason: "Previously attested agent reused with an identical explicit assignment",
       output_admissible: true,
@@ -408,6 +769,7 @@ function reconcileAgent(root, sessionId, agentId) {
       model_critical: request.model_critical,
       reasoning_critical: request.reasoning_critical,
       requested_model: request.requested_model,
+      ...composerBinding(request),
       actual_model: UNVERIFIED,
       model_attestation: "missing_runtime_evidence",
       requested_reasoning_raw: request.requested_reasoning_raw,
@@ -442,6 +804,7 @@ function reconcileAgent(root, sessionId, agentId) {
     model_critical: request.model_critical,
     reasoning_critical: request.reasoning_critical,
     requested_model: request.requested_model,
+    ...composerBinding(request),
     actual_model: evaluated.actualModel,
     model_attestation: evaluated.modelAttestation,
     requested_reasoning_raw: request.requested_reasoning_raw,
@@ -468,7 +831,8 @@ function reconcileAgent(root, sessionId, agentId) {
     status: evaluated.outputAdmissible ? "accepted" : evaluated.status,
     agent_id: agentId,
     actual_model: evaluated.actualModel,
-    requested_model: request.requested_model
+    requested_model: request.requested_model,
+    ...composerBinding(request)
   });
   return receipt;
 }
@@ -476,9 +840,11 @@ function reconcileAgent(root, sessionId, agentId) {
 function preSpawn(root, input) {
   let envelope;
   let assignment;
+  let composerAssignment;
   try {
     envelope = parseEnvelope(input.tool_input?.message);
     assignment = validateAssignment(input.tool_input);
+    composerAssignment = validateComposerAssignment(envelope.composer_assignment, assignment, envelope.seat_id);
   } catch (error) {
     recordDeniedAttempt(root, input, null, error.message);
     return deny(error.message);
@@ -502,6 +868,15 @@ function preSpawn(root, input) {
     reasoning_critical: envelope.reasoning_critical,
     requested_model: assignment.model,
     requested_reasoning_raw: assignment.reasoning,
+    composer_bundle_digest: composerAssignment?.bundle_digest || null,
+    composer_assignment_sha256: composerAssignment?.binding_sha256 || null,
+    composer_worker_seat: composerAssignment?.worker_seat ?? null,
+    composer_worker_assignment_ids: composerAssignment?.worker_assignment_ids || null,
+    composer_worker_prompt_envelope_sha256: composerAssignment?.worker_prompt_envelope_sha256 || null,
+    spark_availability_evidence: composerAssignment?.availability_evidence || null,
+    spark_required: composerAssignment?.spark_required ?? null,
+    spark_fallback_authorized: composerAssignment?.spark_fallback_authorized ?? null,
+    spark_gate: composerAssignment?.spark_gate || null,
     objective: envelope.objective,
     routing_reason: envelope.routing_reason,
     weaker_insufficient: envelope.weaker_insufficient,
@@ -523,6 +898,9 @@ function preSpawn(root, input) {
         if (prior.seat_id !== envelope.seat_id) throw new Error("Agent reuse cannot change the verified seat identity");
         if (prior.actual_model !== assignment.model) throw new Error("Agent reuse model is incompatible with the requested model");
         if (prior.requested_reasoning_raw !== assignment.reasoning) throw new Error("Agent reuse reasoning differs from the configured assignment");
+        if ((prior.composer_assignment_sha256 || null) !== request.composer_assignment_sha256) {
+          throw new Error("Agent reuse composer assignment differs from the accepted launch");
+        }
         request.prior_receipt = prior;
         atomicWrite(p.request(input.tool_use_id), request);
         atomicWrite(p.attemptReceipt(input.tool_use_id), attemptReceipt(input, request, "reuse_requested", "Compatible verified agent reuse"));
@@ -533,6 +911,7 @@ function preSpawn(root, input) {
           seat_id: request.seat_id,
           requested_model: request.requested_model,
           requested_reasoning_raw: request.requested_reasoning_raw,
+          ...composerBinding(request),
           objective: request.objective,
           routing_reason: request.routing_reason,
           weaker_insufficient: request.weaker_insufficient,
@@ -552,7 +931,8 @@ function preSpawn(root, input) {
         attempts: envelope.attempt,
         status: "launch_requested",
         tool_use_id: input.tool_use_id,
-        requested_model: assignment.model
+        requested_model: assignment.model,
+        ...composerBinding(request)
       });
       atomicWrite(p.attemptReceipt(input.tool_use_id), attemptReceipt(input, request, "launch_requested", "Explicit assignment accepted before launch"));
       appendRoutingEvent(root, {
@@ -562,6 +942,7 @@ function preSpawn(root, input) {
         seat_id: request.seat_id,
         requested_model: request.requested_model,
         requested_reasoning_raw: request.requested_reasoning_raw,
+        ...composerBinding(request),
         model_critical: request.model_critical,
         reasoning_critical: request.reasoning_critical,
         objective: request.objective,
@@ -615,6 +996,7 @@ function postSpawn(root, input) {
     seat_id: request.seat_id,
     requested_model: request.requested_model,
     requested_reasoning_raw: request.requested_reasoning_raw,
+    ...composerBinding(request),
     status: "bound"
   });
   const receipt = reconcileAgent(root, input.session_id, agentId);
@@ -626,6 +1008,7 @@ function postSpawn(root, input) {
     seat_id: receipt.seat_id,
     requested_model: receipt.requested_model,
     requested_reasoning_raw: receipt.requested_reasoning_raw,
+    ...composerBinding(receipt),
     actual_model: receipt.actual_model,
     actual_reasoning_raw: receipt.actual_reasoning_raw,
     model_attestation: receipt.model_attestation,
@@ -675,6 +1058,7 @@ function onSubagentStart(root, input) {
     seat_id: receipt.seat_id,
     requested_model: receipt.requested_model,
     requested_reasoning_raw: receipt.requested_reasoning_raw,
+    ...composerBinding(receipt),
     actual_model: receipt.actual_model,
     actual_reasoning_raw: receipt.actual_reasoning_raw,
     model_attestation: receipt.model_attestation,
@@ -703,6 +1087,7 @@ function onSubagentStop(root, input) {
     seat_id: receipt.seat_id,
     requested_model: receipt.requested_model,
     requested_reasoning_raw: receipt.requested_reasoning_raw,
+    ...composerBinding(receipt),
     actual_model: receipt.actual_model,
     actual_reasoning_raw: receipt.actual_reasoning_raw,
     status: "completed"

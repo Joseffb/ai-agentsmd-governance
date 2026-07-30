@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -12,13 +13,17 @@ import {
   receiptPathForAgent,
   routingEventLogPath
 } from "../scripts/model-routing-gate.mjs";
+import {
+  buildOrchestrationBundle,
+  bundleDigest
+} from "../../../lib/orchestration.mjs";
 
 const sessionId = "thread-model-gate-test";
 const pluginRoot = path.resolve(import.meta.dirname, "..");
 const hookLauncher = path.join(pluginRoot, "scripts", "model-routing-gate-hook.sh");
 
 function root(t) {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "model-routing-gate-"));
+  const directory = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "model-routing-gate-")));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   return directory;
 }
@@ -44,9 +49,77 @@ function message(seat, options = {}) {
     seat_id: seat,
     model_critical: options.modelCritical ?? true,
     reasoning_critical: options.reasoningCritical ?? false,
-    attempt: options.attempt ?? 1
+    attempt: options.attempt ?? 1,
+    ...(options.composerAssignment === undefined ? {} : { composer_assignment: options.composerAssignment })
   };
   return `${ENVELOPE_PREFIX}${JSON.stringify(envelope)}\nPerform only the assigned bounded objective. SECRET_PROMPT_TEXT`;
+}
+
+function canonicalJson(value) {
+  if (value === null || typeof value === "boolean" || typeof value === "string" || typeof value === "number") {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
+}
+
+function sha256(value) {
+  return `sha256:${crypto.createHash("sha256").update(value).digest("hex")}`;
+}
+
+function composerAssignment(t, {
+  availability = "selectable",
+  workKind = "mechanical_edit",
+  requiresJudgment = false,
+  excludedEffects = [],
+  workerSeat = 1,
+  workerAssignmentIds = ["bounded-work"]
+} = {}) {
+  const bundleRoot = root(t);
+  fs.chmodSync(bundleRoot, 0o700);
+  const priorRoot = process.env.ACG_ORCHESTRATION_BUNDLE_ROOT;
+  process.env.ACG_ORCHESTRATION_BUNDLE_ROOT = bundleRoot;
+  t.after(() => {
+    if (priorRoot === undefined) delete process.env.ACG_ORCHESTRATION_BUNDLE_ROOT;
+    else process.env.ACG_ORCHESTRATION_BUNDLE_ROOT = priorRoot;
+  });
+  const workItems = workerAssignmentIds.map((id, index) => ({
+    id,
+    write_scopes: [`lib/${id}-${index}.mjs`]
+  }));
+  const bundle = buildOrchestrationBundle({
+    immediate_intent: "implementation",
+    estimated_duration_ms: 300001,
+    effects: ["source_mutation", ...excludedEffects],
+    complexity: "mechanical",
+    ...(workKind === "unexposed" ? {} : {
+      spark_eligibility: {
+        work_kind: workKind,
+        requires_judgment: requiresJudgment,
+        availability
+      }
+    }),
+    maximum_workers: Math.max(workerSeat, workItems.length),
+    decomposition_complete: true,
+    coherent_chain: false,
+    work_items: workItems
+  });
+  const worker = bundle.topology.workers[workerSeat - 1];
+  assert.ok(worker, "fixture worker seat must exist");
+  const bundlePath = path.join(bundleRoot, `${bundle.bundle_digest.slice("sha256:".length)}.json`);
+  fs.writeFileSync(bundlePath, `${JSON.stringify(bundle, null, 2)}\n`, { mode: 0o600 });
+  return {
+    schema_version: 1,
+    bundle_path: bundlePath,
+    bundle_digest: bundle.bundle_digest,
+    worker_seat: workerSeat,
+    worker_assignment_ids: worker.assignment_ids,
+    worker_prompt_envelope_sha256: sha256(canonicalJson(worker.prompt_envelope)),
+    requested_model: worker.requested_model,
+    requested_reasoning_raw: worker.requested_reasoning_raw,
+    spark_gate: bundle.model_recommendation.spark_gate,
+    availability_evidence: "Unverified"
+  };
 }
 
 function pre(stateRoot, toolUseId, seat, options = {}) {
@@ -174,6 +247,282 @@ test("unsupported family alias is blocked", (t) => {
 test("unsupported reasoning for the requested model is blocked", (t) => {
   const result = pre(root(t), "t6", "seat", { model: "gpt-5.3-codex-spark", reasoning: "ultra" });
   assert.match(result.hookSpecificOutput.permissionDecisionReason, /Unsupported reasoning/);
+});
+
+test("unbound Spark and Terra low launches are denied while ordinary legacy routing remains", (t) => {
+  for (const [model, reasoning] of [
+    ["gpt-5.3-codex-spark", "low"],
+    ["gpt-5.6-terra", "low"]
+  ]) {
+    const result = pre(root(t), `unbound-${model}`, "legacy-seat", { model, reasoning });
+    assert.equal(result.hookSpecificOutput.permissionDecision, "deny");
+    assert.match(result.hookSpecificOutput.permissionDecisionReason, /require a verified composer_assignment/);
+  }
+  assert.equal(pre(root(t), "legacy-terra-high", "legacy-seat", {
+    model: "gpt-5.6-terra",
+    reasoning: "high"
+  }).hookSpecificOutput.permissionDecision, "allow");
+});
+
+test("fake bundle path and digest are denied", (t) => {
+  const missing = composerAssignment(t);
+  missing.bundle_path = path.join(path.dirname(missing.bundle_path), "missing.json");
+  assert.match(pre(root(t), "fake-path", "seat-1", {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    composerAssignment: missing
+  }).hookSpecificOutput.permissionDecisionReason, /does not exist/);
+
+  const digestMismatch = composerAssignment(t);
+  digestMismatch.bundle_digest = `sha256:${"f".repeat(64)}`;
+  assert.match(pre(root(t), "fake-digest", "seat-1", {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    composerAssignment: digestMismatch
+  }).hookSpecificOutput.permissionDecisionReason, /differs from the verified bundle/);
+
+  const outside = composerAssignment(t);
+  const outsideDirectory = root(t);
+  const outsidePath = path.join(outsideDirectory, path.basename(outside.bundle_path));
+  fs.copyFileSync(outside.bundle_path, outsidePath);
+  fs.chmodSync(outsidePath, 0o600);
+  outside.bundle_path = outsidePath;
+  assert.match(pre(root(t), "outside-root", "seat-1", {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    composerAssignment: outside
+  }).hookSpecificOutput.permissionDecisionReason, /outside ACG_ORCHESTRATION_BUNDLE_ROOT/);
+
+  const symlinked = composerAssignment(t);
+  const symlinkPath = `${symlinked.bundle_path}.link`;
+  fs.symlinkSync(symlinked.bundle_path, symlinkPath);
+  symlinked.bundle_path = symlinkPath;
+  assert.match(pre(root(t), "symlink-path", "seat-1", {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    composerAssignment: symlinked
+  }).hookSpecificOutput.permissionDecisionReason, /regular non-symlink file/);
+});
+
+test("tampered bundle, payload, and worker seat are denied", (t) => {
+  const tamperedBundle = composerAssignment(t);
+  const persisted = JSON.parse(fs.readFileSync(tamperedBundle.bundle_path, "utf8"));
+  persisted.model_recommendation.model = "gpt-5.6-terra";
+  fs.writeFileSync(tamperedBundle.bundle_path, `${JSON.stringify(persisted)}\n`, { mode: 0o600 });
+  assert.match(pre(root(t), "tampered-bundle", "seat-1", {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    composerAssignment: tamperedBundle
+  }).hookSpecificOutput.permissionDecisionReason, /bundle digest is invalid/);
+
+  const tamperedPayload = composerAssignment(t);
+  tamperedPayload.worker_assignment_ids = ["different-work"];
+  assert.match(pre(root(t), "tampered-payload", "seat-1", {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    composerAssignment: tamperedPayload
+  }).hookSpecificOutput.permissionDecisionReason, /assignment_ids differ/);
+
+  const tamperedPromptBinding = composerAssignment(t);
+  tamperedPromptBinding.worker_prompt_envelope_sha256 = `sha256:${"f".repeat(64)}`;
+  assert.match(pre(root(t), "tampered-prompt-binding", "seat-1", {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    composerAssignment: tamperedPromptBinding
+  }).hookSpecificOutput.permissionDecisionReason, /prompt_envelope_sha256 differs/);
+
+  const wrongSeat = composerAssignment(t);
+  assert.match(pre(root(t), "wrong-seat", "seat-2", {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    composerAssignment: wrongSeat
+  }).hookSpecificOutput.permissionDecisionReason, /seat_id does not match/);
+});
+
+test("digest-recomputed self-authored bundle cannot forge Spark eligibility", (t) => {
+  const forgedAssignment = composerAssignment(t);
+  const forgedBundle = JSON.parse(fs.readFileSync(forgedAssignment.bundle_path, "utf8"));
+  forgedBundle.classification.classification = "seat0_owned";
+  forgedBundle.classification.effects = ["security"];
+  forgedBundle.bundle_digest = bundleDigest(forgedBundle);
+  const forgedPath = path.join(
+    path.dirname(forgedAssignment.bundle_path),
+    `${forgedBundle.bundle_digest.slice("sha256:".length)}.json`
+  );
+  fs.writeFileSync(forgedPath, `${JSON.stringify(forgedBundle, null, 2)}\n`, { mode: 0o600 });
+  forgedAssignment.bundle_path = forgedPath;
+  forgedAssignment.bundle_digest = forgedBundle.bundle_digest;
+
+  const result = pre(root(t), "self-authored-spark", "seat-1", {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    composerAssignment: forgedAssignment
+  });
+  assert.equal(result.hookSpecificOutput.permissionDecision, "deny");
+  assert.match(result.hookSpecificOutput.permissionDecisionReason, /failed full orchestration semantic validation/);
+
+  const eligibilityForgery = composerAssignment(t);
+  const coordinatedBundle = JSON.parse(fs.readFileSync(eligibilityForgery.bundle_path, "utf8"));
+  coordinatedBundle.classification.effects = ["security"];
+  coordinatedBundle.classification.anti_evasion.mandatory_effect_requires_worker = true;
+  coordinatedBundle.seat0_decision.reasons.splice(2, 0, "mandatory_effect_requires_worker");
+  coordinatedBundle.bundle_digest = bundleDigest(coordinatedBundle);
+  const coordinatedPath = path.join(
+    path.dirname(eligibilityForgery.bundle_path),
+    `${coordinatedBundle.bundle_digest.slice("sha256:".length)}.json`
+  );
+  fs.writeFileSync(coordinatedPath, `${JSON.stringify(coordinatedBundle, null, 2)}\n`, { mode: 0o600 });
+  eligibilityForgery.bundle_path = coordinatedPath;
+  eligibilityForgery.bundle_digest = coordinatedBundle.bundle_digest;
+  const coordinated = pre(root(t), "forged-eligibility", "seat-1", {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    composerAssignment: eligibilityForgery
+  });
+  assert.equal(coordinated.hookSpecificOutput.permissionDecision, "deny");
+  assert.match(coordinated.hookSpecificOutput.permissionDecisionReason, /Spark eligibility rejects excluded effects/);
+});
+
+test("composer-bound launch rejects a missing expected assignment field", (t) => {
+  const expected = composerAssignment(t);
+  delete expected.requested_model;
+  const result = pre(root(t), "composer-missing", "seat-1", {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    composerAssignment: expected
+  });
+  assert.equal(result.hookSpecificOutput.permissionDecision, "deny");
+  assert.match(result.hookSpecificOutput.permissionDecisionReason, /Missing composer_assignment field: requested_model/);
+});
+
+test("tampered composer assignment cannot relabel a Spark-required seat as Terra", (t) => {
+  const tampered = composerAssignment(t);
+  tampered.requested_model = "gpt-5.6-terra";
+  const result = pre(root(t), "composer-tampered", "seat-1", {
+    model: "gpt-5.6-terra",
+    reasoning: "low",
+    composerAssignment: tampered
+  });
+  assert.equal(result.hookSpecificOutput.permissionDecision, "deny");
+  assert.match(result.hookSpecificOutput.permissionDecisionReason, /model\/reasoning differs from the verified bundle/);
+});
+
+test("Terra launch mismatching a composer-required Spark assignment is denied", (t) => {
+  const result = pre(root(t), "composer-terra-mismatch", "seat-1", {
+    model: "gpt-5.6-terra",
+    reasoning: "low",
+    composerAssignment: composerAssignment(t)
+  });
+  assert.equal(result.hookSpecificOutput.permissionDecision, "deny");
+  assert.match(result.hookSpecificOutput.permissionDecisionReason, /Launch model\/reasoning differs/);
+});
+
+test("exact composer-required Spark assignment is accepted and receipt-bound", (t) => {
+  const state = root(t);
+  const receipt = acceptedLaunch(
+    state,
+    "composer-spark",
+    "composer-spark-agent",
+    "seat-1",
+    "gpt-5.3-codex-spark",
+    "low",
+    { composerAssignment: composerAssignment(t) }
+  );
+  assert.equal(receipt.output_admissible, true);
+  assert.equal(receipt.spark_required, true);
+  assert.equal(receipt.spark_fallback_authorized, false);
+  assert.match(receipt.composer_assignment_sha256, /^sha256:[a-f0-9]{64}$/);
+  assert.match(receipt.composer_bundle_digest, /^sha256:[a-f0-9]{64}$/);
+});
+
+test("Terra low fallback passes only when composer availability authorizes it", (t) => {
+  const state = root(t);
+  const receipt = acceptedLaunch(
+    state,
+    "composer-fallback",
+    "composer-fallback-agent",
+    "seat-1",
+    "gpt-5.6-terra",
+    "low",
+    {
+      composerAssignment: composerAssignment(t, {
+        model: "gpt-5.6-terra",
+        availability: "unknown_or_unexposed"
+      })
+    }
+  );
+  assert.equal(receipt.output_admissible, true);
+  assert.equal(receipt.spark_required, false);
+  assert.equal(receipt.spark_fallback_authorized, true);
+
+  const unauthorized = pre(root(t), "composer-fallback-denied", "seat-1", {
+    model: "gpt-5.6-terra",
+    reasoning: "low",
+    composerAssignment: composerAssignment(t, {
+      model: "gpt-5.6-terra",
+      availability: "selectable"
+    })
+  });
+  assert.equal(unauthorized.hookSpecificOutput.permissionDecision, "deny");
+
+  for (const availability of ["authoritatively_unavailable", "separate_pool_exhausted"]) {
+    const unsupportedEvidence = pre(root(t), `composer-${availability}`, "seat-1", {
+      model: "gpt-5.6-terra",
+      reasoning: "low",
+      composerAssignment: composerAssignment(t, {
+        model: "gpt-5.6-terra",
+        availability
+      })
+    });
+    assert.equal(unsupportedEvidence.hookSpecificOutput.permissionDecision, "deny");
+    assert.match(unsupportedEvidence.hookSpecificOutput.permissionDecisionReason, /lacks a supported authoritative host capability receipt/);
+  }
+});
+
+test("omitted Spark eligibility routes through ordinary Terra high without fallback authorization", (t) => {
+  const state = root(t);
+  const receipt = acceptedLaunch(
+    state,
+    "composer-unexposed",
+    "composer-unexposed-agent",
+    "seat-1",
+    "gpt-5.6-terra",
+    "high",
+    {
+      composerAssignment: composerAssignment(t, {
+        workKind: "unexposed"
+      })
+    }
+  );
+  assert.equal(receipt.output_admissible, true);
+  assert.equal(receipt.spark_required, false);
+  assert.equal(receipt.spark_fallback_authorized, false);
+  assert.equal(receipt.spark_gate.work_kind, "unexposed");
+  assert.equal(receipt.spark_gate.requires_judgment, true);
+  assert.equal(receipt.spark_gate.worker_required, true);
+});
+
+test("omitted Spark eligibility cannot authorize Spark or Terra low", (t) => {
+  for (const model of ["gpt-5.3-codex-spark", "gpt-5.6-terra"]) {
+    const result = pre(root(t), `composer-unexposed-${model}`, "seat-1", {
+      model,
+      reasoning: "low",
+      composerAssignment: composerAssignment(t, { workKind: "unexposed" })
+    });
+    assert.equal(result.hookSpecificOutput.permissionDecision, "deny");
+    assert.match(result.hookSpecificOutput.permissionDecisionReason, /Launch model\/reasoning differs/);
+  }
+});
+
+test("legacy ordinary non-Spark launches remain compatible", (t) => {
+  assert.equal(pre(root(t), "legacy-terra", "legacy-seat", {
+    model: "gpt-5.6-terra",
+    reasoning: "high"
+  }).hookSpecificOutput.permissionDecision, "allow");
+  assert.equal(pre(root(t), "legacy-sol", "legacy-seat", {
+    model: "gpt-5.6-sol",
+    reasoning: "high"
+  }).hookSpecificOutput.permissionDecision, "allow");
 });
 
 test("Terra launch request records exact assignment before launch", (t) => {

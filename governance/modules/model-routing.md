@@ -10,10 +10,61 @@ Families:
 
 - Luna: deterministic documentation, formatting, fixtures, and narrow edits; usually Low or Medium.
 - Terra: default feature, test, debugging, migration, integration, and multi-file work; usually Medium or High.
-- GPT-5.3-Codex-Spark: bounded delegated work from its separate pool when explicitly selectable. Use Spark first only when it meets the seat's reasoning requirement; use the exact runtime ID.
+- GPT-5.3-Codex-Spark: mandatory only for composer-derived `mechanical` bounded delegated AI transformation or mechanical-edit work when explicitly selectable from its separate pool. Use the exact runtime ID `gpt-5.3-codex-spark` with `low` reasoning.
 - Sol: architecture, authority, distributed systems, difficult concurrency, security-critical design, conflict resolution, and final high-risk verdicts; usually High or stronger when supported. Minimize use without lowering quality.
 
 ## Subagent Assignment
+
+### Spark-Eligible Bounded Delegated Work
+
+Spark eligibility is composer-derived, not inferred from task labels, prose,
+or a manually selected cheap model. Only the exact `mechanical` complexity
+class may produce the `gpt-5.3-codex-spark` and `low` recommendation. The
+composer propagates that request through its content-addressed bundle, worker
+request, and prompt envelope. On a hook-covered path, the integrity-bound Model
+Routing Gate must verify that composer-derived request before launch.
+
+Spark-eligible scope is limited to a bounded delegated AI transformation or
+mechanical-edit worker with supplied inputs, a clear expected output, and
+deterministic acceptance criteria. Examples include bounded reformatting,
+structured-to-structured transformation, fixture generation, and mechanical
+source edits. It is not a general low-cost routing tier.
+
+Keep the deterministic-first boundary intact: retrieval, metadata, identity,
+inventory collection, calculation, test execution, validation, provenance,
+state, and rendering remain deterministic code, tools, or data. Spark may
+transform an authoritative mechanical snapshot, but must never retrieve or
+overwrite the authoritative mechanical data and must never replace tool-run
+tests or validation.
+
+Do not assign Spark-eligible status to architecture, contracts,
+authentication, security, privacy, migrations, ambiguous debugging,
+integration or conflict resolution, release or acceptance work, or a final
+verdict. Route those scopes under their ordinary capability and reasoning
+requirements.
+
+For a composer-derived worker, the no-guess launch path is exact:
+`orchestrate next` -> `orchestrate launch --bundle <path> --seat <N>` -> pass
+the returned `native_quarantine.spawn_request` verbatim -> attest -> send the
+returned `admitted_assignment.message` verbatim as a new turn. Never construct,
+summarize, reformat, or infer either message.
+
+The currently supported conservative Spark fallback is `gpt-5.6-terra` with
+`low` reasoning only when the composer state is exactly
+`unknown_or_unexposed` and `availability_evidence` is `Unverified`.
+`authoritatively_unavailable` and `separate_pool_exhausted` are reserved state
+names and fail closed at launch until a supported host capability receipt
+provides authoritative availability evidence. An unverified claim of either
+reserved state is not permission to launch Terra. Never move the work to Seat
+`0`; block only the affected launch and continue the project through another
+safe supported path. Report actual model and reasoning as `Unverified` unless
+authoritative runtime metadata attests them.
+
+On a hook-covered path, a missing, altered, or non-matching composer request is
+inadmissible for that Spark launch. On an unhooked path, do not claim that this
+routing is enforced; request the explicit Spark assignment or the supported
+`unknown_or_unexposed` Terra fallback and continue the project under unchanged
+worker boundaries.
 
 When explicit per-seat selection exists, every new or resumed seat must receive an exact runtime model ID and raw reasoning value. Never use `Inherit current` or silently accept a selectable default. Before launch, record seat, objective, exact requested model and reasoning, fit, why weaker is insufficient when applicable, and why stronger is unnecessary when applicable. Retrospective routing analysis does not correct an inherited launch.
 

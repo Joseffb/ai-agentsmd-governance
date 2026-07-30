@@ -40,6 +40,12 @@ function run(args, environment = {}) {
   });
 }
 
+function parseLaunchEnvelope(report) {
+  const firstLine = report.native_quarantine.spawn_request.message.split("\n", 1)[0];
+  assert.equal(firstLine.startsWith("MODEL_ROUTING_GATE_V1 "), true);
+  return JSON.parse(firstLine.slice("MODEL_ROUTING_GATE_V1 ".length));
+}
+
 test("orchestrate next persists a private content-addressed bundle and emits only its decision", (t) => {
   const { root, project, bundleRoot, environment } = fixture(t);
   const facts = writeFacts(root, {
@@ -118,6 +124,235 @@ test("orchestrate next accepts only a verified private predecessor and binds its
   const rejected = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "decide", "--facts", facts, "--prior-bundle", prior.bundle_path], environment);
   assert.notEqual(rejected.status, 0);
   assert.match(rejected.stderr, /bundle digest is invalid/);
+});
+
+test("orchestrate launch emits and persists an exact Spark-selectable native package", (t) => {
+  const { root, project, environment } = fixture(t);
+  const facts = writeFacts(root, {
+    estimated_duration_ms: 300001,
+    effects: ["source_mutation"],
+    complexity: "mechanical",
+    spark_eligibility: {
+      work_kind: "mechanical_edit",
+      requires_judgment: false,
+      availability: "selectable"
+    },
+    decomposition_complete: true,
+    coherent_chain: false,
+    work_items: [{ id: "bounded-edit", write_scopes: ["lib/bounded-edit.mjs"] }]
+  });
+  const next = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "implementation", "--facts", facts], environment);
+  assert.equal(next.status, 0, next.stderr);
+  const bundleReport = JSON.parse(next.stdout);
+  const launch = run(["orchestrate", "launch", "--bundle", bundleReport.bundle_path, "--seat", "1"], environment);
+  assert.equal(launch.status, 0, launch.stderr);
+  const report = JSON.parse(launch.stdout);
+  assert.equal(report.bundle_path, bundleReport.bundle_path);
+  assert.equal(report.bundle_digest, bundleReport.bundle_digest);
+  assert.equal(report.worker_seat, 1);
+  assert.equal(report.availability_evidence, "Unverified");
+  assert.equal(report.native_quarantine.pass_spawn_request_verbatim, true);
+  assert.equal(report.native_quarantine.spawn_request.fork_context, false);
+  assert.equal(report.native_quarantine.spawn_request.model, "gpt-5.3-codex-spark");
+  assert.equal(report.native_quarantine.spawn_request.reasoning_effort, "low");
+  const envelope = parseLaunchEnvelope(report);
+  assert.equal(envelope.seat_id, "seat-1");
+  assert.equal(envelope.composer_assignment.bundle_path, bundleReport.bundle_path);
+  assert.equal(envelope.composer_assignment.bundle_digest, bundleReport.bundle_digest);
+  assert.equal(envelope.composer_assignment.worker_seat, 1);
+  assert.deepEqual(envelope.composer_assignment.worker_assignment_ids, ["bounded-edit"]);
+  assert.match(envelope.composer_assignment.worker_prompt_envelope_sha256, /^sha256:[a-f0-9]{64}$/u);
+  assert.equal(envelope.composer_assignment.availability_evidence, "Unverified");
+  assert.equal(envelope.composer_assignment.requested_model, "gpt-5.3-codex-spark");
+  assert.equal(envelope.composer_assignment.requested_reasoning_raw, "low");
+  assert.deepEqual(envelope.composer_assignment.spark_gate, {
+    work_kind: "mechanical_edit",
+    requires_judgment: false,
+    availability: "selectable",
+    actual_availability: "Unverified",
+    worker_required: true,
+    excluded_effects: []
+  });
+  assert.equal(report.admitted_assignment.starts_new_turn, true);
+  assert.equal(report.admitted_assignment.pass_message_verbatim, true);
+  assert.deepEqual(
+    report.admitted_assignment.worker_prompt_envelope,
+    JSON.parse(fs.readFileSync(bundleReport.bundle_path, "utf8")).topology.workers[0].prompt_envelope
+  );
+  assert.match(report.admitted_assignment.message, new RegExp(`${report.admitted_assignment.required_final_sentinel}$`, "u"));
+  assert.equal(fs.statSync(report.launch_package_path).mode & 0o077, 0);
+  assert.deepEqual(JSON.parse(fs.readFileSync(report.launch_package_path, "utf8")), {
+    schema_version: report.schema_version,
+    bundle_path: report.bundle_path,
+    bundle_digest: report.bundle_digest,
+    worker_seat: report.worker_seat,
+    availability_evidence: report.availability_evidence,
+    native_quarantine: report.native_quarantine,
+    native_quarantine_instruction: report.native_quarantine_instruction,
+    admitted_assignment: report.admitted_assignment,
+    launch_package_digest: report.launch_package_digest
+  });
+  const serialized = JSON.stringify(report);
+  for (const forbidden of ["source_content", "model_output", "credential", "api_key", "hidden_reasoning"]) {
+    assert.doesNotMatch(serialized, new RegExp(forbidden, "iu"), forbidden);
+  }
+});
+
+test("orchestrate launch separates omitted eligibility from proven unknown Terra fallback", (t) => {
+  const { root, project, environment } = fixture(t);
+  const facts = writeFacts(root, {
+    estimated_duration_ms: 300001,
+    effects: ["source_mutation", "test"],
+    complexity: "mechanical",
+    decomposition_complete: true,
+    coherent_chain: false,
+    work_items: [{ id: "bounded-transform", write_scopes: ["lib/bounded-transform.mjs"] }]
+  });
+  const next = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "implementation", "--facts", facts], environment);
+  assert.equal(next.status, 0, next.stderr);
+  const bundleReport = JSON.parse(next.stdout);
+  const launch = run(["orchestrate", "launch", "--bundle", bundleReport.bundle_path, "--seat", "1"], environment);
+  assert.equal(launch.status, 0, launch.stderr);
+  const report = JSON.parse(launch.stdout);
+  const composer = parseLaunchEnvelope(report).composer_assignment;
+  assert.equal(report.native_quarantine.spawn_request.model, "gpt-5.6-terra");
+  assert.equal(report.native_quarantine.spawn_request.reasoning_effort, "high");
+  assert.equal(report.availability_evidence, "Unverified");
+  assert.equal(composer.requested_model, "gpt-5.6-terra");
+  assert.equal(composer.requested_reasoning_raw, "high");
+  assert.equal(composer.availability_evidence, "Unverified");
+  assert.deepEqual(composer.spark_gate, {
+    work_kind: "unexposed",
+    requires_judgment: true,
+    availability: "unknown_or_unexposed",
+    actual_availability: "Unverified",
+    worker_required: true,
+    excluded_effects: []
+  });
+
+  for (const effect of ["security", "privacy", "contract_change", "migration"]) {
+    const excludedFacts = writeFacts(root, {
+      estimated_duration_ms: 300001,
+      effects: ["source_mutation", effect],
+      complexity: "mechanical",
+      decomposition_complete: true,
+      coherent_chain: false,
+      work_items: [{ id: `excluded-${effect}`, write_scopes: [`lib/${effect}.mjs`] }]
+    });
+    const excludedNext = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "implementation", "--facts", excludedFacts], environment);
+    assert.equal(excludedNext.status, 0, excludedNext.stderr);
+    const excludedBundle = JSON.parse(excludedNext.stdout);
+    const excludedLaunch = run(["orchestrate", "launch", "--bundle", excludedBundle.bundle_path, "--seat", "1"], environment);
+    assert.equal(excludedLaunch.status, 0, excludedLaunch.stderr);
+    const excludedReport = JSON.parse(excludedLaunch.stdout);
+    const excludedComposer = parseLaunchEnvelope(excludedReport).composer_assignment;
+    assert.equal(excludedReport.native_quarantine.spawn_request.model, "gpt-5.6-terra", effect);
+    assert.equal(excludedReport.native_quarantine.spawn_request.reasoning_effort, "high", effect);
+    assert.deepEqual(excludedComposer.spark_gate.excluded_effects, [effect], effect);
+    assert.equal(excludedComposer.spark_gate.requires_judgment, true, effect);
+  }
+
+  for (const availability of ["unknown_or_unexposed"]) {
+    const explicitFacts = writeFacts(root, {
+      estimated_duration_ms: 300001,
+      effects: ["source_mutation"],
+      complexity: "mechanical",
+      spark_eligibility: {
+        work_kind: "bounded_ai_transformation",
+        requires_judgment: false,
+        availability
+      },
+      decomposition_complete: true,
+      coherent_chain: false,
+      work_items: [{ id: `transform-${availability}`, write_scopes: [`lib/${availability}.mjs`] }]
+    });
+    const explicitNext = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "implementation", "--facts", explicitFacts], environment);
+    assert.equal(explicitNext.status, 0, explicitNext.stderr);
+    const explicitBundle = JSON.parse(explicitNext.stdout);
+    const explicitLaunch = run(["orchestrate", "launch", "--bundle", explicitBundle.bundle_path, "--seat", "1"], environment);
+    assert.equal(explicitLaunch.status, 0, explicitLaunch.stderr);
+    const explicitReport = JSON.parse(explicitLaunch.stdout);
+    const explicitComposer = parseLaunchEnvelope(explicitReport).composer_assignment;
+    assert.equal(explicitReport.native_quarantine.spawn_request.model, "gpt-5.6-terra", availability);
+    assert.equal(explicitReport.native_quarantine.spawn_request.reasoning_effort, "low", availability);
+    assert.equal(explicitReport.availability_evidence, "Unverified", availability);
+    assert.equal(explicitComposer.availability_evidence, "Unverified", availability);
+    assert.equal(explicitComposer.spark_gate.availability, availability);
+    assert.equal(explicitComposer.spark_gate.actual_availability, "Unverified");
+  }
+
+  for (const availability of ["authoritatively_unavailable", "separate_pool_exhausted"]) {
+    const unsupportedFacts = writeFacts(root, {
+      estimated_duration_ms: 300001,
+      effects: ["source_mutation"],
+      complexity: "mechanical",
+      spark_eligibility: {
+        work_kind: "bounded_ai_transformation",
+        requires_judgment: false,
+        availability
+      },
+      decomposition_complete: true,
+      coherent_chain: false,
+      work_items: [{ id: `transform-${availability}`, write_scopes: [`lib/${availability}.mjs`] }]
+    });
+    const unsupportedNext = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "implementation", "--facts", unsupportedFacts], environment);
+    assert.equal(unsupportedNext.status, 0, unsupportedNext.stderr);
+    const unsupportedBundle = JSON.parse(unsupportedNext.stdout);
+    const unsupportedLaunch = run(["orchestrate", "launch", "--bundle", unsupportedBundle.bundle_path, "--seat", "1"], environment);
+    assert.notEqual(unsupportedLaunch.status, 0, availability);
+    assert.match(unsupportedLaunch.stderr, new RegExp(`${availability}.*Unverified.*unknown_or_unexposed.*host capability receipt`, "u"), availability);
+  }
+});
+
+test("orchestrate launch rejects legacy, invalid-seat, tampered, exposed, and non-worker bundles", (t) => {
+  const { root, project, environment } = fixture(t);
+  const workerFacts = writeFacts(root, {
+    estimated_duration_ms: 300001,
+    effects: ["source_mutation"],
+    decomposition_complete: true,
+    coherent_chain: false,
+    work_items: [{ id: "worker", write_scopes: ["lib/worker.mjs"] }]
+  });
+  const next = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "implementation", "--facts", workerFacts], environment);
+  assert.equal(next.status, 0, next.stderr);
+  const workerReport = JSON.parse(next.stdout);
+  for (const seat of ["0", "01", "2", "-1", "worker"]) {
+    const rejected = run(["orchestrate", "launch", "--bundle", workerReport.bundle_path, "--seat", seat], environment);
+    assert.notEqual(rejected.status, 0, seat);
+    assert.match(rejected.stderr, /seat/u, seat);
+  }
+
+  const original = JSON.parse(fs.readFileSync(workerReport.bundle_path, "utf8"));
+  const tampered = structuredClone(original);
+  tampered.topology.workers[0].requested_model = "gpt-5.6-sol";
+  fs.writeFileSync(workerReport.bundle_path, JSON.stringify(tampered), { mode: 0o600 });
+  const rejectedTamper = run(["orchestrate", "launch", "--bundle", workerReport.bundle_path, "--seat", "1"], environment);
+  assert.notEqual(rejectedTamper.status, 0);
+  assert.match(rejectedTamper.stderr, /bundle digest is invalid|does not match the model recommendation/u);
+
+  fs.writeFileSync(workerReport.bundle_path, JSON.stringify(original), { mode: 0o600 });
+  fs.chmodSync(workerReport.bundle_path, 0o644);
+  const rejectedExposed = run(["orchestrate", "launch", "--bundle", workerReport.bundle_path, "--seat", "1"], environment);
+  assert.notEqual(rejectedExposed.status, 0);
+  assert.match(rejectedExposed.stderr, /private owner-only permissions/u);
+
+  fs.chmodSync(workerReport.bundle_path, 0o600);
+  const legacy = structuredClone(original);
+  legacy.schema_version = 4;
+  legacy.release_identity.composer_version = "1.2.0";
+  delete legacy.model_recommendation.spark_gate;
+  legacy.bundle_digest = bundleDigest(legacy);
+  fs.writeFileSync(workerReport.bundle_path, JSON.stringify(legacy), { mode: 0o600 });
+  const rejectedLegacy = run(["orchestrate", "launch", "--bundle", workerReport.bundle_path, "--seat", "1"], environment);
+  assert.notEqual(rejectedLegacy.status, 0);
+  assert.match(rejectedLegacy.stderr, /requires a persisted v5 bundle/u);
+
+  const nonWorkerFacts = writeFacts(root, { estimated_duration_ms: 0, seat0_activity: "decision" });
+  const nonWorker = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "decision", "--facts", nonWorkerFacts], environment);
+  assert.equal(nonWorker.status, 0, nonWorker.stderr);
+  const rejectedNonWorker = run(["orchestrate", "launch", "--bundle", JSON.parse(nonWorker.stdout).bundle_path, "--seat", "1"], environment);
+  assert.notEqual(rejectedNonWorker.status, 0);
+  assert.match(rejectedNonWorker.stderr, /worker-required bundle with topology/u);
 });
 
 test("orchestrate next exposes the first eligible dependency stage rather than a future lane", (t) => {
@@ -231,7 +466,7 @@ test("orchestrate verify rejects a digest-recomputed unknown bundle instruction"
 test("composer identity distinguishes source checkout metadata from an immutable installed release", (t) => {
   const sourceIdentity = resolveOrchestrationReleaseIdentity(repository);
   assert.deepEqual(sourceIdentity, {
-    composer_version: "1.2.0",
+    composer_version: "1.3.0",
     checkout_system_version: checkoutSystemVersion,
     checkout_system_version_evidence: "package_json",
     installed_system_version: "Unverified",
@@ -251,7 +486,7 @@ test("composer identity distinguishes source checkout metadata from an immutable
     system_version: "2.2.1"
   }), { mode: 0o444 });
   assert.deepEqual(resolveOrchestrationReleaseIdentity(policies), {
-    composer_version: "1.2.0",
+    composer_version: "1.3.0",
     checkout_system_version: "Unverified",
     checkout_system_version_evidence: "Unverified",
     installed_system_version: "2.2.1",

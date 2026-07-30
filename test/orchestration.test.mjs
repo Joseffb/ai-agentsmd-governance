@@ -25,15 +25,16 @@ const DIGEST_A = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 const DIGEST_B = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-test("published schema exposes explicit v2/v3 compatibility and the v4 dependency-aware topology contract", () => {
+test("published schema exposes explicit v2-v5 compatibility and the Spark gate contract", () => {
   const schema = JSON.parse(fs.readFileSync(path.join(repository, "governance", "schemas", "orchestration-bundle.schema.json"), "utf8"));
-  assert.equal(ORCHESTRATION_BUNDLE_SCHEMA_VERSION, 4);
-  assert.equal(ORCHESTRATION_COMPOSER_VERSION, "1.2.0");
-  assert.deepEqual(schema.properties.schema_version.enum, [2, 3, ORCHESTRATION_BUNDLE_SCHEMA_VERSION]);
-  assert.deepEqual(schema.oneOf, [{ $ref: "#/$defs/v2Bundle" }, { $ref: "#/$defs/v3Bundle" }, { $ref: "#/$defs/v4Bundle" }]);
+  assert.equal(ORCHESTRATION_BUNDLE_SCHEMA_VERSION, 5);
+  assert.equal(ORCHESTRATION_COMPOSER_VERSION, "1.3.0");
+  assert.deepEqual(schema.properties.schema_version.enum, [2, 3, 4, ORCHESTRATION_BUNDLE_SCHEMA_VERSION]);
+  assert.deepEqual(schema.oneOf, [{ $ref: "#/$defs/v2Bundle" }, { $ref: "#/$defs/v3Bundle" }, { $ref: "#/$defs/v4Bundle" }, { $ref: "#/$defs/v5Bundle" }]);
   assert.equal(schema.$defs.v2Bundle.properties.release_identity.properties.composer_version.const, "1.0.0");
   assert.equal(schema.$defs.v3Bundle.allOf[0].properties.release_identity.properties.composer_version.const, "1.1.0");
-  assert.equal(schema.$defs.v4Bundle.allOf[0].properties.release_identity.properties.composer_version.const, ORCHESTRATION_COMPOSER_VERSION);
+  assert.equal(schema.$defs.v4Bundle.allOf[0].properties.release_identity.properties.composer_version.const, "1.2.0");
+  assert.equal(schema.$defs.v5Bundle.properties.release_identity.properties.composer_version.const, ORCHESTRATION_COMPOSER_VERSION);
   for (const field of [
     "release_identity",
     "project_identity",
@@ -59,6 +60,9 @@ test("published schema exposes explicit v2/v3 compatibility and the v4 dependenc
   assert.equal(schema.properties.topology.properties.decomposed_items.items.properties.shared_resources.maxItems > 0, true);
   assert.equal(schema.properties.contracts.properties.lifecycle.properties.final_validation.const, "planned_seat_0_authoritative_against_integrated_candidate");
   assert.equal(schema.$defs.workerPromptEnvelope.properties.non_authority.const, "does_not_grant_project_authority");
+  assert.equal(schema.properties.model_recommendation.properties.spark_gate.$ref, "#/$defs/sparkGate");
+  assert.equal(schema.$defs.v5Bundle.properties.model_recommendation.required.includes("spark_gate"), true);
+  assert.equal(schema.$defs.sparkGate.properties.actual_availability.const, "Unverified");
   assert.equal(schema.additionalProperties, false);
 });
 
@@ -551,6 +555,7 @@ test("lifecycle and capacity contracts reject tampering while legacy v2 bundles 
   const legacy = structuredClone(bundle);
   legacy.schema_version = 2;
   legacy.release_identity.composer_version = "1.0.0";
+  delete legacy.model_recommendation.spark_gate;
   delete legacy.contracts.lifecycle;
   delete legacy.topology.capacity_limit;
   delete legacy.topology.capacity_evidence;
@@ -575,6 +580,7 @@ test("lifecycle and capacity contracts reject tampering while legacy v2 bundles 
   const v3 = structuredClone(bundle);
   v3.schema_version = 3;
   v3.release_identity.composer_version = "1.1.0";
+  delete v3.model_recommendation.spark_gate;
   for (const field of ["execution_class", "launch_stages", "scheduler_scope", "scheduler_failure_fallback"]) delete v3.contracts.lifecycle[field];
   v3.contracts.lifecycle.stages = [
     "decompose",
@@ -686,6 +692,13 @@ test("bundle digest is stable across input key order and rejects non-JSON values
 });
 
 test("model recommendation chooses the lowest declared reliable tier", () => {
+  assert.deepEqual(recommendLowestReliableModel({ complexity: "mechanical" }), {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    rationale: "lowest known recommendation for the declared reasoning class",
+    actual_model: "Unverified",
+    actual_reasoning_raw: "Unverified"
+  });
   assert.deepEqual(recommendLowestReliableModel({ complexity: "routine" }), {
     model: "gpt-5.6-luna",
     reasoning: "low",
@@ -707,4 +720,139 @@ test("model recommendation chooses the lowest declared reliable tier", () => {
     actual_model: "Unverified",
     actual_reasoning_raw: "Unverified"
   });
+  assert.deepEqual(recommendLowestReliableModel({ complexity: "mechanical", adversarial: true }), {
+    model: "gpt-5.6-sol",
+    reasoning: "high",
+    rationale: "lowest known recommendation for the declared reasoning class",
+    actual_model: "Unverified",
+    actual_reasoning_raw: "Unverified"
+  });
+  for (const nearMatch of ["Mechanical", "mechanical-low", "spark"]) {
+    assert.throws(
+      () => recommendLowestReliableModel({ complexity: nearMatch }),
+      /complexity must be mechanical, routine, complex, or adversarial/,
+      nearMatch
+    );
+  }
+});
+
+test("mechanical bundles propagate Spark requests through worker envelopes without fabricating runtime evidence", () => {
+  const bundle = buildOrchestrationBundle({
+    immediate_intent: "implementation",
+    estimated_duration_ms: FIVE_MINUTES_MS + 1,
+    effects: ["source_mutation"],
+    complexity: "mechanical",
+    spark_eligibility: {
+      work_kind: "mechanical_edit",
+      requires_judgment: false,
+      availability: "selectable"
+    },
+    decomposition_complete: true,
+    coherent_chain: false,
+    work_items: [{ id: "mechanical-worker", write_scopes: ["lib/mechanical.mjs"] }]
+  });
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(bundle.model_recommendation).filter(([key]) => key !== "spark_gate")),
+    recommendLowestReliableModel({ complexity: "mechanical" })
+  );
+  assert.equal(bundle.native_fallback.requested_model, "gpt-5.3-codex-spark");
+  assert.equal(bundle.native_fallback.requested_reasoning_raw, "low");
+  assert.equal(bundle.native_fallback.actual_model, "Unverified");
+  assert.equal(bundle.native_fallback.actual_reasoning_raw, "Unverified");
+  assert.deepEqual(bundle.model_recommendation.spark_gate, {
+    work_kind: "mechanical_edit",
+    requires_judgment: false,
+    availability: "selectable",
+    actual_availability: "Unverified",
+    worker_required: true,
+    excluded_effects: []
+  });
+  for (const worker of bundle.topology.workers) {
+    assert.equal(worker.requested_model, "gpt-5.3-codex-spark");
+    assert.equal(worker.requested_reasoning_raw, "low");
+    assert.equal(worker.prompt_envelope.requested_model, "gpt-5.3-codex-spark");
+    assert.equal(worker.prompt_envelope.requested_reasoning_raw, "low");
+    assert.equal(worker.actual_model, "Unverified");
+    assert.equal(worker.actual_reasoning_raw, "Unverified");
+  }
+  assert.equal(validateOrchestrationBundle(bundle), true);
+
+  for (const [path, value] of [
+    [["model_recommendation", "actual_model"], "gpt-5.3-codex-spark"],
+    [["model_recommendation", "actual_reasoning_raw"], "low"],
+    [["topology", "workers", 0, "actual_model"], "gpt-5.3-codex-spark"],
+    [["topology", "workers", 0, "actual_reasoning_raw"], "low"],
+    [["native_fallback", "actual_model"], "gpt-5.3-codex-spark"],
+    [["native_fallback", "actual_reasoning_raw"], "low"]
+  ]) {
+    const tampered = structuredClone(bundle);
+    let target = tampered;
+    for (const segment of path.slice(0, -1)) target = target[segment];
+    target[path.at(-1)] = value;
+    tampered.bundle_digest = bundleDigest(tampered);
+    assert.throws(() => validateOrchestrationBundle(tampered), /actual.*Unverified|actual model and reasoning require authoritative runtime evidence|fallback contract is invalid/i);
+  }
+});
+
+test("Spark selection and Terra-low fallback require proven eligibility", () => {
+  const base = {
+    immediate_intent: "implementation",
+    estimated_duration_ms: FIVE_MINUTES_MS + 1,
+    effects: ["source_mutation", "test"],
+    complexity: "mechanical",
+    decomposition_complete: true,
+    coherent_chain: false,
+    work_items: [{ id: "mechanical-worker", write_scopes: ["lib/mechanical.mjs"] }],
+    spark_eligibility: { work_kind: "bounded_ai_transformation", requires_judgment: false, availability: "selectable" }
+  };
+  const selectable = buildOrchestrationBundle(base);
+  assert.equal(selectable.model_recommendation.model, "gpt-5.3-codex-spark");
+  assert.equal(selectable.model_recommendation.reasoning, "low");
+  for (const availability of ["authoritatively_unavailable", "separate_pool_exhausted"]) {
+    const bundle = buildOrchestrationBundle({ ...base, spark_eligibility: { ...base.spark_eligibility, availability } });
+    assert.equal(bundle.model_recommendation.model, "gpt-5.6-terra", availability);
+    assert.equal(bundle.model_recommendation.reasoning, "high", availability);
+    assert.equal(bundle.model_recommendation.spark_gate.actual_availability, "Unverified", availability);
+    assert.equal(validateOrchestrationBundle(bundle), true, availability);
+  }
+  const unknown = buildOrchestrationBundle({
+    ...base,
+    spark_eligibility: { ...base.spark_eligibility, availability: "unknown_or_unexposed" }
+  });
+  assert.equal(unknown.model_recommendation.model, "gpt-5.6-terra");
+  assert.equal(unknown.model_recommendation.reasoning, "low");
+  assert.equal(validateOrchestrationBundle(unknown), true);
+
+  const absent = buildOrchestrationBundle({ ...base, spark_eligibility: undefined });
+  assert.equal(absent.model_recommendation.model, "gpt-5.6-terra");
+  assert.equal(absent.model_recommendation.reasoning, "high");
+  assert.deepEqual(absent.model_recommendation.spark_gate, {
+    work_kind: "unexposed",
+    requires_judgment: true,
+    availability: "unknown_or_unexposed",
+    actual_availability: "Unverified",
+    worker_required: true,
+    excluded_effects: []
+  });
+  for (const effect of ["security", "privacy", "contract_change", "migration"]) {
+    const excluded = buildOrchestrationBundle({
+      ...base,
+      effects: ["source_mutation", effect],
+      spark_eligibility: undefined
+    });
+    assert.equal(excluded.model_recommendation.model, "gpt-5.6-terra", effect);
+    assert.equal(excluded.model_recommendation.reasoning, "high", effect);
+    assert.equal(excluded.model_recommendation.spark_gate.requires_judgment, true, effect);
+    assert.deepEqual(excluded.model_recommendation.spark_gate.excluded_effects, [effect], effect);
+    assert.equal(validateOrchestrationBundle(excluded), true, effect);
+  }
+  assert.throws(() => buildOrchestrationBundle({ ...base, spark_eligibility: { ...base.spark_eligibility, requires_judgment: true } }), /rejects judgment-required/);
+  assert.throws(() => buildOrchestrationBundle({ ...base, effects: ["build"], spark_eligibility: base.spark_eligibility }), /rejects excluded effects/);
+  assert.throws(() => buildOrchestrationBundle({ ...base, estimated_duration_ms: 1, effects: ["source_mutation"], explicitly_atomic: true, low_risk: true, remedy_known: true, delegation_overhead_dominates: true, source_mutation_surfaces: ["lib/mechanical.mjs"] }), /worker-required/);
+  assert.throws(() => buildOrchestrationBundle({ ...base, work_items: undefined }), /requires an implementation worker topology/);
+
+  const tampered = structuredClone(selectable);
+  tampered.model_recommendation.spark_gate.availability = "unknown_or_unexposed";
+  tampered.bundle_digest = bundleDigest(tampered);
+  assert.throws(() => validateOrchestrationBundle(tampered), /Spark request requires a composer-derived eligible gate/);
 });

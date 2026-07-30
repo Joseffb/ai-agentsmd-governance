@@ -66,6 +66,30 @@ tiny or tightly coupled work, unsafe overlap, unavailable capacity or tooling,
 ordered dependencies, or coordination cost that truly erases benefit; state a
 material constraint when useful capacity remains idle.
 
+For a bounded delegated AI transformation or mechanical-edit worker, apply
+`model-routing`: only the composer's exact `mechanical` class may request
+`gpt-5.3-codex-spark` at `low`, and an integrity-bound gate verifies the
+content-addressed worker request and prompt envelope before a covered launch.
+Keep inventory retrieval, metadata, identity, calculation, test execution,
+validation, provenance, state, and rendering deterministic code, tools, or
+data; Spark never retrieves or overwrites authoritative mechanical data.
+Exclude architecture, contracts, auth/security/privacy, migrations, ambiguous
+debugging, integration/conflict resolution, release/acceptance, and final
+verdicts. The currently supported conservative fallback is
+`gpt-5.6-terra` at `low` only when the exact composer state is
+`unknown_or_unexposed` and `availability_evidence` is `Unverified`.
+`authoritatively_unavailable` and `separate_pool_exhausted` are reserved and
+fail closed until a supported host capability receipt provides authoritative
+availability evidence. Block only that launch; never move the work to Seat `0`
+or block the project. Actual model and reasoning remain `Unverified` absent
+authoritative metadata.
+
+For a composer-derived worker, use the no-guess path exactly:
+`orchestrate next` -> `orchestrate launch --bundle <path> --seat <N>` -> pass
+the returned `native_quarantine.spawn_request` verbatim -> attest -> send the
+returned `admitted_assignment.message` verbatim as a new turn. Do not guess,
+construct, summarize, or reformat either message.
+
 Topology is JIT launch-order metadata: never load broader context or create a
 persistent workflow state machine for it. Uncertainty yields `SERIAL` or
 `EXPLORATORY`; helper/classifier failure preserves delegation boundaries and

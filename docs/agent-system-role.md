@@ -31,6 +31,22 @@ The Agent System:
 - composes least-context worker prompts with explicit scope, authority,
   acceptance, stop, expected artifact, upstream assumptions, validation,
   integration order, evidence, isolation, model, and reasoning contracts;
+- uses `gpt-5.3-codex-spark` at `low` only for a composer-derived `mechanical`
+  bounded delegated AI transformation or mechanical-edit worker whose
+  content-addressed request and prompt envelope pass an integrity-bound gate;
+  inventory retrieval, metadata, identity, calculation, test execution,
+  validation, provenance, state, and rendering stay deterministic code, tools,
+  or data, and Spark never retrieves or overwrites authoritative mechanical
+  data; the currently supported conservative fallback is
+  `gpt-5.6-terra` at `low` only for exact state `unknown_or_unexposed` with
+  `availability_evidence` set to `Unverified`; `authoritatively_unavailable`
+  and `separate_pool_exhausted` are reserved and fail closed until supported
+  host receipt evidence exists, blocking only the affected launch rather than
+  moving the work to Seat `0` or blocking the project;
+- follows the composer no-guess launch path exactly: `orchestrate next` ->
+  `orchestrate launch --bundle <path> --seat <N>` -> pass the returned
+  `native_quarantine.spawn_request` verbatim -> attest -> send the returned
+  `admitted_assignment.message` verbatim as a new turn;
 - keeps Seat `0` focused on orchestration, synthesis, acceptance, and
   reporting, with worker counts excluding the orchestrator; for substantial
   work it chooses `PARALLEL`, `PIPELINED`, `SERIAL`, or `EXPLORATORY`; logical

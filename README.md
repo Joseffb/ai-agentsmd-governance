@@ -2,7 +2,7 @@
 
 ![AI Coding Agent Governance workflow](docs/assets/ai-coding-agent-governance.png)
 
-> **Current release line:** RC-3.0 (`3.0.12`).
+> **Current release line:** RC-3.0 (`3.1.0`).
 > Immutable releases include the tracked source plugins, but bundling does not
 > prove that any host installed, loaded, or activated those plugins.
 
@@ -155,6 +155,20 @@ binds scope, non-authority, acceptance, stop conditions, validation, isolation,
 evidence, return fields, requested model/reasoning, and fallback. It is not a
 raw prompt, source snapshot, model output, hidden reasoning record, or project
 authority grant. See [the public compatibility matrix](docs/compatibility.md).
+
+For a composer-derived worker, use the no-guess launch path exactly:
+`orchestrate next` -> `orchestrate launch --bundle <path> --seat <N>` -> pass
+the returned `native_quarantine.spawn_request` verbatim -> attest -> send the
+returned `admitted_assignment.message` verbatim as a new turn. Never construct,
+summarize, reformat, or infer either native message.
+
+The currently supported conservative Spark fallback is
+`gpt-5.6-terra` at `low` only when the composer state is exactly
+`unknown_or_unexposed` and `availability_evidence` is `Unverified`.
+`authoritatively_unavailable` and `separate_pool_exhausted` are reserved
+states. They fail closed at launch until a supported host capability receipt
+provides authoritative availability evidence; an unverified claim of either
+state is not permission to launch Terra.
 
 ## Architecture
 

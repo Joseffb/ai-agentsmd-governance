@@ -1,6 +1,6 @@
 {
   "name": "model-routing-gate",
-  "version": "1.0.6+codex.20260729004851",
+  "version": "1.1.3+codex.20260730",
   "description": "Hook-covered model assignment and runtime model attestation for Codex subagents",
   "author": {
     "name": "AI Codex Governance"

@@ -49,6 +49,19 @@ its derived output must remain distinguishable from that snapshot and cannot
 replace or corrupt the authoritative mechanical data. This reduces token cost,
 latency, and hallucination risk across projects.
 
+Composer-classified `mechanical` Spark work requires an integrity-bound gate
+over its content-addressed request. Keep inventory retrieval, test execution,
+validation, provenance, state, and rendering deterministic.
+
+Launch exactly: `orchestrate next` ->
+`orchestrate launch --bundle <path> --seat <N>` -> pass the returned
+`native_quarantine.spawn_request` verbatim -> attest -> send the returned
+`admitted_assignment.message` verbatim. Terra-low is supported only for
+`unknown_or_unexposed` with `availability_evidence` equal to `Unverified`.
+`authoritatively_unavailable` and `separate_pool_exhausted` are reserved; fail
+closed absent a supported host receipt. Block only the affected launch; do not
+move work to Seat `0` or block the project.
+
 ## Seat `0`
 
 Seat `0` is the high-level orchestrator, not a worker. It owns classification,

@@ -33,3 +33,26 @@ test("native collaboration compatibility keeps bypass evidence nonblocking", () 
   assert.match(policy, /telemetry that this path is not hook-gated/);
   assert.match(policy, /never stops the project/i);
 });
+
+test("Spark is mandatory only for composer-derived mechanical AI transformation work", () => {
+  assert.match(policy, /mandatory only for composer-derived `mechanical` bounded delegated AI transformation or mechanical-edit work/);
+  assert.match(policy, /`gpt-5\.3-codex-spark` with `low` reasoning/);
+  assert.match(policy, /## Subagent Assignment\s+### Spark-Eligible Bounded Delegated Work/);
+  assert.match(policy, /only the exact `mechanical` complexity\s+class may produce/i);
+  assert.match(policy, /content-addressed bundle, worker\s+request, and prompt envelope/);
+  assert.match(policy, /integrity-bound Model\s+Routing Gate must verify that composer-derived request before launch/);
+  assert.match(policy, /bounded delegated AI transformation or\s+mechanical-edit worker/i);
+  assert.match(policy, /inventory collection, calculation, test execution, validation, provenance,\s+state, and rendering remain deterministic code, tools, or data/i);
+  assert.doesNotMatch(policy, /model-operated inventories|focused deterministic test execution/);
+  assert.match(policy, /must never retrieve or\s+overwrite the authoritative mechanical data/i);
+  assert.match(policy, /architecture, contracts,\s+authentication, security, privacy, migrations, ambiguous debugging,\s+integration or conflict resolution, release or acceptance work, or a final\s+verdict/i);
+  assert.match(policy, /no-guess launch path is exact:\s+`orchestrate next` -> `orchestrate launch --bundle <path> --seat <N>`/i);
+  assert.match(policy, /pass\s+the returned `native_quarantine\.spawn_request` verbatim -> attest -> send the\s+returned\s+`admitted_assignment\.message` verbatim as a new turn/i);
+  assert.match(policy, /currently supported conservative Spark fallback is `gpt-5\.6-terra` with\s+`low` reasoning only when the composer state is exactly\s+`unknown_or_unexposed` and `availability_evidence` is `Unverified`/i);
+  assert.match(policy, /`authoritatively_unavailable` and `separate_pool_exhausted` are reserved state\s+names and fail closed at launch until a supported host capability receipt\s+provides authoritative availability evidence/i);
+  assert.match(policy, /An unverified claim of either\s+reserved state is not permission to launch Terra/i);
+  assert.match(policy, /Never move the work to Seat\s+`0`/);
+  assert.match(policy, /block only the affected launch and continue the project through another\s+safe supported path/i);
+  assert.match(policy, /actual\s+model and reasoning as `Unverified`/i);
+  assert.match(policy, /missing, altered, or non-matching composer request is\s+inadmissible for that Spark launch/i);
+});
