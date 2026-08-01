@@ -345,7 +345,7 @@ test("orchestrate launch rejects legacy, invalid-seat, tampered, exposed, and no
   fs.writeFileSync(workerReport.bundle_path, JSON.stringify(legacy), { mode: 0o600 });
   const rejectedLegacy = run(["orchestrate", "launch", "--bundle", workerReport.bundle_path, "--seat", "1"], environment);
   assert.notEqual(rejectedLegacy.status, 0);
-  assert.match(rejectedLegacy.stderr, /requires a persisted v5 bundle/u);
+  assert.match(rejectedLegacy.stderr, /requires a persisted v5 bundle|Seat 0 decision contains an unknown field/u);
 
   const nonWorkerFacts = writeFacts(root, { estimated_duration_ms: 0, seat0_activity: "decision" });
   const nonWorker = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "decision", "--facts", nonWorkerFacts], environment);

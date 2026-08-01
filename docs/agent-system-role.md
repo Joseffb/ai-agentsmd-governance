@@ -7,20 +7,69 @@ The role is intrinsic system behavior, not a custom profile or project overlay.
 
 ## Purpose
 
-Agent System is the JIT orchestration and agent-use governor. Its primary product
-is JIT Agent-file/rule discovery and the smallest-sufficient scoped prompt
-composition for coding agents. Agent-use enforcement is the necessary execution
-control; dependency-aware scheduling is a thin launch-order layer. It dynamically loads the smallest applicable rule set for the immediate intent, composes scoped worker prompts, selects the lowest reliable model and reasoning, and Seat `0` remains the high-level orchestrator. It maintains the kernel, policy router, skills, plugins,
+Agent System is the JIT orchestration and agent-use governor.
+
+**Agent System governs execution, not engineering.** Its primary product is JIT
+Agent-file/rule discovery and the smallest-sufficient scoped prompt composition
+for coding agents. Worker admission enforcement is limited to named expensive
+or irreversible boundaries; dependency-aware scheduling is a thin,
+observational launch-order layer. It
+dynamically loads the smallest applicable rule set for the immediate intent,
+composes scoped worker prompts, selects the
+lowest reliable model and reasoning, and Seat `0` remains the high-level
+orchestrator. It maintains the kernel, policy router, skills, plugins,
 model-routing controls, project overlays, release system, continuity
 interfaces, machine-profile contract, and optional engineering analytics as
 one coherent system.
 
-Agent System governs agent use and prompt activation. It never supplies or
-expands project authority, owns project state, authorizes releases, deployment
-or publication, or performs another project's business execution.
+**Agent System provides governance through evidence, not control.** It never
+supplies or expands project authority, owns project state, authorizes releases,
+deployment or publication, or performs another project's business execution.
+Evidence can establish a named worker boundary, but evidence, receipts,
+lifecycle records, metrics, and reports never become authority or control
+execution.
 
 Its outcome is practical: make governed project work safer, faster, easier to
 supervise, and less likely to stall on the governance machinery itself.
+
+## Light-governance Doctrine
+
+Workers fail closed only at these boundaries:
+
+- missing authority or scope expansion;
+- secret, data, tenancy, or privilege boundaries;
+- destructive or irreversible effects;
+- missing verified Git lineage or worktree;
+- primary integration or merge;
+- a tampered assignment, bundle, or receipt;
+- an authoritatively known costly model mismatch; and
+- mutation of governance, authority, execution contracts, or evidence.
+
+Unknown actual model identity continues safely as `Unverified`. Incomplete
+required validation holds automatic admission and escalates to Seat `0`.
+Differences in strategy, topology, implementation, coding, or optimization are
+observed, not blocked.
+
+Every hard rule declares `prevented_failure`,
+`why_failure_is_expensive_or_irreversible`, `enforcement_cost`,
+`seat0_escalation_path`, and `safe_fallback`. Prefer observation over
+intervention, existing evidence over new instrumentation, composition over a
+new subsystem, and deletion over new policy. An elegance-only feature is a
+removal candidate. Every rule must pay rent.
+
+Seat `0` is governed and auditable, but Agent System never enforces execution
+against it. Seat `0` is constrained only by external platform and safety
+requirements, valid user authority, ownership and data boundaries, destructive
+ambiguity, and project release rules. An explicit user instruction that
+“Seat 0 does not implement” remains user authority. Agent System or helper
+failure never blocks Seat `0` or the project.
+
+A material decision changes authority, scope, ownership, data/tenancy/
+privilege, destructive reversibility, Git lineage or integration ownership,
+validation admission, release posture, or execution-contract/evidence
+integrity. Its provenance records the exact `decision_scope` and external
+`decision_authority`. A provenance-write failure emits a warning and reduces
+coverage only; it cannot block, void, delay, or reopen execution.
 
 ## Responsibilities
 
@@ -40,9 +89,10 @@ The Agent System:
   data; the currently supported conservative fallback is
   `gpt-5.6-terra` at `low` only for exact state `unknown_or_unexposed` with
   `availability_evidence` set to `Unverified`; `authoritatively_unavailable`
-  and `separate_pool_exhausted` are reserved and fail closed until supported
-  host receipt evidence exists, blocking only the affected launch rather than
-  moving the work to Seat `0` or blocking the project;
+  and `separate_pool_exhausted` are reserved evidence states. They hold only an
+  affected launch that establishes an authoritatively known costly model
+  mismatch; unknown actual model identity continues safely as `Unverified`
+  rather than moving the work to Seat `0` or blocking the project;
 - follows the composer no-guess launch path exactly: `orchestrate next` ->
   `orchestrate launch --bundle <path> --seat <N>` -> pass the returned
   `native_quarantine.spawn_request` verbatim -> attest -> send the returned
@@ -68,6 +118,9 @@ The Agent System:
   persistent workflow state machine; uncertainty yields `SERIAL` or
   `EXPLORATORY`, while helper/classifier failure uses a bounded manual/native
   worker fallback under unchanged delegation boundaries without blocking the project;
+- treats lifecycle records and operator-requested reports as observational
+  evidence only, never admission, routing, authority, completion, or execution
+  control;
 - maintains and simplifies the portable governance/orchestration system;
 - facilitates project tasks by resolving Agent System blockers and returning a
   supported continuation path;
@@ -107,8 +160,8 @@ project ownership, authorize work, or become a governance input. Repair work
 must preserve the reporting project's state. After one consent-selected report
 or local log, the reporting project immediately continues within existing
 authority using its existing tool definitions or native tools. There is no
-wait-for-Agent-System state. Agent System may block an improper Seat `0` action,
-but it never blocks the project.
+wait-for-Agent-System state. Agent System may warn and preserve evidence about
+a Seat `0` decision, but it never blocks Seat `0` or the project.
 
 ## Post-goal Analysis
 

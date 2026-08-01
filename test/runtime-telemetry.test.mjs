@@ -57,9 +57,10 @@ test("runtime ingestion emits schema-recognized per-turn token/quota facts, bind
   assert.equal(usage.input_tokens, 11);
   assert.equal(usage.total_tokens, 16);
   assert.equal(usage.task_id, "task-opaque");
+  assert.match(usage.execution_id, /^execution-[a-f0-9]{32}$/);
   assert.equal(usage.coverage_status, "complete");
   const quota = events.find((event) => event.type === "token.quota_snapshot");
-  assert.deepEqual(Object.keys(quota).sort(), ["coverage_status", "evidence_authority", "evidence_class", "event_id", "occurred_at", "project", "recorded_at", "reset_epoch_seconds", "schema_version", "source", "task_id", "type", "used_percent", "window_minutes"].sort());
+  assert.deepEqual(Object.keys(quota).sort(), ["coverage_status", "evidence_authority", "evidence_class", "event_id", "execution_id", "occurred_at", "project", "recorded_at", "reset_epoch_seconds", "schema_version", "source", "task_id", "type", "used_percent", "window_minutes"].sort());
   assert.equal(quota.used_percent, 27);
   assert.equal(quota.window_minutes, 300);
   assert.equal(quota.reset_epoch_seconds, 1_785_000_000);

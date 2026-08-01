@@ -15,9 +15,9 @@
   },
   "kernel": {
     "path": "kernel/AGENTS.md",
-    "sha256": "sha256:dd861ae75e67fcf1008409730d2f6abfc939237879bc62b9356b9729917be446",
-    "bytes": 7995,
-    "words": 874,
+    "sha256": "sha256:ce2724dd6d26827afcc661440427a6fa31183e7a2118297ecbe2cf7bf6535a76",
+    "bytes": 7993,
+    "words": 842,
     "estimated_tokens": 1999
   },
   "skill": {

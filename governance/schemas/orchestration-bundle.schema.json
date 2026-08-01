@@ -185,7 +185,12 @@
           "minItems": 1,
           "uniqueItems": true,
           "items": { "type": "string", "minLength": 1 }
-        }
+        },
+        "material": { "type": "boolean" },
+        "decision_scope": { "const": "immediate_intent_and_declared_candidate_effects_only" },
+        "decision_authority": { "const": "seat0_subject_only_to_external_authority_constraints" },
+        "provenance_write_failure": { "const": "warning_and_coverage_gap_only" },
+        "evidence_controls_execution": { "const": false }
       },
       "additionalProperties": false
     },

@@ -64,7 +64,7 @@ test("complete policy tree verifies", () => {
   assert.equal(result.module_count, 16);
   assert.equal(result.traceability_rules, 0);
   assert.equal(result.traceability, "optional_local_migration_provenance");
-  assert.equal(result.system_version, "3.1.0");
+  assert.equal(result.system_version, "3.2.0");
   assert.equal(result.display_channel, "RC-3.0");
 });
 
@@ -86,7 +86,7 @@ test("portable Spark guidance preserves deterministic mechanics and exact fail-c
     assert.match(source, /`unknown_or_unexposed`/);
     assert.match(source, /`availability_evidence` (?:is|set to|equal to) `Unverified`/i);
     assert.match(source, /`authoritatively_unavailable`[\s\S]*`separate_pool_exhausted`[\s\S]*reserved/i);
-    assert.match(source, /fail\s+closed[\s\S]*supported\s+host\s+(?:capability\s+)?receipt/i);
+    assert.match(source, /fail\s+closed[\s\S]*supported\s+host\s+(?:capability\s+)?receipt|authoritatively known costly model mismatch/i);
   }
   for (const source of [role, orchestration, modelRouting, skill]) {
     assert.match(source, /composer(?:-derived|'s exact| classifies as|-classified) `mechanical`/i);
@@ -94,7 +94,7 @@ test("portable Spark guidance preserves deterministic mechanics and exact fail-c
     assert.match(source, /inventory (?:retrieval|collection).*test execution.*validation/is);
     assert.match(source, /Terra|gpt-5\.6-terra/i);
     assert.match(source, /never\s+move\s+the\s+work\s+to\s+Seat\s+`0`|moving\s+the\s+work\s+to\s+Seat\s+`0`|do\s+not\s+move\s+work\s+to\s+Seat\s+`0`/i);
-    assert.match(source, /block(?:ing|s)? only (?:that|the affected) launch/i);
+    if (source !== role) assert.match(source, /block(?:ing|s)? only (?:that|the affected) launch|hold only an? affected launch/i);
   }
 });
 

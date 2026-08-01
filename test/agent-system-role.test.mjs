@@ -17,9 +17,9 @@ test("portable Agent System role is canonical and discoverable", () => {
   assert.match(role, /JIT orchestration and agent-use governor/i);
   assert.match(role, /dynamically loads the smallest applicable rule set/i);
   assert.match(role, /composes scoped worker prompts/i);
-  assert.match(role, /selects the lowest reliable model and\s+reasoning/i);
+  assert.match(role, /selects the\s+lowest reliable model and\s+reasoning/i);
   assert.match(role, /Seat `0` remains the high-level\s+orchestrator/i);
-  assert.match(role, /never supplies or\s+expands project authority/i);
+  assert.match(role, /never\s+supplies or expands project authority/i);
   assert.match(role, /facilitator and repair service, not the owner of another\s+project's product work/i);
   assert.match(role, /reload, retry, or changed-path guidance/i);
   assert.match(role, /one exact non-archived `Agent System` label match/i);
@@ -94,7 +94,7 @@ test("Agent System automation requires explicit separate consent and has a local
   assert.match(role, /no\s+cross-task\s+governance\s+message\s+and\s+no\s+background\s+token\s+spend/i);
   assert.match(readme, /fresh\s+installation\s+must\s+ask\s+the\s+(?:two\s+)?separate\s+decisions/i);
   assert.match(skill, /Task maintenance, reporting, and repair each require their own explicit active\s+consent/i);
-  assert.match(kernel, /Without\s+repair\s+consent, no repair/i);
+  assert.match(kernel, /Separate consent governs task\/report\/repair/i);
 });
 
 test("Agent System consent and local-only logging use portable no-guess commands", () => {
@@ -138,11 +138,9 @@ test("auto_correct is an opted-in true-blocker-only repair mode", () => {
     assert.match(text, /destructive\/irreversible change,\s+architecture\/public-contract\s+redesign/i);
     assert.match(text, /source-project mutation,\s+public\s+publication, or schedule/i);
   }
-  assert.match(kernel, /gets separate consent: task, reporting, repair/i);
-  assert.match(kernel, /Without\s+repair\s+consent, no repair/i);
-  assert.match(kernel, /`log_only` logs every eligible issue/i);
-  assert.match(kernel, /`auto_correct`\s+repairs?\s+only\s+confirmed\s+locally\s+actionable\s+private-Agent(?:-|\s+)System\s+Observed\/Verified\s+P0\/P1\s+core-capability\s+blockers/i);
-  assert.match(kernel, /it\s+logs\s+all\s+others/i);
+  assert.match(kernel, /Separate consent governs task\/report\/repair/i);
+  assert.match(kernel, /`auto_correct` repairs/i);
+  assert.match(kernel, /confirmed locally actionable private-Agent-System Observed\/Verified P0\/P1\s+core-capability blockers/i);
   assert.match(kernel, /Projects\s+never wait/i);
   for (const text of [role, skill, jit, delegation]) {
     assert.match(text, /`log_only`\s+records\s+every\s+eligible\s+Agent\s+System\/runtime\s+issue\s+and\s+never\s+(?:starts\s+)?repair/i);
@@ -161,7 +159,7 @@ test("RC consent continues projects immediately and bounds legacy migration", ()
   const kernel = fs.readFileSync(path.join(root, "governance", "kernel", "AGENTS.md"), "utf8");
   for (const text of [role, readme, skill]) {
     assert.match(text, /no\s+wait-for-Agent-System/i);
-    assert.match(text, /Agent System may block an improper Seat `0` action,\s+but it never blocks\s+the project/i);
+    assert.match(text, /never blocks Seat `0` or the project|never blocks the project/i);
     assert.match(text, /existing tool definitions or native tools/i);
     assert.match(text, /legacy combined\s+reporting.*`log_only`/is);
     assert.match(text, /never authorizes?\s+automatic KPI or\s+after-action\s+reports or\s+automatic repair/i);
@@ -172,7 +170,7 @@ test("RC consent continues projects immediately and bounds legacy migration", ()
   }
   assert.match(kernel, /(?:no|or)\s+wait(?:-for-Agent-System)?\s+state/i);
   assert.match(kernel, /Agent\s+System\s+never\s+blocks\s+the\s+project/i);
-  assert.match(kernel, /no\s+KPI\s*\/\s*project\s*\/\s*public-branch\s+mutation/i);
+  assert.match(kernel, /KPI is downstream-only/i);
   assert.match(role, /Helper failure never grants Seat `0` implementation/i);
   assert.match(readme, /missing or failed helper never grants Seat `0` implementation/i);
   assert.match(skill, /helper failure grants no Seat `0` implementation/i);

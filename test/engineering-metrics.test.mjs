@@ -10,6 +10,7 @@ import {
   buildMetricsReport,
   ENGINEERING_EVENT_FAMILIES,
   normalizeEngineeringEvent,
+  projectExecutionEvidenceLifecycles,
   readEngineeringEvents,
   recordEngineeringEvent
 } from "../lib/engineering-metrics.mjs";
@@ -92,6 +93,82 @@ test("event ledger rejects unbounded data and CLI writes are private and quiet",
   assert.equal(read.valid_lines, 1);
   assert.equal(read.events[0].type, "task.started");
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("canonical execution evidence is bounded, append-only, and observational", () => {
+  assert.deepEqual(ENGINEERING_EVENT_FAMILIES.Execution, [
+    "execution.", "accepted_work.", "correlation.", "decision.", "billing."
+  ]);
+  const running = normalizeEngineeringEvent({
+    type: "execution.running",
+    project: "alpha",
+    execution_id: "execution-1",
+    occurred_at: "2026-07-26T00:00:00.000Z",
+    source: "runtime"
+  });
+  const accepted = normalizeEngineeringEvent({
+    type: "accepted_work.recorded",
+    project: "alpha",
+    execution_id: "execution-1",
+    accepted_work_id: "work-1",
+    acceptance_status: "accepted",
+    revision: "r1",
+    accepted_by: "reviewer-1",
+    artifact_validation_ref: "validation-1",
+    occurred_at: "2026-07-26T00:01:00.000Z"
+  });
+  assert.equal(accepted.artifact_validation_ref, "validation-1");
+  assert.throws(() => normalizeEngineeringEvent({ ...running, prompt: "never retained" }), /prohibited or unknown fields/);
+  const projected = projectExecutionEvidenceLifecycles([
+    running,
+    { ...running, event_id: "accepted", type: "execution.accepted", occurred_at: "2026-07-26T00:02:00.000Z" },
+    { ...running, event_id: "out-of-order", type: "execution.allocated", occurred_at: "2026-07-26T00:03:00.000Z" }
+  ]);
+  assert.deepEqual(projected[0].lifecycle, ["Running", "Accepted"]);
+  assert.equal(projected[0].coverage_status, "partial");
+  assert.equal(projected[0].invalid_observation_count, 1);
+  assert.equal(projected[0].timestamps.Queued, undefined, "missing states are never inferred");
+  const decision = normalizeEngineeringEvent({
+    type: "decision.material",
+    project: "alpha",
+    execution_id: "execution-1",
+    decision_id: "decision-1",
+    decision_scope: "delivery",
+    decision_authority: "operator",
+    decision_status: "recorded",
+    decision_revision: "r1",
+    decision_basis_ref: "basis-1",
+    occurred_at: "2026-07-26T00:03:00.000Z"
+  });
+  assert.equal(decision.decision_authority, "operator");
+  const linked = normalizeEngineeringEvent({
+    type: "correlation.linked",
+    project: "alpha",
+    execution_id: "execution-1",
+    correlation_id: "correlation-1",
+    linked_execution_id: "execution-2",
+    link_type: "retry_of",
+    occurred_at: "2026-07-26T00:03:30.000Z"
+  });
+  assert.equal(linked.linked_execution_id, "execution-2");
+  const legacy = normalizeEngineeringEvent({
+    type: "correlation.legacy_unlinked",
+    project: "alpha",
+    legacy_reference: "legacy-1",
+    occurred_at: "2026-07-26T00:03:31.000Z"
+  });
+  assert.equal(legacy.correlation_id, undefined, "legacy evidence is not retrospectively linked");
+  const billing = normalizeEngineeringEvent({
+    type: "billing.benchmark",
+    project: "alpha",
+    billing_benchmark_id: "benchmark-1",
+    billing_unit: "token",
+    billing_quantity: 10,
+    billing_rate_micros: 15,
+    billing_currency: "USD",
+    occurred_at: "2026-07-26T00:04:00.000Z"
+  });
+  assert.equal(billing.billing_rate_micros, 15);
 });
 
 test("metrics record accepts a closed JSON event without exposing telemetry output", () => {

@@ -2,7 +2,7 @@
 
 ![AI Coding Agent Governance workflow](docs/assets/ai-coding-agent-governance.png)
 
-> **Current release line:** RC-3.0 (`3.1.0`).
+> **Current release line:** RC-3.0 (`3.2.0`).
 > Immutable releases include the tracked source plugins, but bundling does not
 > prove that any host installed, loaded, or activated those plugins.
 
@@ -11,6 +11,12 @@
 > scoped prompt composition. Agent-use enforcement is the necessary execution
 > control; dependency-aware scheduling is a thin launch-order layer. Optional
 > telemetry and defect/reporting support are secondary and never authority.
+
+> **Public evidence philosophy:** Canonical Execution Evidence is a read-only,
+> operator-requested projection of one private append-only evidence ledger.
+> Coverage is never inferred where authoritative evidence is unavailable;
+> governance records reality and does not manufacture it. Metrics remain
+> downstream-only and never influence execution.
 
 > **Incident and adoption contract:** Each bounded governance/runtime incident
 > is privately appended to JSONL under a failure class. A persistent Agent
@@ -136,6 +142,14 @@ by OpenAI, Anthropic, or another model provider.
 The policy corpus and router are portable. Runtime-specific skills, plugins,
 model attestations, and interception guarantees are not silently generalized
 to runtimes that do not expose equivalent capabilities.
+
+### Approval progression
+
+Private evidence and local validation may inform a proposed change, but they do
+not authorize publication. The explicit progression is **private immutable
+evidence -> public beta -> public main**. Each transition requires its own
+operator approval; no receipt, report, test, or metric substitutes for that
+approval.
 
 For native read-only quarantine attestation, `--agent` accepts either the
 runtime UUID or the exact canonical collaboration task path (for example,

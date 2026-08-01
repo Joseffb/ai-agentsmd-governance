@@ -8,6 +8,8 @@ import {
   FIVE_MINUTES_MS,
   ORCHESTRATION_BUNDLE_SCHEMA_VERSION,
   ORCHESTRATION_COMPOSER_VERSION,
+  WORKER_HARD_BOUNDARY_RULES,
+  WORKER_OBSERVATIONAL_DIFFERENCES,
   buildOrchestrationBundle,
   buildWorkerTopology,
   bundleDigest,
@@ -89,6 +91,37 @@ test("Seat 0 permits only one fully evidenced low-risk source correction at the 
   for (const effect of ["deployment", "database_mutation", "release"]) {
     assert.equal(classifyImmediateIntent({ ...atomicCorrection, effects: [effect] }).classification, "project_authority_required", effect);
   }
+});
+
+test("worker hard boundaries are bounded, reviewable, and differences remain observational", () => {
+  assert.deepEqual(WORKER_HARD_BOUNDARY_RULES.map((rule) => rule.id), [
+    "missing_authority_or_scope_expansion",
+    "secret_data_tenancy_or_privilege_boundary",
+    "destructive_or_irreversible_effect",
+    "missing_verified_git_lineage_or_worktree",
+    "primary_integration_or_merge",
+    "tampered_assignment_bundle_or_receipt",
+    "authoritatively_known_costly_model_mismatch",
+    "governance_authority_execution_contract_or_evidence_mutation"
+  ]);
+  for (const rule of WORKER_HARD_BOUNDARY_RULES) {
+    assert.deepEqual(Object.keys(rule), [
+      "id",
+      "prevented_failure",
+      "why_failure_is_expensive_or_irreversible",
+      "enforcement_cost",
+      "seat0_escalation_path",
+      "safe_fallback"
+    ]);
+    for (const value of Object.values(rule)) assert.equal(typeof value === "string" && value.length > 0, true);
+  }
+  assert.deepEqual(WORKER_OBSERVATIONAL_DIFFERENCES, [
+    "strategy",
+    "topology",
+    "implementation",
+    "coding",
+    "optimization"
+  ]);
 });
 
 test("the closed effect vocabulary rejects unknown aliases and case variants", () => {
@@ -473,6 +506,11 @@ test("bundle records the explicit RC-3 identity, decision, worker, and execution
   assert.equal(bundle.seat0_decision.seat, 0);
   assert.equal(bundle.seat0_decision.decision, "worker_required");
   assert.equal(bundle.seat0_decision.reasons.includes("duration_exceeds_five_minutes"), true);
+  assert.equal(bundle.seat0_decision.material, true);
+  assert.equal(bundle.seat0_decision.decision_scope, "immediate_intent_and_declared_candidate_effects_only");
+  assert.equal(bundle.seat0_decision.decision_authority, "seat0_subject_only_to_external_authority_constraints");
+  assert.equal(bundle.seat0_decision.provenance_write_failure, "warning_and_coverage_gap_only");
+  assert.equal(bundle.seat0_decision.evidence_controls_execution, false);
   assert.equal(bundle.predecessor_digest, DIGEST_A);
   assert.equal(bundle.native_fallback.actual_model, "Unverified");
   assert.equal(bundle.model_recommendation.model, "gpt-5.6-terra");
@@ -489,6 +527,10 @@ test("bundle records the explicit RC-3 identity, decision, worker, and execution
     assert.equal(worker.actual_reasoning_raw, "Unverified");
     assert.deepEqual(worker.prompt_envelope.scope, { item_ids: worker.item_ids, write_scopes: worker.write_scopes });
     assert.equal(worker.prompt_envelope.non_authority, "does_not_grant_project_authority");
+    assert.deepEqual(worker.prompt_envelope.stop_conditions, [
+      ...WORKER_HARD_BOUNDARY_RULES.map((rule) => rule.id),
+      "incomplete_required_validation"
+    ]);
     assert.equal(worker.prompt_envelope.requested_model, "gpt-5.6-terra");
     assert.equal(worker.prompt_envelope.requested_reasoning_raw, "high");
   }
@@ -511,7 +553,7 @@ test("bundle records the explicit RC-3 identity, decision, worker, and execution
   assert.equal(bundle.contracts.lifecycle.execution_evidence, "Unverified");
   assert.equal(bundle.contracts.lifecycle.execution_class, "PARALLEL");
   assert.deepEqual(bundle.contracts.lifecycle.launch_stages, bundle.topology.launch_stages);
-  assert.equal(bundle.contracts.lifecycle.scheduler_scope, "deterministic_planning_only_no_persistent_workflow_state");
+  assert.equal(bundle.contracts.lifecycle.scheduler_scope, "observational_launch_order_metadata_only_no_execution_authority");
   assert.equal(bundle.contracts.lifecycle.scheduler_failure_fallback, "native_or_manual_worker_without_expanded_authority");
   assert.equal(bundle.contracts.return.recipient_seat, 0);
   assert.deepEqual(bundle.contracts.fallback, bundle.native_fallback);
@@ -556,6 +598,9 @@ test("lifecycle and capacity contracts reject tampering while legacy v2 bundles 
   legacy.schema_version = 2;
   legacy.release_identity.composer_version = "1.0.0";
   delete legacy.model_recommendation.spark_gate;
+  for (const field of ["material", "decision_scope", "decision_authority", "provenance_write_failure", "evidence_controls_execution"]) {
+    delete legacy.seat0_decision[field];
+  }
   delete legacy.contracts.lifecycle;
   delete legacy.topology.capacity_limit;
   delete legacy.topology.capacity_evidence;
@@ -581,6 +626,9 @@ test("lifecycle and capacity contracts reject tampering while legacy v2 bundles 
   v3.schema_version = 3;
   v3.release_identity.composer_version = "1.1.0";
   delete v3.model_recommendation.spark_gate;
+  for (const field of ["material", "decision_scope", "decision_authority", "provenance_write_failure", "evidence_controls_execution"]) {
+    delete v3.seat0_decision[field];
+  }
   for (const field of ["execution_class", "launch_stages", "scheduler_scope", "scheduler_failure_fallback"]) delete v3.contracts.lifecycle[field];
   v3.contracts.lifecycle.stages = [
     "decompose",
@@ -623,6 +671,10 @@ test("bundle integrity and privacy reject tampering, prompts, content, output, c
   tampered.seat0_decision.reasons = ["invented_reason"];
   tampered.bundle_digest = bundleDigest(tampered);
   assert.throws(() => validateOrchestrationBundle(tampered), /reasons do not match/);
+  const tamperedProvenance = structuredClone(bundle);
+  tamperedProvenance.seat0_decision.evidence_controls_execution = true;
+  tamperedProvenance.bundle_digest = bundleDigest(tamperedProvenance);
+  assert.throws(() => validateOrchestrationBundle(tamperedProvenance), /decision provenance contract is invalid/);
   assert.throws(() => buildOrchestrationBundle({ immediate_intent: "x", estimated_duration_ms: 0, prompt: "do not persist" }), /not permitted/);
   for (const forbidden of ["source_content", "model_output", "credential", "reasoning"]) {
     assert.throws(

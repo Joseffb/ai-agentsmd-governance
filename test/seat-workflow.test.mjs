@@ -299,12 +299,36 @@ test("seat assign hides protocol and emits a private assignment package", () => 
   const assignment = JSON.parse(fs.readFileSync(output.assignment_package, "utf8"));
   assert.equal(assignment.child_ledger, "fresh_no_parent_receipt");
   assert.equal(assignment.requested_model, "gpt-5.6-terra");
+  assert.match(assignment.execution_id, /^execution-[a-f0-9]{32}$/);
   assert.deepEqual(assignment.write_scope, ["src/owned.rs"]);
   assert.ok(assignment.policy_lifecycle.context_acknowledgment);
   const events = fs.readFileSync(value.metricsLedger, "utf8").trim().split("\n").map(JSON.parse);
-  assert.equal(events.length, 1);
+  assert.equal(events.length, 2);
   assert.equal(events[0].type, "seat.prepared");
   assert.equal(events[0].project, "fixture");
+  assert.equal(events[1].type, "execution.allocated");
+  assert.equal(events[1].execution_id, assignment.execution_id);
+});
+
+test("mutating preflight records the observed subtask start with its execution correlation", () => {
+  const value = fixture();
+  const assigned = JSON.parse(execFileSync(process.execPath, seatArgs(value, "assign", "started-writer"), {
+    encoding: "utf8",
+    env: value.env
+  }));
+  const assignment = JSON.parse(fs.readFileSync(assigned.assignment_package, "utf8"));
+  execFileSync(assigned.child_preflight.executable, assigned.child_preflight.args, {
+    encoding: "utf8",
+    env: value.env
+  });
+  const events = fs.readFileSync(value.metricsLedger, "utf8").trim().split("\n").map(JSON.parse);
+  const started = events.find((event) => event.type === "seat.started");
+  const running = events.find((event) => event.type === "execution.running");
+  assert.equal(started.execution_id, assignment.execution_id);
+  assert.equal(running.execution_id, assignment.execution_id);
+  assert.equal(started.occurred_at, running.occurred_at);
+  assert.ok(Date.parse(started.occurred_at) >= Date.parse(assignment.created_at));
+  assert.equal(started.coverage_status, "complete");
 });
 
 test("seat assign carries declared generated scope in its private assignment package", () => {

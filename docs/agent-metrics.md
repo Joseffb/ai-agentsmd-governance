@@ -8,7 +8,8 @@ is one-way:
 Kernel -> Receipts -> Events -> Metrics
 ```
 
-Metrics consume bounded lifecycle evidence. They do not authorize, deny, block,
+Metrics consume bounded lifecycle evidence from one private append-only evidence
+ledger. They do not authorize, deny, block,
 route, modify, or score governed execution, and no metric is a completion gate.
 
 ## Anti-optimization doctrine
@@ -180,6 +181,9 @@ node bin/acg.mjs metrics ingest-runtime \
 node bin/acg.mjs metrics after-action \
   --project example \
   --thread thread-123
+
+# Operator-requested Canonical Execution Evidence projection
+node bin/acg.mjs metrics execution --execution execution-123
 ```
 
 Every report includes project dashboards and weekly trend data. A thread filter
@@ -190,6 +194,25 @@ for a later scheduled task. Comparison reporting is operator-requested only;
 no schedule is created without an explicit operator cadence.
 The after-action projection omits ledger diagnostics and raw task/thread IDs;
 it is the bounded payload supplied to the configured Agent System lane.
+
+### Canonical Execution Evidence
+
+`metrics execution` is an operator-triggered, read-only projection of one
+explicit `execution_id`. It reports only normalized ledger rows carrying that
+identifier; task, work, and thread IDs are never inferred as execution links.
+It retains bounded acceptance revision, artifact-validation, and decision
+provenance references plus coverage. Prompts, source, output, secrets,
+reasoning, and free-form decision narrative are not report fields.
+
+The credit benchmark view recognizes only
+`billing.credit_benchmark_started`, `billing.credit_benchmark_exhausted`, and
+`benchmark.project_linked`. Credit amount and currency are observed fields,
+never a hard-coded `$100`; quota percentages and snapshots are never a
+substitute for credit, tokens, or accepted work. Per-credit measures are
+`null` unless all required evidence is complete and currency-consistent.
+
+This is reporting, not an execution control plane. Governance records reality;
+it does not manufacture it, and metrics never influence execution.
 
 ## Metric Semantics
 
