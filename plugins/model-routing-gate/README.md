@@ -16,12 +16,14 @@ The repository copy is canonical. Runtime receipts are private and untracked.
 
 The ledger defaults to `~/.codex/plugin-data/model-routing-gate/model-routing-events.jsonl`. It excludes prompts, source, subagent output, secrets, and hidden reasoning. Use the governance CLI's `model-audit` command to backfill native launches that bypass hooks and summarize a task or time window.
 
-Composer v5 Spark and Terra/low mechanical launches require the exact
+Composer v6 Spark and Terra/low mechanical launches require the exact
 `composer_assignment` emitted with the launch. The gate reads its owner-private
 `bundle_path` beneath `ACG_ORCHESTRATION_BUNDLE_ROOT` (defaulting to the
-private Codex orchestration store), recomputes the bounded v5 bundle's
-canonical digest, and verifies the selected worker seat, assignment IDs,
-prompt-envelope digest, model/reasoning, and complete Spark gate. Selectable
+private Codex orchestration store), recomputes the bounded v6 bundle's
+canonical digest, and verifies its execution, correlation, and causation IDs
+against both the bundle and selected worker prompt before checking the worker
+seat, assignment IDs, prompt-envelope digest, model/reasoning, and complete
+Spark gate. Unknown or self-authored identity fields fail closed. Selectable
 work requires exact Spark/low. With `availability_evidence:"Unverified"`, only
 `unknown_or_unexposed` may use conservative Terra/low; unavailable or exhausted
 claims require a future supported host receipt and currently fail closed.

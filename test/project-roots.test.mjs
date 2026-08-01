@@ -115,7 +115,7 @@ test("JIT orchestration never substitutes for project authority or completion", 
   assert.match(jitPolicy, /does not govern project authority, product state, business decisions,\s+releases, deployment, publication, or execution ownership/i);
   assert.match(jitPolicy, /Removing or declining it leaves rule selection, prompt composition,\s+delegation, native recovery, project-native tooling, and project completion\s+available/i);
   assert.match(jitPolicy, /Only cross-task defect delivery disappears/i);
-  assert.match(jitPolicy, /There is no fixed retry count, but an\s+unchanged relaunch loop is prohibited/i);
+  assert.match(jitPolicy, /There is no fixed retry count, but an\s+unchanged relaunch loop is\s+prohibited/i);
 });
 
 test("JIT orchestration keeps authoritative mechanical data deterministic", () => {

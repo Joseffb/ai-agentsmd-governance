@@ -46,6 +46,16 @@ function parseLaunchEnvelope(report) {
   return JSON.parse(firstLine.slice("MODEL_ROUTING_GATE_V1 ".length));
 }
 
+function stripExecutionIdentity(value) {
+  if (Array.isArray(value)) return value.map(stripExecutionIdentity);
+  if (!value || typeof value !== "object") return value;
+  const copy = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (!["execution_id", "correlation_id", "causation_id"].includes(key)) copy[key] = stripExecutionIdentity(child);
+  }
+  return copy;
+}
+
 test("orchestrate next persists a private content-addressed bundle and emits only its decision", (t) => {
   const { root, project, bundleRoot, environment } = fixture(t);
   const facts = writeFacts(root, {
@@ -116,6 +126,10 @@ test("orchestrate next accepts only a verified private predecessor and binds its
   assert.equal(second.status, 0, second.stderr);
   const persisted = JSON.parse(fs.readFileSync(JSON.parse(second.stdout).bundle_path, "utf8"));
   assert.equal(persisted.predecessor_digest, prior.bundle_digest);
+  const firstPersisted = JSON.parse(fs.readFileSync(prior.bundle_path, "utf8"));
+  assert.equal(persisted.execution_id, firstPersisted.execution_id);
+  assert.equal(persisted.correlation_id, firstPersisted.correlation_id);
+  assert.notEqual(persisted.causation_id, firstPersisted.causation_id);
   assert.deepEqual(persisted.rule_selection.rule_delta, []);
   assert.deepEqual(persisted.rule_selection.context_ledger, JSON.parse(fs.readFileSync(prior.bundle_path, "utf8")).rule_selection.context_ledger);
 
@@ -159,6 +173,7 @@ test("orchestrate launch emits and persists an exact Spark-selectable native pac
   assert.equal(envelope.seat_id, "seat-1");
   assert.equal(envelope.composer_assignment.bundle_path, bundleReport.bundle_path);
   assert.equal(envelope.composer_assignment.bundle_digest, bundleReport.bundle_digest);
+  assert.match(envelope.composer_assignment.execution_id, /^execution-[a-f0-9]{32}$/u);
   assert.equal(envelope.composer_assignment.worker_seat, 1);
   assert.deepEqual(envelope.composer_assignment.worker_assignment_ids, ["bounded-edit"]);
   assert.match(envelope.composer_assignment.worker_prompt_envelope_sha256, /^sha256:[a-f0-9]{64}$/u);
@@ -185,6 +200,9 @@ test("orchestrate launch emits and persists an exact Spark-selectable native pac
     schema_version: report.schema_version,
     bundle_path: report.bundle_path,
     bundle_digest: report.bundle_digest,
+    execution_id: report.execution_id,
+    correlation_id: report.correlation_id,
+    causation_id: report.causation_id,
     worker_seat: report.worker_seat,
     availability_evidence: report.availability_evidence,
     native_quarantine: report.native_quarantine,
@@ -337,15 +355,14 @@ test("orchestrate launch rejects legacy, invalid-seat, tampered, exposed, and no
   assert.match(rejectedExposed.stderr, /private owner-only permissions/u);
 
   fs.chmodSync(workerReport.bundle_path, 0o600);
-  const legacy = structuredClone(original);
-  legacy.schema_version = 4;
-  legacy.release_identity.composer_version = "1.2.0";
-  delete legacy.model_recommendation.spark_gate;
+  const legacy = stripExecutionIdentity(original);
+  legacy.schema_version = 5;
+  legacy.release_identity.composer_version = "1.3.0";
   legacy.bundle_digest = bundleDigest(legacy);
   fs.writeFileSync(workerReport.bundle_path, JSON.stringify(legacy), { mode: 0o600 });
   const rejectedLegacy = run(["orchestrate", "launch", "--bundle", workerReport.bundle_path, "--seat", "1"], environment);
   assert.notEqual(rejectedLegacy.status, 0);
-  assert.match(rejectedLegacy.stderr, /requires a persisted v5 bundle|Seat 0 decision contains an unknown field/u);
+  assert.match(rejectedLegacy.stderr, /orchestrate launch requires v6; remediation: run orchestrate next without --prior-bundle, then launch the returned v6 --bundle/u);
 
   const nonWorkerFacts = writeFacts(root, { estimated_duration_ms: 0, seat0_activity: "decision" });
   const nonWorker = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "decision", "--facts", nonWorkerFacts], environment);
@@ -466,7 +483,7 @@ test("orchestrate verify rejects a digest-recomputed unknown bundle instruction"
 test("composer identity distinguishes source checkout metadata from an immutable installed release", (t) => {
   const sourceIdentity = resolveOrchestrationReleaseIdentity(repository);
   assert.deepEqual(sourceIdentity, {
-    composer_version: "1.3.0",
+    composer_version: "1.4.0",
     checkout_system_version: checkoutSystemVersion,
     checkout_system_version_evidence: "package_json",
     installed_system_version: "Unverified",
@@ -486,7 +503,7 @@ test("composer identity distinguishes source checkout metadata from an immutable
     system_version: "2.2.1"
   }), { mode: 0o444 });
   assert.deepEqual(resolveOrchestrationReleaseIdentity(policies), {
-    composer_version: "1.3.0",
+    composer_version: "1.4.0",
     checkout_system_version: "Unverified",
     checkout_system_version_evidence: "Unverified",
     installed_system_version: "2.2.1",

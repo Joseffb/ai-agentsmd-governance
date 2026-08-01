@@ -20,10 +20,12 @@ function fixture() {
   const repository = path.join(root, "repo");
   const worktrees = path.join(root, "worktrees");
   const provenance = path.join(root, "provenance");
+  const bundleRoot = path.join(root, "private-bundles");
   const metricsLedger = path.join(root, "engineering-events.jsonl");
   const profile = path.join(root, "profile.json");
   fs.mkdirSync(path.join(repository, "src"), { recursive: true });
   fs.mkdirSync(worktrees);
+  fs.mkdirSync(bundleRoot, { mode: 0o700 });
   git(repository, ["init"]);
   git(repository, ["config", "user.email", "acg@example.invalid"]);
   git(repository, ["config", "user.name", "ACG Test"]);
@@ -43,10 +45,27 @@ function fixture() {
     ...process.env,
     ACG_MACHINE_PROFILE: profile,
     ACG_PROVENANCE_ROOT: provenance,
+    ACG_ORCHESTRATION_BUNDLE_ROOT: bundleRoot,
     ACG_METRICS_LEDGER: metricsLedger,
     TMPDIR: root
   };
-  return { root, repository, worktrees, provenance, metricsLedger, base, env };
+  return { root, repository, worktrees, provenance, bundleRoot, metricsLedger, base, env };
+}
+
+function orchestrationBundle(value, facts = {}) {
+  const factsPath = path.join(value.root, `orchestration-facts-${crypto.randomUUID()}.json`);
+  fs.writeFileSync(factsPath, JSON.stringify({
+    estimated_duration_ms: 300001,
+    effects: ["source_mutation"],
+    decomposition_complete: true,
+    coherent_chain: false,
+    work_items: [{ id: "owned", write_scopes: ["src/owned.rs"] }],
+    ...facts
+  }));
+  return JSON.parse(execFileSync(process.execPath, [
+    cli, "orchestrate", "next", "--project", "fixture", "--path", value.repository,
+    "--intent", "implementation", "--facts", factsPath
+  ], { encoding: "utf8", env: value.env }));
 }
 
 function seatArgs(value, command, seat, writeScope = "src/owned.rs") {
@@ -105,6 +124,9 @@ test("seat inspect owns the read-only lifecycle and emits a one-command child pr
   assert.equal(assignment.child_ledger, "fresh_no_parent_receipt");
   assert.equal(assignment.actual_model, "Unverified");
   assert.equal(assignment.actual_reasoning_raw, "Unverified");
+  assert.match(assignment.execution_id, /^execution-[a-f0-9]{32}$/u);
+  assert.match(assignment.correlation_id, /^correlation-[a-f0-9]{32}$/u);
+  assert.match(assignment.causation_id, /^causation-[a-f0-9]{32}$/u);
   assert.deepEqual(output.native_quarantine, assignment.native_quarantine);
   assert.equal(assignment.native_quarantine.pass_spawn_request_verbatim, true);
   assert.equal(assignment.native_quarantine.spawn_request.fork_context, false);
@@ -157,8 +179,91 @@ test("seat inspect owns the read-only lifecycle and emits a one-command child pr
   assert.equal(preflight.preflight_contract_verified, true);
   assert.equal(preflight.source_inspection_authorized, true);
   assert.equal(preflight.seat, "reader");
+  assert.deepEqual(
+    [preflight.execution_id, preflight.correlation_id, preflight.causation_id],
+    [assignment.execution_id, assignment.correlation_id, assignment.causation_id]
+  );
   assert.match(preflight.audit_completion_sentinel, /^ACG_AUDIT_READY:[0-9a-f]{16}$/);
   assert.match(preflight.completion_sentinel, /^ACG_READ_ONLY_SEAT_PREFLIGHT:[0-9a-f]{16}$/);
+  const events = fs.readFileSync(value.metricsLedger, "utf8").trim().split("\n").map(JSON.parse);
+  const allocated = events.find((event) => event.type === "execution.allocated");
+  const running = events.find((event) => event.type === "execution.running");
+  const started = events.find((event) => event.type === "seat.started");
+  assert.deepEqual(
+    [allocated.execution_id, allocated.correlation_id, allocated.causation_id],
+    [assignment.execution_id, assignment.correlation_id, assignment.causation_id]
+  );
+  for (const event of [running, started]) {
+    assert.deepEqual(
+      [event.execution_id, event.correlation_id, event.causation_id],
+      [assignment.execution_id, assignment.correlation_id, assignment.causation_id]
+    );
+    assert.equal(event.coverage_status, "complete");
+  }
+});
+
+test("seat assign and inspect inherit a verified v6 orchestration execution identity", () => {
+  const value = fixture();
+  const bundle = orchestrationBundle(value);
+  const expected = JSON.parse(fs.readFileSync(bundle.bundle_path, "utf8"));
+  const assigned = JSON.parse(execFileSync(process.execPath, [
+    ...seatArgs(value, "assign", "1"), "--bundle", bundle.bundle_path
+  ], { encoding: "utf8", env: value.env }));
+  const assignment = JSON.parse(fs.readFileSync(assigned.assignment_package, "utf8"));
+  assert.deepEqual(
+    [assignment.execution_id, assignment.correlation_id, assignment.causation_id],
+    [expected.execution_id, expected.correlation_id, expected.causation_id]
+  );
+  assert.deepEqual(assignment.orchestration_bundle, {
+    bundle_path: bundle.bundle_path,
+    bundle_digest: bundle.bundle_digest,
+    worker_seat: 1,
+    worker_assignment_ids: ["owned"],
+    execution_id: expected.execution_id,
+    correlation_id: expected.correlation_id,
+    causation_id: expected.causation_id
+  });
+  const provenance = JSON.parse(fs.readFileSync(assignment.provenance_path, "utf8"));
+  assert.deepEqual(provenance.orchestration_bundle, assignment.orchestration_bundle);
+  const inspected = JSON.parse(execFileSync(process.execPath, [
+    ...inspectArgs(value, "1"), "--bundle", bundle.bundle_path
+  ], { encoding: "utf8", env: value.env }));
+  const readOnly = JSON.parse(fs.readFileSync(inspected.assignment_package, "utf8"));
+  assert.deepEqual(
+    [readOnly.execution_id, readOnly.correlation_id, readOnly.causation_id],
+    [expected.execution_id, expected.correlation_id, expected.causation_id]
+  );
+  assert.deepEqual(readOnly.orchestration_bundle, assignment.orchestration_bundle);
+  const events = fs.readFileSync(value.metricsLedger, "utf8").trim().split("\n").map(JSON.parse);
+  for (const event of events.filter((event) => event.type === "seat.prepared" || event.type === "execution.allocated")) {
+    assert.equal(event.execution_id, expected.execution_id);
+    assert.equal(event.correlation_id, expected.correlation_id);
+    assert.equal(event.causation_id, expected.causation_id);
+  }
+});
+
+test("seat bundle binding rejects a tampered bundle and project or seat mismatches", () => {
+  const value = fixture();
+  const bundle = orchestrationBundle(value);
+  const mismatchedSeat = spawnSync(process.execPath, [
+    ...seatArgs(value, "assign", "2"), "--bundle", bundle.bundle_path
+  ], { encoding: "utf8", env: value.env });
+  assert.notEqual(mismatchedSeat.status, 0);
+  assert.match(mismatchedSeat.stderr, /does not select the requested worker seat/u);
+  const mismatchedProject = spawnSync(process.execPath, [
+    cli, "seat", "inspect", "--project", "other", "--path", value.repository,
+    "--seat", "1", "--model", "gpt-5.6-terra", "--reasoning", "high", "--bundle", bundle.bundle_path
+  ], { encoding: "utf8", env: value.env });
+  assert.notEqual(mismatchedProject.status, 0);
+  assert.match(mismatchedProject.stderr, /project does not match seat project/u);
+  const tampered = JSON.parse(fs.readFileSync(bundle.bundle_path, "utf8"));
+  tampered.execution_id = "execution-00000000000000000000000000000000";
+  fs.writeFileSync(bundle.bundle_path, JSON.stringify(tampered), { mode: 0o600 });
+  const rejected = spawnSync(process.execPath, [
+    ...seatArgs(value, "assign", "1"), "--bundle", bundle.bundle_path
+  ], { encoding: "utf8", env: value.env });
+  assert.notEqual(rejected.status, 0);
+  assert.match(rejected.stderr, /correlation_id must be derived from execution_id|bundle digest is invalid/u);
 });
 
 test("seat inspect persists the exact admitted assignment for truncation-safe recovery", () => {
@@ -300,6 +405,8 @@ test("seat assign hides protocol and emits a private assignment package", () => 
   assert.equal(assignment.child_ledger, "fresh_no_parent_receipt");
   assert.equal(assignment.requested_model, "gpt-5.6-terra");
   assert.match(assignment.execution_id, /^execution-[a-f0-9]{32}$/);
+  assert.match(assignment.correlation_id, /^correlation-[a-f0-9]{32}$/);
+  assert.match(assignment.causation_id, /^causation-[a-f0-9]{32}$/);
   assert.deepEqual(assignment.write_scope, ["src/owned.rs"]);
   assert.ok(assignment.policy_lifecycle.context_acknowledgment);
   const events = fs.readFileSync(value.metricsLedger, "utf8").trim().split("\n").map(JSON.parse);
@@ -308,6 +415,8 @@ test("seat assign hides protocol and emits a private assignment package", () => 
   assert.equal(events[0].project, "fixture");
   assert.equal(events[1].type, "execution.allocated");
   assert.equal(events[1].execution_id, assignment.execution_id);
+  assert.equal(events[1].correlation_id, assignment.correlation_id);
+  assert.equal(events[1].causation_id, assignment.causation_id);
 });
 
 test("mutating preflight records the observed subtask start with its execution correlation", () => {
@@ -326,6 +435,8 @@ test("mutating preflight records the observed subtask start with its execution c
   const running = events.find((event) => event.type === "execution.running");
   assert.equal(started.execution_id, assignment.execution_id);
   assert.equal(running.execution_id, assignment.execution_id);
+  assert.equal(started.correlation_id, assignment.correlation_id);
+  assert.equal(running.causation_id, assignment.causation_id);
   assert.equal(started.occurred_at, running.occurred_at);
   assert.ok(Date.parse(started.occurred_at) >= Date.parse(assignment.created_at));
   assert.equal(started.coverage_status, "complete");
@@ -384,6 +495,9 @@ test("initial assignment finalization internally binds legitimate owned dirty st
   assert.equal(finalized.command, "seat finalize");
   assert.equal(finalized.changed_paths, 1);
   const provenance = JSON.parse(fs.readFileSync(assignment.provenance_path, "utf8"));
+  assert.equal(provenance.execution_id, assignment.execution_id);
+  assert.equal(provenance.correlation_id, assignment.correlation_id);
+  assert.equal(provenance.causation_id, assignment.causation_id);
   assert.match(provenance.finalization_receipt_sha256, /^sha256:[0-9a-f]{64}$/u);
   assert.deepEqual(provenance.final_changed_paths, ["src/owned.rs"]);
   assert.equal(provenance.final_files[0].deleted, false);
@@ -748,6 +862,7 @@ test("seat continue binds current receipt project and rejects a project mismatch
   ], { encoding: "utf8", env: value.env }));
   const assignment = JSON.parse(fs.readFileSync(continued.assignment_package, "utf8"));
   assert.deepEqual(assignment.project_provenance, { project: "fixture", provenance_class: "receipt_project_bound" });
+  assert.equal(assignment.execution_evidence, "Unverified");
 });
 
 test("legacy receipt continuation requires unique project-profile provenance", () => {

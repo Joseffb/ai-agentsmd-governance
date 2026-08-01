@@ -420,12 +420,12 @@ try {
       orchestrate: {
         next: "orchestrate next --project <slug> --path <absolute-root> --intent <intent> --facts <json-file|-> [--prior-bundle <absolute-path>]",
         verify: "orchestrate verify --bundle <absolute-path>",
-        launch: "orchestrate launch --bundle <private-v5-bundle> --seat <1..N>"
+        launch: "orchestrate launch --bundle <private-v6-bundle> --seat <1..N>"
       },
       seat: {
-        inspect: "seat inspect --project <slug> --path <absolute-root> --seat <name> --model <id> --reasoning <value> [--attempt 1|2] [--objective <text>] [--prior-receipt <file|->]",
+        inspect: "seat inspect --project <slug> --path <absolute-root> --seat <name> --model <id> --reasoning <value> [--bundle <private-v6-bundle>] [--attempt 1|2] [--objective <text>] [--prior-receipt <file|->]",
         preflight: "seat preflight --assignment <read-only-assignment-package>",
-        assign: "seat assign --project <slug> --repository <repo> --base <sha> --seat <worker-name> --worktree-root <root> --write-scope <path> [--generated-scope <non-integrable-path>]... --model <id> --reasoning <value>",
+        assign: "seat assign --project <slug> --repository <repo> --base <sha> --seat <worker-name> --worktree-root <root> --write-scope <path> [--generated-scope <non-integrable-path>]... --model <id> --reasoning <value> [--bundle <private-v6-bundle>]",
         recover: "seat recover --assignment <governed-mutating-assignment-package>",
         continue: "seat continue --project <slug> --receipt <original-assignment-receipt> --expected-head <sha> [--intent implementation|validate|deploy]",
         finalize: "seat finalize --assignment <assignment-package> [--receipt <continuation-receipt>]",

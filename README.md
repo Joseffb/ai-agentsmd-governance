@@ -2,7 +2,7 @@
 
 ![AI Coding Agent Governance workflow](docs/assets/ai-coding-agent-governance.png)
 
-> **Current release line:** RC-3.0 (`3.2.0`).
+> **Current release line:** RC-3.0 (`3.3.0`).
 > Immutable releases include the tracked source plugins, but bundling does not
 > prove that any host installed, loaded, or activated those plugins.
 
@@ -34,6 +34,13 @@
 > **Status: available and verified.** The optional local event and reporting layer is released. It is not the product contract; KPI history appears only after truthful lifecycle evidence is recorded.
 
 Governance tells an agent how to work safely. **Agent KPIs answer the larger engineering question: is the Agent System helping people ship better software faster, with less waiting and less intervention?**
+
+The reporting hierarchy starts with engineered output: accepted decision-complete
+work, validated artifacts or releases, accepted scope per wall-clock hour,
+first-pass versus rework, operator touch/wait, and conventional engineering
+effort estimates with provenance and ranges. Tokens and API-equivalent dollars
+are cost denominators per accepted result, never the headline or a completion
+proxy.
 
 The primary view is a portfolio dashboard grouped by project, not by task. Any project using the Agent System can share one event model without embedding analytics in the project itself.
 
@@ -103,6 +110,31 @@ that handoff.
 
 See the [engineering metrics operator reference](docs/agent-metrics.md) for the
 event and report commands, coverage rules, and scheduling boundary.
+
+### Observed Engineering Capacity Benchmark
+
+The Observed Engineering Capacity Benchmark (OECB) compares a bounded,
+validated workload sample using evidence rather than quota displays or provider
+billing assumptions. Its July 2026 case study covers the inclusive interval
+`2026-07-29T00:00:00Z` through validated `2026-07-30T15:38:00Z`: 47,939
+observed token-attribution rows, 12,548,725,850 total tokens, 6,331,131,990
+input tokens, 6,197,476,608 cached input tokens (97.90% cached/input),
+15,135,452 output tokens, and 4,981,800 reasoning tokens.
+
+The operator cross-validated comparable Spark and $100-credit work against an
+OpenAI Analytics usage report. The **Analytics-aligned subscription benchmark**
+uses input or normalized-input as its controlling unit and records `$2,091.45`
+per reset cycle and `$8,365.80` for four cycles only for that exact boundary
+and benchmark method. Analytics corroboration is operator-validated, not
+raw-ingested here. A separate API-equivalent valuation uses official
+per-model categories only when each category and model are observed; it is not
+the same projection as raw total tokens or the subscription benchmark. Neither
+projection is an actual subscription invoice, settled charge, or provider price
+commitment. The full method and limits are in the [OECB standard](docs/agent-metrics.md#observed-engineering-capacity-benchmark-oecb).
+
+The citable [OECB Snapshot](docs/agent-metrics.md#oecb-snapshot) leads with
+accepted validated output and marks every value Observed, Derived, Proposed, or
+Unknown; unavailable values are `null`, and the record has no KPI authority.
 
 <!-- agent-kpi-overview:end -->
 
@@ -651,5 +683,4 @@ cadence; it does not create an automatic scheduler.
 
 ## License
 
-No license is granted until a license file is added. Source visibility alone
-does not grant permission to reuse or redistribute the project.
+This project is licensed under the [MIT License](LICENSE).

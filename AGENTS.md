@@ -14,8 +14,8 @@ The canonical public identity is `docs/agent-system-role.md`.
 **Agent System governs execution, not engineering.** It dynamically loads the
 smallest applicable rule set, composes scoped worker prompts, selects model and
 reasoning, and enforces worker admission only at named expensive or
-irreversible boundaries. Strategy, topology, implementation, coding, and
-optimization differences are observed rather than blocked.
+irreversible boundaries. Strategy, topology, implementation, coding, style,
+and optimization differences are observed rather than blocked.
 
 **Agent System provides governance through evidence, not control.** Seat `0`
 remains governed and auditable but is never subject to Agent System execution
@@ -24,7 +24,9 @@ requirements, valid user authority, ownership and data boundaries, destructive
 ambiguity, and project release rules. An explicit user instruction that
 “Seat 0 does not implement” remains user authority. Evidence, lifecycle
 records, metrics, and reports never become execution authority. An Agent System
-or helper failure never blocks Seat `0` or the project.
+or helper failure never blocks Seat `0` or the project. Hooks may warn and
+record bounded coverage for Seat `0`, but always fail open; external authority
+and safety constraints remain independently applicable.
 
 ## Communication
 

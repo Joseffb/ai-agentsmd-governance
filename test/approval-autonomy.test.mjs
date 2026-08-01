@@ -37,9 +37,11 @@ test("light governance constrains workers while Seat 0 remains externally author
   assert.match(kernel, /Seat `0` is governed and auditable but never subject to Agent System execution\s+enforcement/);
   assert.match(kernel, /“Seat 0 does not implement” removes this exception; it is direct user authority/);
   assert.match(kernel, /Agent System never blocks the\s+project\s+or Seat `0`/);
+  assert.match(kernel, /Agent System hooks always fail open for Seat `0`/);
+  assert.match(kernel, /external authority remains independently binding/);
   assert.match(role, /Unknown actual model identity continues safely as `Unverified`/);
   assert.match(role, /Incomplete\s+required validation holds automatic admission and escalates to Seat `0`/);
-  assert.match(role, /strategy, topology, implementation, coding, or optimization are\s+observed, not blocked/);
+  assert.match(role, /strategy, topology, implementation, coding, style, or\s+optimization are observed, not blocked/);
 });
 
 test("hard rules pay rent and decision provenance remains observational", () => {
@@ -58,7 +60,12 @@ test("hard rules pay rent and decision provenance remains observational", () => 
   assert.match(kernel, /deletion over new policy/);
   assert.match(kernel, /every rule pays rent/i);
   assert.match(kernel, /A material decision changes authority, scope, ownership/);
-  assert.match(kernel, /Record its `decision_scope` and external `decision_authority`/);
+  assert.match(kernel, /Record bounded scope\/type\/action\/normal path/);
+  assert.match(kernel, /external authority\+refs, evidence\/rule refs/);
+  assert.match(kernel, /reason summary \(never prompt or\s+reasoning\)/);
+  assert.match(kernel, /alternatives, risk\/effect, actor, status\/revision\/basis\/artifact/);
+  assert.match(kernel, /Accepted validated scope\/output is reporting's primary numerator/);
+  assert.match(kernel, /tokens\/cost\s+are downstream denominators/);
   assert.match(kernel, /Provenance write failure is a warning and coverage gap only/);
   assert.match(kernel, /Lifecycle and reports remain observational/);
 });

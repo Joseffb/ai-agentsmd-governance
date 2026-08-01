@@ -79,6 +79,23 @@ test("metrics remain downstream observations rather than optimization authority"
   }
 });
 
+test("canonical evidence prioritizes accepted engineered output and bounded decision provenance", () => {
+  const role = fs.readFileSync(rolePath, "utf8");
+  const jit = fs.readFileSync(path.join(root, "governance", "modules", "jit-orchestration.md"), "utf8");
+  for (const text of [role, jit]) {
+    assert.match(text, /accepted validated scope and engineered output/i);
+    assert.match(text, /Tokens and cost (?:remain|are) downstream\s+denominators/i);
+    assert.match(text, /OECB\s+headline/i);
+    for (const label of ["Observed", "Derived", "Proposed", "Unknown"]) {
+      assert.match(text, new RegExp(label));
+    }
+    assert.match(text, /missing effort (?:stays|remains) `null`/i);
+    assert.match(text, /decision.*scope.*type.*action.*normal path/is);
+    assert.match(text, /authority.*evidence.*rule references/is);
+    assert.match(text, /never records prompts or hidden reasoning|without\s+prompt or hidden reasoning/i);
+  }
+});
+
 test("Agent System automation requires explicit separate consent and has a local-only disposition", () => {
   const role = fs.readFileSync(rolePath, "utf8");
   const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
@@ -197,7 +214,6 @@ test("JIT manifest failure behavior blocks only the affected Agent System path",
   const manifest = JSON.parse(fs.readFileSync(path.join(root, "governance", "manifest.json"), "utf8"));
   const jit = manifest.modules.find((module) => module.id === "jit-orchestration");
   assert.deepEqual(jit.on_failure.block, [
-    "proven_improper_seat0_direct_worker_required_execution",
     "affected_agent_system_path"
   ]);
   assert.deepEqual(jit.on_failure.allow, [
@@ -250,8 +266,15 @@ test("complete tracked distribution contains no machine-private identity", () =>
     if (!fs.lstatSync(file).isFile()) continue;
     const content = fs.readFileSync(file);
     if (content.includes(0)) continue;
+    let text = content.toString("utf8");
+    if (relative === "LICENSE") {
+      const canonicalHolder = [["Jos", "eff"], ["Beta", "ncourt"]].map((parts) => parts.join("")).join(" ");
+      const copyrightLine = new RegExp(`^Copyright \\(c\\) 2026 ${canonicalHolder}$`, "m");
+      assert.match(text, new RegExp(`^MIT License\\n\\n${copyrightLine.source}`, "m"), relative);
+      text = text.replace(copyrightLine, "Copyright (c) [canonical holder]");
+    }
     for (const pattern of privatePatterns) {
-      assert.doesNotMatch(content.toString("utf8"), pattern, relative);
+      assert.doesNotMatch(text, pattern, relative);
     }
   }
 });

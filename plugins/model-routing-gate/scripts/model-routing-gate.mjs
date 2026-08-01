@@ -35,6 +35,9 @@ const BUNDLE_FIELDS = new Set([
   "release_identity",
   "project_identity",
   "predecessor_digest",
+  "execution_id",
+  "correlation_id",
+  "causation_id",
   "immediate_intent",
   "classification",
   "seat0_decision",
@@ -272,7 +275,7 @@ function configuredBundleRoot() {
   return fs.realpathSync(root);
 }
 
-function readBoundV5Bundle(bundlePath) {
+function readBoundV6Bundle(bundlePath) {
   if (typeof bundlePath !== "string" || !path.isAbsolute(bundlePath) || path.normalize(bundlePath) !== bundlePath) {
     throw new Error("composer_assignment bundle_path must be a normalized absolute path");
   }
@@ -326,8 +329,8 @@ function readBoundV5Bundle(bundlePath) {
     throw new Error(`composer_assignment failed full orchestration semantic validation: ${error.message}`);
   }
   exactObject(bundle, BUNDLE_FIELDS, "composer_assignment bundle");
-  if (bundle.schema_version !== 5 || bundle.bundle_type !== "jit_orchestration") {
-    throw new Error("composer_assignment bundle must be an exact v5 orchestration bundle");
+  if (bundle.schema_version !== 6 || bundle.bundle_type !== "jit_orchestration") {
+    throw new Error("composer_assignment bundle must be an exact v6 orchestration bundle");
   }
   const unsigned = { ...bundle };
   delete unsigned.bundle_digest;
@@ -361,6 +364,9 @@ function validateComposerAssignment(value, assignment, seatId) {
     "schema_version",
     "bundle_path",
     "bundle_digest",
+    "execution_id",
+    "correlation_id",
+    "causation_id",
     "worker_seat",
     "worker_assignment_ids",
     "worker_prompt_envelope_sha256",
@@ -375,6 +381,15 @@ function validateComposerAssignment(value, assignment, seatId) {
   }
   if (typeof value.bundle_digest !== "string" || !/^sha256:[a-f0-9]{64}$/.test(value.bundle_digest)) {
     throw new Error("composer_assignment bundle_digest must be an exact SHA-256 digest");
+  }
+  for (const [field, prefix] of [
+    ["execution_id", "execution"],
+    ["correlation_id", "correlation"],
+    ["causation_id", "causation"]
+  ]) {
+    if (typeof value[field] !== "string" || !new RegExp(`^${prefix}-[a-f0-9]{32}$`).test(value[field])) {
+      throw new Error(`composer_assignment ${field} must be an opaque ${prefix}-<32hex> identifier`);
+    }
   }
   if (!Number.isInteger(value.worker_seat) || value.worker_seat < 1) {
     throw new Error("composer_assignment worker_seat must be a positive integer");
@@ -395,9 +410,16 @@ function validateComposerAssignment(value, assignment, seatId) {
     value.requested_reasoning_raw,
     "composer_assignment"
   );
-  const bundle = readBoundV5Bundle(value.bundle_path);
+  const bundle = readBoundV6Bundle(value.bundle_path);
   if (bundle.bundle_digest !== value.bundle_digest) {
     throw new Error("composer_assignment bundle_digest differs from the verified bundle");
+  }
+  if (
+    bundle.execution_id !== value.execution_id ||
+    bundle.correlation_id !== value.correlation_id ||
+    bundle.causation_id !== value.causation_id
+  ) {
+    throw new Error("composer_assignment execution identity differs from the verified bundle");
   }
   const recommendation = bundle.model_recommendation;
   if (!recommendation || typeof recommendation !== "object" || Array.isArray(recommendation)) {
@@ -416,6 +438,13 @@ function validateComposerAssignment(value, assignment, seatId) {
   }
   if (sha256(canonicalJson(worker.prompt_envelope)) !== value.worker_prompt_envelope_sha256) {
     throw new Error("composer_assignment worker_prompt_envelope_sha256 differs from the verified bundle worker");
+  }
+  if (
+    worker.prompt_envelope?.execution_id !== value.execution_id ||
+    worker.prompt_envelope?.correlation_id !== value.correlation_id ||
+    worker.prompt_envelope?.causation_id !== value.causation_id
+  ) {
+    throw new Error("composer_assignment execution identity differs from the verified bundle worker");
   }
   if (
     recommendation.model !== expected.model ||
@@ -493,6 +522,9 @@ function validateComposerAssignment(value, assignment, seatId) {
     schema_version: 1,
     bundle_path: value.bundle_path,
     bundle_digest: value.bundle_digest,
+    execution_id: value.execution_id,
+    correlation_id: value.correlation_id,
+    causation_id: value.causation_id,
     worker_seat: value.worker_seat,
     worker_assignment_ids: value.worker_assignment_ids,
     worker_prompt_envelope_sha256: value.worker_prompt_envelope_sha256,
@@ -510,6 +542,9 @@ function validateComposerAssignment(value, assignment, seatId) {
   };
   return {
     bundle_digest: value.bundle_digest,
+    execution_id: value.execution_id,
+    correlation_id: value.correlation_id,
+    causation_id: value.causation_id,
     worker_seat: value.worker_seat,
     worker_assignment_ids: value.worker_assignment_ids,
     worker_prompt_envelope_sha256: value.worker_prompt_envelope_sha256,

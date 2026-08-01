@@ -33,8 +33,15 @@ Future roadmap operations never affect current classification or rule
 selection. A claimed short duration cannot override an effect, project
 authority, worker ownership, or a stricter instruction.
 
-Topology is JIT launch-order metadata, not broader context or persistent workflow state. Uncertain dependencies yield `SERIAL` or `EXPLORATORY`; if a topology helper or classifier fails, use a bounded manual or native worker fallback under unchanged delegation boundaries and do not block the project.
-Topology helper or classifier failure does not block the project.
+Topology is JIT launch-order metadata, not broader context or persistent workflow state. Uncertain dependencies yield `SERIAL` or `EXPLORATORY`; a failed topology helper or classifier uses a bounded manual or native worker fallback under unchanged delegation boundaries and does not block the project.
+
+Material decision evidence uses one append-only canonical event ledger.
+Enriched `decision.material` records scope/type/action/normal path, authority
+and references, evidence/rule references, a summary without prompt or hidden reasoning,
+alternatives, risk/effect, actor, status/revision/basis/artifact, results, and
+supersession. Legacy rows readable; common-envelope projection is
+`event_family`, `event_type`, `project_id`, `authority_level`, and
+`typed_payload`. Provenance/projection failures reduce coverage only.
 
 ## Deterministic-First Data Handling
 
@@ -44,14 +51,13 @@ rendering. Use AI only for semantic interpretation, judgment, classification,
 clustering, and synthesis. AI must never overwrite authoritative mechanical
 data.
 
-AI may consume an authoritative mechanical snapshot for semantic work, but
-its derived output must remain distinguishable from that snapshot and cannot
-replace or corrupt the authoritative mechanical data. This reduces token cost,
-latency, and hallucination risk across projects.
+AI may consume an authoritative mechanical snapshot for semantic work, but its
+derived output must remain distinguishable from that snapshot and cannot
+replace or corrupt the authoritative mechanical data.
 
 Composer-classified `mechanical` Spark work requires an integrity-bound gate
-over its content-addressed request. Keep inventory retrieval, test execution,
-validation, provenance, state, and rendering deterministic.
+over its content-addressed request; inventory retrieval/collection, test execution,
+validation, provenance, state, and rendering remain deterministic.
 
 Launch exactly: `orchestrate next` ->
 `orchestrate launch --bundle <path> --seat <N>` -> pass the returned
@@ -66,11 +72,10 @@ move work to Seat `0` or block the project.
 
 Seat `0` is the high-level orchestrator, not a worker. It owns classification,
 decomposition, prompt composition, routing, coordination, synthesis, conflict
-resolution, acceptance, evidence review, validation ownership, and final
-reporting. Non-implementation coordination has no mutation effect.
+resolution, acceptance, evidence review, validation ownership, and final reporting.
 
 Seat `0` can directly implement only one genuinely atomic correction meeting
-all of these pre-mutation facts:
+these pre-mutation facts:
 
 - explicitly atomic;
 - low risk with a known remedy;
@@ -83,11 +88,14 @@ all of these pre-mutation facts:
   authority-changing effect.
 
 Anything else is worker-required or project-authority-required. Exactly five
-minutes is inside the exception; five minutes plus any amount is outside it.
-Do not split, chain, omit, or relabel effects to evade the boundary. Stop and
-delegate the remainder if the estimate, elapsed time, surface count, remedy,
-risk, ownership, or effect changes. A direct user or project instruction that
-“Seat 0 does not implement” makes `seat0_atomic_allowed` unavailable.
+minutes is inside the exception; any more is outside it. Do not split, chain,
+omit, or relabel effects to evade the boundary. Stop and delegate if the
+estimate, elapsed time, surface count, remedy, risk, ownership, or effect
+changes. A direct user or project instruction that “Seat 0 does not implement”
+makes `seat0_atomic_allowed` unavailable.
+This classification is advisory for Seat `0`; hooks may warn or record coverage
+but always fail open. External platform, safety, user-authority, ownership,
+data, destructive, and release constraints remain independently binding.
 
 Seat `0` is excluded from the worker count. `N` agents or seats means `N`
 delegated workers numbered `1` through `N`; topology labels still begin with
@@ -99,16 +107,12 @@ material constraint when useful capacity remains idle.
 
 ## Scoped Worker Prompts
 
-Every worker prompt states the role, immediate objective, project and
-repository, work identifier, exact read/write scope, candidate and isolation
-when relevant, required references, acceptance criteria, stop conditions,
-expected artifact, upstream assumptions, validation responsibility, Git/effect
-permissions, integration order, evidence, and return format. Include shared-
-resource exclusions only for non-file mutable state such as schemas, migrations,
-lockfiles, ports, databases, generated registries, or mutable fixtures. Include
-only the minimum project context and policy delta
-needed for that seat. Never include secrets, hidden reasoning, unrelated
-project data, or authority the coordinator does not hold.
+Every worker prompt states role, immediate objective, project/repository, work
+identifier, exact scope, candidate/isolation when relevant, references,
+acceptance, stop, artifact, assumptions, validation, Git/effect permissions,
+integration, evidence, and return. Shared-resource exclusions apply only to
+non-file mutable state. Include only minimum context and policy delta; never
+secrets, hidden reasoning, unrelated data, or authority the coordinator lacks.
 
 Each mutating worker receives its own receipt-verified branch/worktree before
 source inspection or mutation; it never merges, integrates, or touches the
@@ -119,11 +123,10 @@ never weaken mutating Git isolation. Returned work is advisory until Seat `0`
 alone owns integration of the accepted candidates, scope, and evidence;
 project-authoritative validation runs against that integrated candidate.
 
-Choose the lowest-capability model and raw reasoning level that reliably
-handles the assigned reasoning and validation. Record the request before
-launch. Actual model or reasoning requires authoritative runtime metadata;
-narrative claims, style, role names, and output quality are not evidence.
-Report `Actual model: Unverified` when attestation is absent.
+Choose the lowest-capability model and raw reasoning that reliably handles the
+assignment; record the request before launch. Actual model or reasoning needs
+authoritative runtime metadata; narrative claims, style, role names, and output
+quality are not evidence. Without attestation, report `Actual model: Unverified`.
 
 ## Native Recovery Ladder
 
@@ -141,75 +144,64 @@ through any safe available option:
    reasoning, stop, evidence, and isolation contract; then
 6. project-native tooling within existing authority.
 
-This is an ordered set of available recovery options, not a requirement to
-attempt unavailable or unsuitable paths. There is no fixed retry count, but an
-unchanged relaunch loop is prohibited. A retry or replacement must not admit
-stale or unverified output. No fallback grants Seat `0` substantial
-implementation, missing project authority, destructive authority, or release
-authority.
+This ordered set is not a requirement to attempt unavailable or unsuitable
+paths. There is no fixed retry count, but an unchanged relaunch loop is
+prohibited. Retries or replacements cannot admit stale or unverified output.
+No fallback grants Seat `0` substantial implementation, missing project
+authority, destructive authority, or release authority.
 
-Ask the operator only when the remaining safe path needs new authority, a
-destructive or materially ambiguous decision, or a required resource that is
-actually absent. Otherwise continue. There is no wait-for-Agent-System state:
-Agent System failure never blocks the project, and a later repair reply is not
-project-resume permission.
+Ask only when the remaining safe path needs new authority, a destructive or
+materially ambiguous decision, or an absent required resource. Otherwise
+continue. There is no wait-for-Agent-System state: Agent System failure never
+blocks the project, and a later repair reply is not project-resume permission.
 
 ## Agent System Defect Consent
 
-A fresh installation asks three separate questions: whether to create and
-maintain a persistent Agent System task, whether to automatically send it
-bounded governance/runtime defect reports, and whether to repair true Agent
-System blockers. State that task operation, reporting, and repair can consume
-tokens. Task maintenance, reporting, and repair each require their own active
-consent; automatic reporting also requires an active task lane.
+A fresh installation separately asks about a persistent Agent System task,
+bounded governance/runtime defect reporting, and true-blocker repair; task
+operation, reporting, and repair can consume tokens. Each needs active consent;
+automatic reporting also needs an active task lane.
 
-Enabled defect reporting requires `log_only` or `auto_correct`. Missing,
-disabled, undecided, inactive, or local-only repair consent means no repair.
-Legacy or unqualified reporting consent maps to `log_only`; it never authorizes
-automatic KPI or after-action reports, automatic repair, project mutation, or
-public-branch mutation. `log_only` records every eligible Agent System/runtime
-issue and never starts repair. Opted-in `auto_correct` is the active System
-Agent repair mode: it automatically repairs only a confirmed, locally
+Enabled reporting requires `log_only` or `auto_correct`; missing, disabled,
+undecided, inactive, or local-only repair consent means no repair. Legacy or
+unqualified reporting maps to `log_only`, never authorizing automatic KPI or
+after-action reports, repair, project mutation, or public-branch mutation.
+`log_only` records every eligible Agent System/runtime issue and never starts
+repair. Opted-in `auto_correct` automatically repairs only a confirmed, locally
 actionable true Agent System blocker and logs every other issue without repair.
-A true blocker is an Observed/Verified P0/P1 defect that disables a required
-core Agent System capability, is locally actionable within private Agent System
-scope, and has no equivalent supported repair path restoring that capability.
-It is not a project defect, caller syntax error, external runtime-only
-limitation, destructive/irreversible change, architecture/public-contract
-redesign, source-project mutation, public publication, or schedule.
+A true blocker is an Observed/Verified P0/P1 defect disabling a required core
+Agent System capability, locally actionable within private Agent System scope,
+with no equivalent supported repair path. It is not a project defect, caller syntax error,
+external runtime-only limitation, destructive/irreversible change,
+architecture/public-contract redesign, source-project mutation, public publication, or schedule.
 
 Absent, undecided, inactive, declined, or local-only reporting consent permits
-only a quiet bounded secret-free append to the private untracked local JSONL
-issue ledger. It is not a message, never creates or wakes a task, and spends no
-background reporting tokens. Active delivery resolves one current
-non-archived exact-label target, sends unchanged evidence once, and continues
-the project immediately. Do not claim background interception without
-authoritative runtime evidence.
+only a quiet bounded secret-free private untracked JSONL append: not a message,
+never creating or waking a task, and no background reporting tokens. Active
+delivery resolves one current non-archived exact-label target, sends unchanged
+evidence once, and immediately continues the project. Do not claim background
+interception without authoritative runtime evidence.
 
 ## Incident Filter and Aggregation
 
 Append every bounded governance/runtime incident to the private JSONL ledger
-first, regardless of reporting disposition. Classify it as `agent_system`,
-`worker_adherence`, `host_runtime`, `project_tool_side_effect`, `caller_error`,
-or `expected_fail_closed`. Ordinary project defects, caller mistakes, expected
-fail-closed results, and worker-adherence incidents are not Agent System
-defects. A non-`agent_system` incident may cross only after a separately
-confirmed append-only reclassification to `agent_system`.
+first; classify it as `agent_system`, `worker_adherence`, `host_runtime`,
+`project_tool_side_effect`, `caller_error`, or `expected_fail_closed`. Ordinary
+project defects, caller mistakes, expected fail-closed results, and worker
+adherence are not Agent System defects; another category crosses only after
+separate confirmed append-only reclassification to `agent_system`.
 
-Cross-task delivery to a persistent Agent System is permitted only for a new
-confirmed `agent_system` failure class, materially new evidence that advances
-or changes repair, or a true Observed/Verified P0/P1 core blocker with no
-supported fallback. Aggregate repeats and addenda under their failure class;
-append corrections rather than rewriting history, including corrections that
-reclassify an earlier incident. The reporting project immediately continues
-through its fallback after the local append or any permitted delivery.
+Cross-task delivery is only for a new confirmed `agent_system` failure class,
+materially new repair-advancing evidence, or a true Observed/Verified P0/P1
+core blocker with no supported fallback. Aggregate repeats/addenda by failure
+class; append corrections, including reclassifications. The reporting project
+continues through fallback after local append or permitted delivery.
 
 The local append returns delivery eligibility. Active reporting sends at most
-one cross-task message only when eligible; disabled reporting stays local-only.
-Delivery-unavailable entries require explicit category and stable failure class,
-stay local, and never create a resend loop. A confirmed append-only
-reclassification to `agent_system` may report once when eligible, but correction
-status alone never authorizes `auto_correct`.
+one eligible cross-task message; disabled stays local-only. Delivery-unavailable
+entries require explicit category and stable failure class, stay local, and
+never resend. A confirmed append-only reclassification to `agent_system` may
+report once when eligible, but correction alone never authorizes `auto_correct`.
 
 The persistent task is an optional support lane, never a JIT dependency.
 Removing or declining it leaves rule selection, prompt composition,
@@ -219,8 +211,6 @@ disposition remains.
 
 ## KPI Boundary
 
-The analytics flow is one-way:
-
 ```text
 Kernel -> Receipts -> Events -> Metrics
 ```
@@ -229,11 +219,19 @@ KPI lifecycle facts are silent private JSONL writes. Metrics observe execution
 and never become execution authority; they consume evidence. No KPI, alone or
 in combination, may automatically route, rank, reward, punish, block,
 authorize, select models, choose delegation, set worker count, declare
-progress or completion, or mutate policy. Historical metric data remain
+progress/completion, or mutate policy. Historical metric data remain
 downstream-only and cannot feed live prompts or decisions automatically.
 
+Accepted validated scope and engineered output are the primary reporting
+numerator. Acceptance status, artifacts, validation, actor/time,
+revision/rework, first output, validation completion, and operator touch/wait
+remain independently visible when evidenced. Tokens and cost are downstream
+denominators only. OECB headline evidence is explicitly
+Observed/Derived/Proposed/Unknown, missing effort remains `null`, and no report
+becomes execution authority.
+
 Worker topology follows real, independently integrable architecture boundaries;
-agent count is never a target. Metric-informed policy changes require explicit
+agent count is never a target. Metric-informed policy changes need explicit
 operator review, a new version, stated assumptions, and post-change
 recalibration. Missing timings, estimates, intervals, validation, acceptance,
 or model attestation remain `null` with coverage; never infer them.
@@ -244,8 +242,8 @@ only for observed failure classes; every rule needs a clear purpose and
 observable effect. Expose unresolved rule conflicts rather than silently
 choosing, and ensure governance reduces uncertainty rather than creating it.
 
-KPI and after-action reports are produced only in response to a direct
-operator request. Cleanup, completion, defect reporting, task replacement, and
-automatic reporting consent never generate or send one. Reports are bounded,
-private, read-only, and identity-minimized; they cannot reopen completion,
-transfer project ownership, create a wait state, or become policy input.
+KPI and after-action reports are produced only in response to a direct operator
+request. Cleanup, completion, defect reporting, task replacement, and automatic
+reporting consent never generate one. Reports are bounded, private, read-only,
+identity-minimized, and cannot reopen completion, transfer ownership, create a
+wait state, or become policy input.

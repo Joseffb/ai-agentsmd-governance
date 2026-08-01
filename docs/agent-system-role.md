@@ -47,8 +47,8 @@ Workers fail closed only at these boundaries:
 
 Unknown actual model identity continues safely as `Unverified`. Incomplete
 required validation holds automatic admission and escalates to Seat `0`.
-Differences in strategy, topology, implementation, coding, or optimization are
-observed, not blocked.
+Differences in strategy, topology, implementation, coding, style, or
+optimization are observed, not blocked.
 
 Every hard rule declares `prevented_failure`,
 `why_failure_is_expensive_or_irreversible`, `enforcement_cost`,
@@ -63,13 +63,27 @@ requirements, valid user authority, ownership and data boundaries, destructive
 ambiguity, and project release rules. An explicit user instruction that
 “Seat 0 does not implement” remains user authority. Agent System or helper
 failure never blocks Seat `0` or the project.
+Agent System hooks always fail open for Seat `0`: they may record a bounded
+warning or coverage gap, but external authority and safety constraints remain
+independently applicable.
 
 A material decision changes authority, scope, ownership, data/tenancy/
 privilege, destructive reversibility, Git lineage or integration ownership,
 validation admission, release posture, or execution-contract/evidence
 integrity. Its provenance records the exact `decision_scope` and external
-`decision_authority`. A provenance-write failure emits a warning and reduces
-coverage only; it cannot block, void, delay, or reopen execution.
+`decision_authority`, bounded authority/evidence/rule references, decision
+type, requested action, normal path, reason summary, alternatives, risk,
+expected effect, actor, status/revision/basis/artifact, result links, and
+supersession. It never records prompts or hidden reasoning. A provenance-write
+failure emits a warning and reduces coverage only; it cannot block, void,
+delay, or reopen execution.
+
+Canonical reporting prioritizes accepted validated scope and engineered output:
+acceptance status, decision-complete scope, artifacts, validation references,
+actor/time, revision, first pass, rework, first-output latency, and operator
+touch/wait. Tokens and cost remain downstream denominators. The bounded OECB
+headline labels Observed, Derived, Proposed, and Unknown evidence explicitly;
+missing effort stays `null`, and no metric influences execution.
 
 ## Responsibilities
 

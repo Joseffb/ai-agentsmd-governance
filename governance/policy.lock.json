@@ -3,7 +3,7 @@
   "manifest": {
     "id": "ai-codex-governance",
     "version": 1,
-    "sha256": "sha256:4003117fabf5ee83cdf06df45ce0cd7d6ab078c3eee7495dcf4374bdfd164a68"
+    "sha256": "sha256:82f5e39835c21e672de5eeaf867399f25e06eb712c60e08ea90454960973939c"
   },
   "estimator": {
     "id": "utf8-bytes-div-4-ceil",
@@ -15,10 +15,10 @@
   },
   "kernel": {
     "path": "kernel/AGENTS.md",
-    "sha256": "sha256:ce2724dd6d26827afcc661440427a6fa31183e7a2118297ecbe2cf7bf6535a76",
-    "bytes": 7993,
-    "words": 842,
-    "estimated_tokens": 1999
+    "sha256": "sha256:afbc0c49ac56e9be0566eb3a63842eb37747eef11e30f63545a564b9626646d0",
+    "bytes": 7963,
+    "words": 813,
+    "estimated_tokens": 1991
   },
   "skill": {
     "path": "skills/govern-codex-policy/SKILL.md",
@@ -86,9 +86,9 @@
       "id": "jit-orchestration",
       "version": 7,
       "path": "modules/jit-orchestration.md",
-      "sha256": "sha256:9ea4961f2f5d75ac9f077ebc30dedee1bf4193e3e00eb89224b0c9705ac4a617",
-      "bytes": 13987,
-      "words": 1847,
+      "sha256": "sha256:d7c1bb08d426e1be5d6aac647e71be7754385d01cda85622998ac13fd35ef0ce",
+      "bytes": 13988,
+      "words": 1788,
       "estimated_tokens": 3497
     },
     {

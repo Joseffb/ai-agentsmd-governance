@@ -20,6 +20,10 @@ status unknown**.
 | Failure class family | Disposition | Evidence boundary |
 | --- | --- | --- |
 | Runtime enforcement and host integration | `unverifiable` / `runtime_limited` | Local application behavior is not authoritative host-interception proof. |
+| Local hook coverage | `mitigated` / `runtime_limited` | Official documentation supports `PreToolUse` matching local function tools, including `spawn_agent` via the `Agent` alias; specialized tool paths can opt out. |
+| Subagent lifecycle hooks | `unverifiable` | `SubagentStart` can add context but `continue: false` does not deny a subagent launch. |
+| App-server telemetry and collaboration | `mitigated` | Official app-server documentation exposes thread usage updates, account usage reads, per-turn token categories, and collaboration items that can carry `newThreadId`; local use remains separately evidenced. |
+| Screenshot, profile, and label symptoms | `ticket_status_unknown` | The reviewed current app 26.727 changelog does not claim fixes for these symptoms. Absence of a changelog claim is not proof of an unresolved defect. |
 | Local workflow validation | `mitigated` | Repository checks can demonstrate bounded local behavior only. |
 | Environment and root binding | `open` | Local issue recurrence does not determine host ticket status. |
 | Regression | `unverifiable` | No approved reproduction was run for this audit. |
@@ -32,9 +36,16 @@ authoritative runtime evidence.
 
 ## External product references
 
-OpenAI's official Codex changelog is the appropriate source for product-level
-feature and fix claims; this repository does not treat local observations as
-product release evidence. See the [official Codex changelog](https://help.openai.com/en/articles/11428266-codex-changelog/) and [official Codex introduction](https://openai.com/index/introducing-codex/).
+OpenAI's official [Codex hooks manual](https://learn.chatgpt.com/docs/hooks.md)
+documents `PreToolUse` coverage for local function tools (with `spawn_agent`
+matching `Agent`), the non-denying `SubagentStart` boundary, and specialized
+tool-path opt-outs. The official [Codex App Server manual](https://learn.chatgpt.com/docs/app-server.md)
+documents `thread/tokenUsage/updated`, `account/usage/read`, per-turn input,
+cached-input, output, and reasoning token usage, and collaboration items with
+an optional `newThreadId`. The current app 26.727 changelog review contains no
+claim that screenshot, profile, or label symptoms were fixed. This repository
+does not treat local observations or changelog silence as product-release
+evidence.
 
 ## Follow-up rule
 

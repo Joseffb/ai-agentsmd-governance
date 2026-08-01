@@ -509,7 +509,7 @@
       "id": "jit-orchestration",
       "version": 7,
       "path": "modules/jit-orchestration.md",
-      "digest": "sha256:9ea4961f2f5d75ac9f077ebc30dedee1bf4193e3e00eb89224b0c9705ac4a617",
+      "digest": "sha256:d7c1bb08d426e1be5d6aac647e71be7754385d01cda85622998ac13fd35ef0ce",
       "triggers": {
         "operations": [
           "repository_inspection",
@@ -561,7 +561,6 @@
       "authority": "workflow",
       "on_failure": {
         "block": [
-          "proven_improper_seat0_direct_worker_required_execution",
           "affected_agent_system_path"
         ],
         "allow": [
@@ -574,8 +573,8 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 13987,
-      "words": 1847,
+      "bytes": 13988,
+      "words": 1788,
       "estimated_tokens": 3497
     },
     {

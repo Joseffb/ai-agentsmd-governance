@@ -23,7 +23,7 @@ test("policy accounting grows monotonically without imposing a context rollover"
   const skill = read("skills/govern-codex-policy/SKILL.md");
   const skillAgent = read("skills/govern-codex-policy/agents/openai.yaml");
   assert.match(kernel, /Policy context grows monotonically/);
-  assert.match(kernel, /never force compaction, rollover, handoff, or fresh task/i);
+  assert.match(kernel, /Totals never force compaction, rollover,\s+handoff, or fresh task/i);
   assert.match(kernel, /only\s+authoritative hosting-runtime capacity failure may require transition/u);
   assert.match(skill, /Estimated policy totals never force rollover or handoff/);
   assert.match(skill, /Advisory context-growth targets never block an operation/);
@@ -148,11 +148,11 @@ test("confirmed pre-hook tasks adopt current policy without making Agent System 
   assert.match(skill, /Require a fresh handoff only for that dependency/u);
   assert.match(jit, /failure blocks only the\s+affected path/u);
   assert.match(jit, /continue immediately\s+through any safe available option/u);
-  assert.match(jit, /No fallback grants Seat `0` substantial\s+implementation, missing project authority, destructive authority/u);
-  assert.match(jit, /Agent System failure never blocks the project/u);
+  assert.match(jit, /No fallback grants Seat `0` substantial\s+implementation, missing project\s+authority, destructive authority/u);
+  assert.match(jit, /Agent System failure never\s+blocks the project/u);
   assert.match(skill, /context adopt-current --operator-confirmed-pre-hook/);
   assert.match(skill, /Continue same-task work and legacy agents by default/);
   assert.match(skill, /Launch-time hook and host-interception enforcement remain Unverified/);
-  assert.match(jit, /topology helper or\s+classifier fails[\s\S]*?manual or\s+native worker fallback/i);
+  assert.match(jit, /failed topology helper or classifier[\s\S]*?bounded manual or native worker fallback/i);
   assert.match(jit, /does not block the project/i);
 });

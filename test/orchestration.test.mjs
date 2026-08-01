@@ -27,16 +27,18 @@ const DIGEST_A = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 const DIGEST_B = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-test("published schema exposes explicit v2-v5 compatibility and the Spark gate contract", () => {
+test("published schema exposes explicit v2-v6 compatibility and the execution identity contract", () => {
   const schema = JSON.parse(fs.readFileSync(path.join(repository, "governance", "schemas", "orchestration-bundle.schema.json"), "utf8"));
-  assert.equal(ORCHESTRATION_BUNDLE_SCHEMA_VERSION, 5);
-  assert.equal(ORCHESTRATION_COMPOSER_VERSION, "1.3.0");
-  assert.deepEqual(schema.properties.schema_version.enum, [2, 3, 4, ORCHESTRATION_BUNDLE_SCHEMA_VERSION]);
-  assert.deepEqual(schema.oneOf, [{ $ref: "#/$defs/v2Bundle" }, { $ref: "#/$defs/v3Bundle" }, { $ref: "#/$defs/v4Bundle" }, { $ref: "#/$defs/v5Bundle" }]);
+  assert.equal(ORCHESTRATION_BUNDLE_SCHEMA_VERSION, 6);
+  assert.equal(ORCHESTRATION_COMPOSER_VERSION, "1.4.0");
+  assert.deepEqual(schema.properties.schema_version.enum, [2, 3, 4, 5, ORCHESTRATION_BUNDLE_SCHEMA_VERSION]);
+  assert.deepEqual(schema.oneOf, [{ $ref: "#/$defs/v2Bundle" }, { $ref: "#/$defs/v3Bundle" }, { $ref: "#/$defs/v4Bundle" }, { $ref: "#/$defs/v5Bundle" }, { $ref: "#/$defs/v6Bundle" }]);
   assert.equal(schema.$defs.v2Bundle.properties.release_identity.properties.composer_version.const, "1.0.0");
   assert.equal(schema.$defs.v3Bundle.allOf[0].properties.release_identity.properties.composer_version.const, "1.1.0");
   assert.equal(schema.$defs.v4Bundle.allOf[0].properties.release_identity.properties.composer_version.const, "1.2.0");
-  assert.equal(schema.$defs.v5Bundle.properties.release_identity.properties.composer_version.const, ORCHESTRATION_COMPOSER_VERSION);
+  assert.equal(schema.$defs.v5Bundle.properties.release_identity.properties.composer_version.const, "1.3.0");
+  assert.equal(schema.$defs.v6Bundle.properties.release_identity.properties.composer_version.const, ORCHESTRATION_COMPOSER_VERSION);
+  assert.deepEqual(schema.$defs.v6Bundle.required.slice(-3), ["execution_id", "correlation_id", "causation_id"]);
   for (const field of [
     "release_identity",
     "project_identity",
@@ -120,6 +122,7 @@ test("worker hard boundaries are bounded, reviewable, and differences remain obs
     "topology",
     "implementation",
     "coding",
+    "style",
     "optimization"
   ]);
 });
@@ -512,6 +515,10 @@ test("bundle records the explicit RC-3 identity, decision, worker, and execution
   assert.equal(bundle.seat0_decision.provenance_write_failure, "warning_and_coverage_gap_only");
   assert.equal(bundle.seat0_decision.evidence_controls_execution, false);
   assert.equal(bundle.predecessor_digest, DIGEST_A);
+  assert.match(bundle.execution_id, /^execution-[a-f0-9]{32}$/u);
+  assert.match(bundle.correlation_id, /^correlation-[a-f0-9]{32}$/u);
+  assert.match(bundle.causation_id, /^causation-[a-f0-9]{32}$/u);
+  assert.equal(bundle.seat0_decision.execution_id, bundle.execution_id);
   assert.equal(bundle.native_fallback.actual_model, "Unverified");
   assert.equal(bundle.model_recommendation.model, "gpt-5.6-terra");
   assert.equal(bundle.topology.worker_count, 2);
@@ -533,6 +540,9 @@ test("bundle records the explicit RC-3 identity, decision, worker, and execution
     ]);
     assert.equal(worker.prompt_envelope.requested_model, "gpt-5.6-terra");
     assert.equal(worker.prompt_envelope.requested_reasoning_raw, "high");
+    assert.equal(worker.prompt_envelope.execution_id, bundle.execution_id);
+    assert.equal(worker.prompt_envelope.correlation_id, bundle.correlation_id);
+    assert.equal(worker.prompt_envelope.causation_id, bundle.causation_id);
   }
   assert.equal(bundle.contracts.isolation.mode, "receipt_bound_git_worktree_before_launch");
   assert.deepEqual(bundle.contracts.authority, {
@@ -598,9 +608,11 @@ test("lifecycle and capacity contracts reject tampering while legacy v2 bundles 
   legacy.schema_version = 2;
   legacy.release_identity.composer_version = "1.0.0";
   delete legacy.model_recommendation.spark_gate;
+  for (const field of ["execution_id", "correlation_id", "causation_id"]) delete legacy[field];
   for (const field of ["material", "decision_scope", "decision_authority", "provenance_write_failure", "evidence_controls_execution"]) {
     delete legacy.seat0_decision[field];
   }
+  for (const field of ["execution_id", "correlation_id", "causation_id"]) delete legacy.seat0_decision[field];
   delete legacy.contracts.lifecycle;
   delete legacy.topology.capacity_limit;
   delete legacy.topology.capacity_evidence;
@@ -618,6 +630,7 @@ test("lifecycle and capacity contracts reject tampering while legacy v2 bundles 
   for (const worker of legacy.topology.workers) {
     delete worker.worker_kind;
     delete worker.prompt_envelope.worker_kind;
+    for (const field of ["execution_id", "correlation_id", "causation_id"]) delete worker.prompt_envelope[field];
   }
   legacy.bundle_digest = bundleDigest(legacy);
   assert.equal(validateOrchestrationBundle(legacy), true);
@@ -626,9 +639,11 @@ test("lifecycle and capacity contracts reject tampering while legacy v2 bundles 
   v3.schema_version = 3;
   v3.release_identity.composer_version = "1.1.0";
   delete v3.model_recommendation.spark_gate;
+  for (const field of ["execution_id", "correlation_id", "causation_id"]) delete v3[field];
   for (const field of ["material", "decision_scope", "decision_authority", "provenance_write_failure", "evidence_controls_execution"]) {
     delete v3.seat0_decision[field];
   }
+  for (const field of ["execution_id", "correlation_id", "causation_id"]) delete v3.seat0_decision[field];
   for (const field of ["execution_class", "launch_stages", "scheduler_scope", "scheduler_failure_fallback"]) delete v3.contracts.lifecycle[field];
   v3.contracts.lifecycle.stages = [
     "decompose",
@@ -648,6 +663,7 @@ test("lifecycle and capacity contracts reject tampering while legacy v2 bundles 
   for (const worker of v3.topology.workers) {
     delete worker.worker_kind;
     delete worker.prompt_envelope.worker_kind;
+    for (const field of ["execution_id", "correlation_id", "causation_id"]) delete worker.prompt_envelope[field];
   }
   v3.bundle_digest = bundleDigest(v3);
   assert.equal(validateOrchestrationBundle(v3), true);
@@ -657,7 +673,7 @@ test("lifecycle and capacity contracts reject tampering while legacy v2 bundles 
     mismatched.schema_version = schemaVersion;
     mismatched.release_identity.composer_version = composerVersion;
     mismatched.bundle_digest = bundleDigest(mismatched);
-    assert.throws(() => validateOrchestrationBundle(mismatched), /composer_version must be/);
+    assert.throws(() => validateOrchestrationBundle(mismatched), /composer_version must be|unknown field/);
   }
 });
 

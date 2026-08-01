@@ -33,9 +33,11 @@ test("plugin package manifest remains installable and delegates hooks to hooks.j
   assert.equal(hookConfig.hooks.PreToolUse[0].hooks[0].command, "node \"$PLUGIN_ROOT/scripts/jit-orchestration-governor.mjs\" hook");
 });
 
-test("enforces proven Seat 0 worker-required work", (t) => {
+test("observes and warns on Seat 0 worker-required work without denying execution", (t) => {
   const result = processHook(event(worker()), { stateRoot: root(t) });
-  assert.equal(result.hookSpecificOutput.permissionDecision, "deny");
+  assert.equal(result.hookSpecificOutput.permissionDecision, "allow");
+  assert.match(result.hookSpecificOutput.additionalContext, /Seat 0 JIT advisory: worker_required/);
+  assert.match(result.hookSpecificOutput.additionalContext, /never enforces execution against Seat 0/);
 });
 
 test("missing metadata fails open for project execution", (t) => {
@@ -44,9 +46,10 @@ test("missing metadata fails open for project execution", (t) => {
   assert.match(result.hookSpecificOutput.additionalContext, /Unverified/);
 });
 
-test("explicit Seat 0 prohibition is enforced", (t) => {
+test("explicit Seat 0 prohibition remains external authority and is only observed", (t) => {
   const result = processHook(event({ ...worker("seat-0"), estimated_duration_ms: 1, seat0_prohibited: true }), { stateRoot: root(t) });
-  assert.equal(result.hookSpecificOutput.permissionDecision, "deny");
+  assert.equal(result.hookSpecificOutput.permissionDecision, "allow");
+  assert.match(result.hookSpecificOutput.additionalContext, /worker_required/);
 });
 
 test("worker bypass is allowed", (t) => {
@@ -61,11 +64,11 @@ test("complete canonical worker metadata remains allowed", (t) => {
 
 test("primary classifier failure retries the deterministic fallback", (t) => {
   const result = processHook(event(worker()), { stateRoot: root(t), classifier: () => { throw new Error("unavailable"); } });
-  assert.equal(result.hookSpecificOutput.permissionDecision, "deny");
-  assert.match(result.hookSpecificOutput.permissionDecisionReason, /worker_required/);
+  assert.equal(result.hookSpecificOutput.permissionDecision, "allow");
+  assert.match(result.hookSpecificOutput.additionalContext, /worker_required/);
 });
 
-test("project authority is denied for every seat when complete metadata requires it", (t) => {
+test("project authority remains fail-closed for workers when complete metadata requires it", (t) => {
   const result = processHook(event({
     ...worker("seat-1"),
     effects: ["database_mutation"],
@@ -73,6 +76,17 @@ test("project authority is denied for every seat when complete metadata requires
   }), { stateRoot: root(t) });
   assert.equal(result.hookSpecificOutput.permissionDecision, "deny");
   assert.match(result.hookSpecificOutput.permissionDecisionReason, /explicit project\/user authority/i);
+});
+
+test("Seat 0 project-authority findings warn but remain fail-open", (t) => {
+  const result = processHook(event({
+    ...worker("seat-0"),
+    effects: ["database_mutation"],
+    project_authority_granted: false
+  }), { stateRoot: root(t) });
+  assert.equal(result.hookSpecificOutput.permissionDecision, "allow");
+  assert.match(result.hookSpecificOutput.additionalContext, /project_authority_required/);
+  assert.match(result.hookSpecificOutput.additionalContext, /External project or user authority remains required/);
 });
 
 test("only boolean true grants authority in fallback classification", (t) => {
@@ -85,7 +99,7 @@ test("only boolean true grants authority in fallback classification", (t) => {
   assert.match(result.hookSpecificOutput.permissionDecisionReason, /authority/i);
 });
 
-test("unknown, aliased, and case-variant effects deny only that action for every seat", (t) => {
+test("unknown, aliased, and case-variant effects deny only the worker action", (t) => {
   for (const effect of ["Publication", "db", "database", "deploy", "contract"]) {
     const result = processHook(event({
       ...worker("seat-1"),
@@ -95,6 +109,17 @@ test("unknown, aliased, and case-variant effects deny only that action for every
     assert.equal(result.hookSpecificOutput.permissionDecision, "deny", effect);
     assert.match(result.hookSpecificOutput.permissionDecisionReason, /canonical action metadata/i);
   }
+});
+
+test("unknown Seat 0 effects remain advisory and fail-open", (t) => {
+  const result = processHook(event({
+    ...worker("seat-0"),
+    estimated_duration_ms: 1,
+    effects: ["Publication"]
+  }), { stateRoot: root(t) });
+  assert.equal(result.hookSpecificOutput.permissionDecision, "allow");
+  assert.match(result.hookSpecificOutput.additionalContext, /canonical_metadata_required/);
+  assert.match(result.hookSpecificOutput.additionalContext, /never enforces execution against Seat 0/);
 });
 
 test("every canonical effect remains recognized by the standalone fallback", (t) => {
@@ -112,15 +137,15 @@ test("every canonical effect remains recognized by the standalone fallback", (t)
   }
 });
 
-test("explicit Seat 0 malformed metadata denies only that action with native delegation guidance", (t) => {
+test("explicit Seat 0 malformed metadata warns and fails open", (t) => {
   const result = processHook(event({ seat_id: "seat 0", immediate_intent: "implementation", estimated_duration_ms: "fast", effects: ["source_mutation"] }), {
     stateRoot: root(t),
     classifier: () => { throw new Error("unavailable"); },
     fallbackClassifier: () => { throw new Error("unavailable"); }
   });
-  assert.equal(result.hookSpecificOutput.permissionDecision, "deny");
-  assert.match(result.hookSpecificOutput.permissionDecisionReason, /native worker tooling/i);
-  assert.match(result.hookSpecificOutput.permissionDecisionReason, /project may continue/i);
+  assert.equal(result.hookSpecificOutput.permissionDecision, "allow");
+  assert.match(result.hookSpecificOutput.additionalContext, /coverage warning/i);
+  assert.match(result.hookSpecificOutput.additionalContext, /never enforces execution against Seat 0/i);
 });
 
 test("non-Seat-0 malformed metadata continues with Unverified guidance", (t) => {
