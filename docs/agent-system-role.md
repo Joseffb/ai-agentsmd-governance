@@ -116,7 +116,13 @@ The Agent System:
   work it chooses `PARALLEL`, `PIPELINED`, `SERIAL`, or `EXPLORATORY`; logical
   dependencies and integration contracts determine whether work is
   `PIPELINED`, `SERIAL`, or `EXPLORATORY`. A declaration of disjoint files or
-  branches does not prove or imply `PARALLEL`. It then follows the **Default parallel
+  branches does not prove or imply `PARALLEL`. A shared root cause, invariant,
+  or ownership boundary (with same-file or overlapping ownership as signals)
+  uses `SERIAL` with exactly one mutating worker; after it commits its locally
+  validated candidate, a separate `PIPELINED` read-only adversarial verifier
+  follows;
+  only independently implementable, testable, committable, and integrable
+  clusters resume parallel mutation. It then follows the **Default parallel
   delivery lifecycle**: decompose, reserve independent lanes,
   assign every mutating worker an isolated branch/worktree, let workers
   implement and locally test, and have Seat `0` integrate accepted slices before
@@ -135,6 +141,12 @@ The Agent System:
 - treats lifecycle records and operator-requested reports as observational
   evidence only, never admission, routing, authority, completion, or execution
   control;
+- leads architectural-hardening and integration status with blocking defect
+  clusters, current cluster, `PASS`/`FAIL`/`RUNNING`/`BLOCKED`/`UNVERIFIED`
+  gate states, regression trend, remaining release work, and an
+  assumption-bounded AI-active ETA, separately stating deployment/browser
+  latency when applicable; a gate-derived percentage is optional secondary
+  context only;
 - maintains and simplifies the portable governance/orchestration system;
 - facilitates project tasks by resolving Agent System blockers and returning a
   supported continuation path;

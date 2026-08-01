@@ -3,7 +3,7 @@
   "manifest": {
     "id": "ai-codex-governance",
     "version": 1,
-    "sha256": "sha256:82f5e39835c21e672de5eeaf867399f25e06eb712c60e08ea90454960973939c"
+    "sha256": "sha256:3c2d6d1e5f1d541be8539e59a92cad45b2dd98458967594bbd3eb3d3f3866fb9"
   },
   "estimator": {
     "id": "utf8-bytes-div-4-ceil",
@@ -22,10 +22,10 @@
   },
   "skill": {
     "path": "skills/govern-codex-policy/SKILL.md",
-    "sha256": "sha256:428de79d239fe47f5c7a120535b895669b1bca54f8126af0682468712408f908",
-    "bytes": 27692,
-    "words": 3526,
-    "estimated_tokens": 6923
+    "sha256": "sha256:ca513bf1023a2ce6771467682317cef5c043e43da473aaee08176542a2bb10a3",
+    "bytes": 28088,
+    "words": 3578,
+    "estimated_tokens": 7022
   },
   "modules": [
     {
@@ -57,12 +57,12 @@
     },
     {
       "id": "planning-and-capacity",
-      "version": 4,
+      "version": 5,
       "path": "modules/planning-and-capacity.md",
-      "sha256": "sha256:a5bf21eeeff2d1ca020e51f939c0e757023111c84e7e7045992d03a0068ccd0f",
-      "bytes": 3268,
-      "words": 433,
-      "estimated_tokens": 817
+      "sha256": "sha256:e8fe1fcb3534c575ccbec70bb50dfaf42262d5c475b03dba95f6f3c179e1e745",
+      "bytes": 4090,
+      "words": 544,
+      "estimated_tokens": 1023
     },
     {
       "id": "model-routing",
@@ -93,12 +93,12 @@
     },
     {
       "id": "delegation",
-      "version": 18,
+      "version": 19,
       "path": "modules/delegation.md",
-      "sha256": "sha256:53341e5cb048fae625c09325dcc6e374a0aef9a2ad27f1e68f39586bf2f2452e",
-      "bytes": 13941,
-      "words": 1876,
-      "estimated_tokens": 3486
+      "sha256": "sha256:a1473232e58bf4b17414f2f4d83d47e8ffcf95d39cb77d4628555e431e827de5",
+      "bytes": 13993,
+      "words": 1860,
+      "estimated_tokens": 3499
     },
     {
       "id": "subagent-git",

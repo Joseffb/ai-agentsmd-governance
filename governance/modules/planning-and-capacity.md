@@ -24,6 +24,19 @@ earlier by materially more than elapsed time, label a forecast revision rather
 than completed work. Use comparable AI work-class history, never a human
 schedule or fixed multiplier.
 
+## Architectural hardening and integration status
+
+For architectural-hardening or integration status, lead with defect clusters
+and validation gates, not a completion percentage. Report the independent
+blocking clusters, the current cluster, each applicable gate as `PASS`,
+`FAIL`, `RUNNING`, `BLOCKED`, or `UNVERIFIED`, the evidenced regression trend,
+and the remaining release work. Follow with a ranged remaining AI-active ETA
+that states its assumptions, including any serial verification, integration,
+and validation floors. When applicable, report deployment/browser latency
+separately from the AI-active ETA. A gate-derived percentage is optional secondary context
+only when it is derived from the listed gates; use `Unknown` when it cannot be justified.
+It never substitutes for a blocking cluster or gate state.
+
 Use authoritative capacity metadata when exposed. Otherwise state that availability is unavailable or user-reported; never invent an exact balance.
 
 - GO: upper estimate is at most 70 percent of available capacity and retains 30 percent for validation and repair.

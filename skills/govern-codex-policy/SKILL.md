@@ -397,7 +397,7 @@ bootstrap defect and remains fail-closed for the affected governed operation.
 
 Keep routine governance internals silent unless they fail, materially change the assignment, or the operator asks. Normal shows task, owner, scope, status, meaningful change, and result; Warning shows a blocker, scope or authority conflict, unsafe dirty state, failed proof, or model mismatch; Diagnostic returns requested receipts, modules, routes, hashes, provenance, and accounting.
 
-On material multi-phase work, update only at phase boundaries, material changes, blockers, validation milestones, completion, or required heartbeats. State phase, gate-derived percent (else `Unknown`), and ranged `Estimated` AI-active time with basis and confidence. Revise on critical-path evidence. Never give unadjusted human time, clock promises, or filler.
+On material multi-phase work, update only at phase boundaries, material changes, blockers, validation milestones, completion, or required heartbeats. For architectural hardening or integration, state independent blocking defect clusters, the current cluster, each applicable gate as `PASS`, `FAIL`, `RUNNING`, `BLOCKED`, or `UNVERIFIED`, the evidenced regression trend, remaining release work, and a ranged `Estimated` AI-active time with assumptions and confidence; separately state deployment/browser latency when applicable. A gate-derived percentage is optional secondary context (else `Unknown`), never the status lead or a substitute for a cluster or gate. Revise on critical-path evidence. Never give unadjusted human time, clock promises, or filler.
 
 Keep the initial completion window beside current P50/P80 ETA. When its target
 moves materially faster than elapsed time, state the gate, scope, failure,

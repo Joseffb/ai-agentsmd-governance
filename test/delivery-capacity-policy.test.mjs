@@ -93,6 +93,22 @@ test("branch disjointness is not a parallelism proof", () => {
   }
 });
 
+test("one shared-invariant defect cluster has one mutating worker before pipelined adversarial verification", () => {
+  const policy = read("governance/modules/delegation.md");
+  const role = read("docs/agent-system-role.md");
+  const readme = read("README.md");
+  assert.match(policy, /shared root cause, invariant, or ownership boundary/i);
+  assert.match(policy, /same-file\/overlapping-ownership signals/i);
+  assert.match(policy, /`SERIAL`[\s\S]{0,180}?exactly one mutating worker/i);
+  assert.match(policy, /sole worker commits its locally validated candidate[\s\S]{0,220}?`PIPELINED` read-only adversarial verifier/i);
+  assert.match(policy, /verifier[\s\S]{0,300}?cannot change[\s\S]{0,300}?(?:source|Git)/i);
+  assert.match(policy, /`PARALLEL` only applies to distinct clusters[\s\S]{0,300}?independently\s+implementable,\s+testable,\s+committable,\s+and\s+integrable/i);
+  for (const text of [role, readme]) {
+    assert.match(text, /shar(?:ed|ing)[\s\S]{0,120}?(?:invariant|ownership boundary)[\s\S]{0,240}?exactly one\s+mutating\s+worker[\s\S]{0,240}?`PIPELINED` read-only\s+adversarial\s+verifier/i);
+  }
+  assert.match(policy, /not a\s+scheduler state machine or new subsystem/i);
+});
+
 test("Seat 0 permits only a pre-estimated atomic five-minute correction", () => {
   const policy = read("governance/modules/delegation.md");
   assert.match(policy, /cannot receive a worker assignment/);
@@ -126,19 +142,23 @@ test("model routing uses the lowest reliable model and reasoning tier", () => {
   assert.doesNotMatch(delegation, /recommend `medium`, `high`, or `xhigh`/);
 });
 
-test("operator progress is significant, gate-derived, and estimated in AI time", () => {
+test("architectural hardening status is defect-cluster and gate first, with percentage secondary", () => {
   const skill = read("skills/govern-codex-policy/SKILL.md");
-  const metrics = read("docs/agent-metrics.md");
+  const planning = read("governance/modules/planning-and-capacity.md");
+  const role = read("docs/agent-system-role.md");
   const readme = read("README.md");
-  assert.match(skill, /update only at phase boundaries/);
-  assert.match(skill, /State phase, gate-derived percent \(else `Unknown`\)/);
-  assert.match(skill, /ranged `Estimated` AI-active time with basis and confidence/);
+  for (const text of [skill, planning, role, readme]) {
+    assert.match(text, /(?:blocking\s+)?(?:independent\s+)?defect\s+clusters/i);
+    assert.match(text, /current cluster/i);
+    assert.match(text, /`PASS`[\s\S]{0,80}?`FAIL`[\s\S]{0,80}?`RUNNING`[\s\S]{0,80}?`BLOCKED`[\s\S]{0,80}?`UNVERIFIED`/);
+    assert.match(text, /regression trend/i);
+    assert.match(text, /remaining\s+release\s+work/i);
+    assert.match(text, /(?:ranged|range|assumption-bounded)[\s\S]{0,160}?AI-active/i);
+    assert.match(text, /(?:deployment\/browser\s+latency[\s\S]{0,120}?(?:separately|separate|when applicable)|(?:separately|separate)[\s\S]{0,120}?deployment\/browser\s+latency)/i);
+    assert.match(text, /percentage[\s\S]{0,180}?(?:optional secondary|secondary context)/i);
+  }
   assert.match(skill, /Never give unadjusted human time, clock promises, or filler/);
-  assert.match(skill, /Keep the initial completion window beside current P50\/P80 ETA/);
-  assert.match(metrics, /A target that advances by hours during only\s+minutes of execution is a forecast revision/);
-  assert.match(metrics, /midpoint nevertheless moved\s+from 11 hours to 5\.5 hours/);
-  assert.match(readme, /gate-derived percentage \(or\s+`Unknown`\)/);
-  assert.match(readme, /conventional human P50\/P80 effort separate from AI wall-clock/);
+  assert.match(planning, /gate-derived[\s\S]{0,160}?percentage[\s\S]{0,160}?never substitutes/i);
 });
 
 test("confirmed pre-hook tasks adopt current policy without making Agent System a project dependency", () => {

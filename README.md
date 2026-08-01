@@ -257,7 +257,12 @@ disjointness: isolated branches do not prove independent contracts. The default
 delivery loop is **decompose -> reserve independent lanes -> isolated
 branch/worktree per mutating worker -> worker implementation and local tests ->
 Seat `0` integration -> authoritative final validation on the integrated
-candidate**. Workers never merge, integrate, or touch the primary checkout.
+candidate**. Workers never merge, integrate, or touch the primary checkout. A
+defect cluster sharing a root cause, invariant, or ownership boundary (with
+same-file or overlapping ownership as signals) uses `SERIAL` with exactly one
+mutating worker, then—after it commits its locally validated candidate—a
+separate `PIPELINED` read-only adversarial verifier; parallel mutation resumes only for independently implementable,
+testable, committable, and integrable clusters.
 Truly read-only workers need no new worktree; non-Git mutation uses equivalent
 isolated mutable state. Worker contracts state the expected artifact, upstream
 assumptions, validation, and integration order; shared-resource exclusions are
@@ -548,8 +553,13 @@ supervise multiple seats without reading governance transcripts.
 
 For material multi-phase work, updates appear at meaningful phase transitions,
 blockers, estimate changes, validation milestones, completion, or a required
-heartbeat. They include the current phase, a gate-derived percentage (or
-`Unknown`), and an Estimated AI-active-time range. Substantial forecasts keep
+heartbeat. Architectural-hardening and integration updates lead with
+independent blocking defect clusters, the current cluster, `PASS`/`FAIL`/
+`RUNNING`/`BLOCKED`/`UNVERIFIED` gate states, regression trend, remaining
+release work, and an assumption-bounded Estimated AI-active-time range;
+deployment/browser latency is stated separately when applicable. A gate-derived
+percentage (or `Unknown`) is optional secondary context only.
+Substantial forecasts keep
 conventional human P50/P80 effort separate from AI wall-clock, critical-path,
 seat, validation, rework, and operator-time estimates. Forecasts are not
 promises, telemetry, or completion gates.

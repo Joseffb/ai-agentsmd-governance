@@ -40,6 +40,20 @@ insufficient, choose `SERIAL` or `EXPLORATORY`. If a topology helper or
 classifier fails, preserve delegation boundaries and use a bounded manual or
 native worker fallback; the project continues under existing authority.
 
+### Shared-invariant defect clusters
+
+Classify by shared root cause, invariant, or ownership boundary, not path;
+same-file/overlapping-ownership signals. Such a cluster is
+`SERIAL` with exactly one mutating worker, never split across parallel mutation.
+Only after that sole worker commits its locally validated candidate, run a
+separate `PIPELINED` read-only adversarial verifier for invariant, boundary,
+and regressions. It cannot change source, Git, tracked/generated files, or the
+candidate; its output informs Seat `0` acceptance/final validation, not
+implementation. `PARALLEL` only applies to distinct clusters independently
+implementable, testable, committable, and integrable in any order; otherwise
+use `SERIAL` or `EXPLORATORY`. This is JIT launch-order guidance, not a
+scheduler state machine or new subsystem.
+
 Skip or constrain this default only for genuinely tiny or tightly coupled work,
 unsafe overlap, unavailable capacity or tooling, ordered dependencies, or when
 coordination cost truly erases the benefit. Do not use ceremony, a convenient
@@ -61,15 +75,24 @@ or local-log the helper defect once according to consent, then continue with a
 safe native/manual worker path or project-owned tooling under existing
 authority.
 
-Use one counting contract in capacity reports, dashboards, and operator updates. Reserve seat `0` for the coordinator/orchestrator so topology labels start at zero, but exclude it from the unqualified agent count and seat count. A displayed count of `N` means `N` delegated worker seats, numbered `1` through `N`; the topology therefore has labels `0` through `N`. For example, a count of `2` may be reported as `0 orchestrator, 1 UI, 2 security`. Use `total participants` when a value intentionally includes the orchestrator.
+In capacity reports, seat `0` is the coordinator and excluded from unqualified
+agent/seat counts. `N` means workers `1..N` (topology `0..N`); use `total
+participants` only when including the coordinator.
 
 Apply `model-routing` to every seat: choose the lowest capable family and reasoning tier that can reliably complete and validate it. Never silently downgrade an exact or reasoning-critical assignment. Ask once only when the coordinator is below the task's demonstrated requirement; an unanswered request does not block safe work.
 
 Each seat owns a fresh governance ledger. Never pass a parent policy acknowledgment as a child's `prior_receipt`. If releases may differ, use bounded non-forked context; the child routes without a prior receipt. Keep ledgers separate. Mutating seats receive only their verified worktree receipt.
 
-Reuse an active seat only when its objective, project, repository state, model and reasoning assignment, authority, and context remain valid. Do not reuse when independent or adversarial review is needed; model, reasoning, authority, project, worktree, or write ownership changes; or context may be stale. After reconciliation, promptly close completed, failed, redundant, or idle seats so they release shared runtime concurrency. Keep a completed seat open only for an immediate, tightly related reuse. Treat any exact agent limit as runtime metadata, not a hard-coded constant.
+Reuse a seat only while objective, project, repository state, model/reasoning,
+authority, and context remain valid. Do not reuse it for independent/adversarial
+review or changed model, authority, project, worktree, or write ownership.
+Promptly close completed, failed, redundant, or idle seats; exact agent limits
+are runtime metadata, not hard-coded constants.
 
-Every significant prompt includes role, objective, project and repository, work ID, branch/worktree and base commit when relevant, bounded continuity, authoritative references, allowed read/write scope, acceptance criteria, stop conditions, expected artifact, upstream assumptions, validation, Git permissions, integration order, and return format. Add shared-resource exclusions only when needed for non-file mutable state such as schemas, migrations, lockfiles, ports, databases, generated registries, or mutable fixtures.
+Every significant prompt states role, objective, project/repository/work ID,
+relevant worktree/base, bounded continuity/references, allowed scope,
+acceptance/stop/artifact, assumptions, validation, Git, integration, evidence,
+and return. Name shared non-file mutable resources only when needed.
 
 Load `model-routing` before launch. Also load `subagent-git` and `continuity` before mutating launch. Read-only seats must not mutate source, Git, tracked generated files, locks, formatter output, or continuity.
 

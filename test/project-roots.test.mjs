@@ -94,9 +94,8 @@ test("seat terminology reserves zero for the orchestrator without inflating dele
   const readme = fs.readFileSync(path.join(codeRoot, "README.md"), "utf8");
   const metrics = fs.readFileSync(path.join(codeRoot, "docs", "agent-metrics.md"), "utf8");
 
-  assert.match(delegationPolicy, /Reserve seat `0` for the coordinator\/orchestrator/);
-  assert.match(delegationPolicy, /exclude it from the unqualified agent count and seat count/);
-  assert.match(delegationPolicy, /numbered `1` through `N`/);
+  assert.match(delegationPolicy, /seat `0` is the coordinator and excluded from unqualified\s+agent\/seat counts/i);
+  assert.match(delegationPolicy, /`N` means workers `1\.\.N` \(topology `0\.\.N`\)/);
   assert.match(readme, /A count of `2` therefore maps to/);
   assert.match(readme, /`0 orchestrator, 1 UI, 2 security`/);
   assert.match(metrics, /excluded from\s+average, peak, and displayed agent or seat counts/);

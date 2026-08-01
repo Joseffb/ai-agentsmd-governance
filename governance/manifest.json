@@ -404,9 +404,9 @@
     },
     {
       "id": "planning-and-capacity",
-      "version": 4,
+      "version": 5,
       "path": "modules/planning-and-capacity.md",
-      "digest": "sha256:a5bf21eeeff2d1ca020e51f939c0e757023111c84e7e7045992d03a0068ccd0f",
+      "digest": "sha256:e8fe1fcb3534c575ccbec70bb50dfaf42262d5c475b03dba95f6f3c179e1e745",
       "triggers": {
         "operations": [
           "plan"
@@ -432,9 +432,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 3268,
-      "words": 433,
-      "estimated_tokens": 817
+      "bytes": 4090,
+      "words": 544,
+      "estimated_tokens": 1023
     },
     {
       "id": "model-routing",
@@ -579,9 +579,9 @@
     },
     {
       "id": "delegation",
-      "version": 18,
+      "version": 19,
       "path": "modules/delegation.md",
-      "digest": "sha256:53341e5cb048fae625c09325dcc6e374a0aef9a2ad27f1e68f39586bf2f2452e",
+      "digest": "sha256:a1473232e58bf4b17414f2f4d83d47e8ffcf95d39cb77d4628555e431e827de5",
       "triggers": {
         "operations": [
           "launch_subagent",
@@ -609,9 +609,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 13941,
-      "words": 1876,
-      "estimated_tokens": 3486
+      "bytes": 13993,
+      "words": 1860,
+      "estimated_tokens": 3499
     },
     {
       "id": "subagent-git",
