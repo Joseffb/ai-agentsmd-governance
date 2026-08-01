@@ -5,6 +5,7 @@
   "private": true,
   "type": "module",
   "description": "JIT orchestration and agent-use governor for AI coding agents",
+  "license": "MIT",
   "scripts": {
     "lock": "node bin/acg.mjs lock",
     "traceability": "node bin/acg.mjs traceability",
