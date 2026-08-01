@@ -403,17 +403,49 @@
       "estimated_tokens": 366
     },
     {
+      "id": "benchmark-calibration",
+      "version": 1,
+      "path": "modules/benchmark-calibration.md",
+      "digest": "sha256:7de56c97150f68db463382fee8251b1238c57e0f1b57e3777de210f40b414f2a",
+      "triggers": {
+        "operations": []
+      },
+      "dependencies": [
+        "jit-orchestration"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "substantial_plan"
+      ],
+      "precedence": 79,
+      "authority": "workflow",
+      "on_failure": {
+        "block": [
+          "benchmark_calibrated_ai_hour_estimate"
+        ],
+        "allow": [
+          "seat0_manual_or_native_planning_with_calibration_unknown"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 3235,
+      "words": 430,
+      "estimated_tokens": 809
+    },
+    {
       "id": "planning-and-capacity",
-      "version": 5,
+      "version": 6,
       "path": "modules/planning-and-capacity.md",
-      "digest": "sha256:e8fe1fcb3534c575ccbec70bb50dfaf42262d5c475b03dba95f6f3c179e1e745",
+      "digest": "sha256:17c2ad7156bca2ce9ea1ae63fe042de1a20c522ea4de6ee42e0eb20e152dbb41",
       "triggers": {
         "operations": [
           "plan"
         ]
       },
       "dependencies": [
-        "jit-orchestration"
+        "benchmark-calibration"
       ],
       "conflicts": [],
       "load_before": [
@@ -432,9 +464,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 4090,
-      "words": 544,
-      "estimated_tokens": 1023
+      "bytes": 4551,
+      "words": 609,
+      "estimated_tokens": 1138
     },
     {
       "id": "model-routing",

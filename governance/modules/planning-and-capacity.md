@@ -8,13 +8,20 @@ Use the delivery triad: minimize safely verified critical-path time; count token
 
 For substantial estimates, separate Proposed conventional human effort from AI execution. State P50/P80 wall clock, critical path, seat-hours, serial and parallel validation, operator touch and wait, manual-equivalent P50/P80, rework, confidence, comparable samples, assumptions, dependencies, and stop gates. Unknowns remain null; never reduce the result to a human sprint label or let observed metrics govern execution.
 
-For operator progress estimates, apply any explicit operator-supplied
-human-to-AI compression calibration before reporting AI-active time. For
-example, an active 53x calibration divides the human-active portion by 53, then
-adds serial build, deployment, validation, browser, model-latency, and
-operator-wait floors separately. Never report an unadjusted human duration as
-AI-active time, and never apply one project's calibration as a universal
-measured rate without explicit authority and provenance.
+For operator progress estimates, consume the applicable calibration from the
+JIT-owned `benchmark-calibration` module only when estimating AI-active time.
+An explicitly approved project-specific calibration may override it for its
+scope. Apply it only to compressible human-active effort, then add serial
+build, test, deploy, browser, model-latency, and operator-wait floors
+separately. Never report an unadjusted human duration as AI-active time or
+treat a planning calibration as a universal measured rate.
+
+If benchmark integrity cannot be verified, the governed benchmark-calibrated
+estimate path is blocked only. Do not claim an automatic CLI fallback: the
+project and Seat `0` continue immediately through existing native/manual
+planning with calibrated AI-hour value `Unknown` and an explicit coverage
+warning. With a valid policy load, unavailable or inapplicable calibration also
+means `Unknown` with that warning; any uncalibrated estimate remains ROM.
 
 An ETA is remaining AI wall clock from now, not ambiguous "focused hours."
 Preserve the initial completion window and reforecast only on material gate,

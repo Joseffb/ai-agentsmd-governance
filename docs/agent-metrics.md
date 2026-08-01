@@ -414,6 +414,12 @@ is reported as a qualified category mismatch and remains ineligible for
 portfolio delivery compression until the complete comparable workstream
 denominator is available.
 
+Planning calibration is owned and version-controlled by the Agent System JIT
+`benchmark-calibration` policy module, not by this metrics layer. Historical
+metrics may inform only a future operator-reviewed release; they never
+automatically adopt, revise, or supersede a planning benchmark, and never
+influence execution.
+
 ### Capture status
 
 | Signal | Automatic today | Explicit event | Runtime limitation |

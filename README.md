@@ -559,9 +559,10 @@ independent blocking defect clusters, the current cluster, `PASS`/`FAIL`/
 release work, and an assumption-bounded Estimated AI-active-time range;
 deployment/browser latency is stated separately when applicable. A gate-derived
 percentage (or `Unknown`) is optional secondary context only.
-Substantial forecasts keep
-conventional human P50/P80 effort separate from AI wall-clock, critical-path,
-seat, validation, rework, and operator-time estimates. Forecasts are not
+Substantial forecasts keep conventional human P50/P80 effort separate from AI
+wall-clock, critical-path, seat, validation, rework, and operator-time
+estimates. Planning consumes the Agent System JIT benchmark-calibration policy
+only when estimating AI time; its AI-hour forecasts are ROM estimates, not
 promises, telemetry, or completion gates.
 
 ## Agent System Defect Lane

@@ -61,10 +61,10 @@ function localRequest(fixture, extra = {}) {
 test("complete policy tree verifies", () => {
   const result = verifyAll(policyRoot);
   assert.equal(result.verified, true);
-  assert.equal(result.module_count, 16);
+  assert.equal(result.module_count, 17);
   assert.equal(result.traceability_rules, 0);
   assert.equal(result.traceability, "optional_local_migration_provenance");
-  assert.equal(result.system_version, "3.3.1");
+  assert.equal(result.system_version, "3.3.2");
   assert.equal(result.display_channel, "RC-3.0");
 });
 
@@ -109,7 +109,7 @@ test("future operations do not trigger policy", () => {
   }, policyRoot);
   assert.deepEqual(
     result.active_modules.map((module) => module.id),
-    ["context-routing", "jit-orchestration", "planning-and-capacity"]
+    ["context-routing", "jit-orchestration", "benchmark-calibration", "planning-and-capacity"]
   );
 });
 
@@ -324,11 +324,37 @@ test("resolution, delivery, and context acknowledgment remain distinct", () => {
   assert.deepEqual(delivered.delivery_receipt.delivered_modules.map((module) => module.id), [
     "context-routing",
     "jit-orchestration",
+    "benchmark-calibration",
     "planning-and-capacity"
   ]);
   const acknowledged = acknowledgeDelivery(delivered, policyRoot).context_acknowledgment;
   assert.equal(acknowledged.already_in_context.includes("planning-and-capacity"), true);
+  assert.equal(acknowledged.already_in_context.includes("benchmark-calibration"), true);
   assert.equal(acknowledged.accumulated_policy_tokens, Object.values(acknowledged.context_ledger).reduce((sum, entry) => sum + entry.estimated_tokens, 0));
+});
+
+test("planning loads the benchmark calibration only through its declared dependency", () => {
+  const manifest = readJson(path.join(policyRoot, "manifest.json"));
+  const benchmark = manifest.modules.find((module) => module.id === "benchmark-calibration");
+  const planning = manifest.modules.find((module) => module.id === "planning-and-capacity");
+  assert.deepEqual(benchmark.triggers.operations, []);
+  assert.deepEqual(benchmark.dependencies, ["jit-orchestration"]);
+  assert.deepEqual(benchmark.on_failure.block, ["benchmark_calibrated_ai_hour_estimate"]);
+  assert.deepEqual(benchmark.on_failure.allow, ["seat0_manual_or_native_planning_with_calibration_unknown"]);
+  assert.ok(planning.dependencies.includes("benchmark-calibration"));
+  const routed = resolveRoute({
+    mode: "read_only",
+    phase: "plan",
+    project: "*",
+    operations: ["plan"],
+    mutation_authority: false
+  }, policyRoot);
+  assert.deepEqual(routed.active_modules.map((module) => module.id), [
+    "context-routing",
+    "jit-orchestration",
+    "benchmark-calibration",
+    "planning-and-capacity"
+  ]);
 });
 
 test("accumulated policy context can grow beyond an advisory mode target", () => {
@@ -428,6 +454,28 @@ test("missing or tampered modules fail closed", () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test("benchmark integrity fails the governed estimate route while Seat 0 retains documented manual fallback", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-benchmark-policy-"));
+  const copiedPolicy = path.join(root, "policy");
+  const benchmarkFile = path.join(copiedPolicy, "modules", "benchmark-calibration.md");
+  const request = {
+    mode: "read_only",
+    phase: "plan",
+    project: "*",
+    operations: ["plan"],
+    mutation_authority: false
+  };
+  fs.cpSync(policyRoot, copiedPolicy, { recursive: true });
+  fs.appendFileSync(benchmarkFile, "\ntampered\n");
+  assert.throws(() => resolveRoute(request, copiedPolicy), /Required module digest mismatch: benchmark-calibration/u);
+  fs.rmSync(benchmarkFile);
+  assert.throws(() => resolveRoute(request, copiedPolicy), /unreadable|ENOENT/u);
+  const benchmark = fs.readFileSync(path.join(policyRoot, "modules", "benchmark-calibration.md"), "utf8");
+  assert.match(benchmark, /does not automatically provide a CLI fallback/u);
+  assert.match(benchmark, /Seat `0` immediately continue through existing native\/manual planning/u);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 function makeTestRelease(root, marker = "") {
   const source = path.join(root, "source");
   const staging = path.join(source, ".runtime", "releases", `.staging-${marker || "base"}`);
@@ -478,7 +526,7 @@ test("packaged runtime release verifies through its policies entry point", () =>
   assert.equal(result.verified, true);
   assert.equal(result.release_id, releaseId);
   assert.equal(result.source_commit, "0".repeat(40));
-  assert.equal(result.module_count, 16);
+  assert.equal(result.module_count, 17);
   fs.rmSync(root, { recursive: true, force: true });
 });
 

@@ -3,7 +3,7 @@
   "manifest": {
     "id": "ai-codex-governance",
     "version": 1,
-    "sha256": "sha256:3c2d6d1e5f1d541be8539e59a92cad45b2dd98458967594bbd3eb3d3f3866fb9"
+    "sha256": "sha256:e5ef8233136f94ecefcbc85bce8931980fc9d02aa8bc5b0c8e0e234dcf719f1e"
   },
   "estimator": {
     "id": "utf8-bytes-div-4-ceil",
@@ -22,10 +22,10 @@
   },
   "skill": {
     "path": "skills/govern-codex-policy/SKILL.md",
-    "sha256": "sha256:ca513bf1023a2ce6771467682317cef5c043e43da473aaee08176542a2bb10a3",
-    "bytes": 28088,
-    "words": 3578,
-    "estimated_tokens": 7022
+    "sha256": "sha256:e6af00a1252c3785ad84abc7e8f5bfa0716fce2ce6b05b824bb845991a8dd7f9",
+    "bytes": 28438,
+    "words": 3625,
+    "estimated_tokens": 7110
   },
   "modules": [
     {
@@ -56,13 +56,22 @@
       "estimated_tokens": 366
     },
     {
+      "id": "benchmark-calibration",
+      "version": 1,
+      "path": "modules/benchmark-calibration.md",
+      "sha256": "sha256:7de56c97150f68db463382fee8251b1238c57e0f1b57e3777de210f40b414f2a",
+      "bytes": 3235,
+      "words": 430,
+      "estimated_tokens": 809
+    },
+    {
       "id": "planning-and-capacity",
-      "version": 5,
+      "version": 6,
       "path": "modules/planning-and-capacity.md",
-      "sha256": "sha256:e8fe1fcb3534c575ccbec70bb50dfaf42262d5c475b03dba95f6f3c179e1e745",
-      "bytes": 4090,
-      "words": 544,
-      "estimated_tokens": 1023
+      "sha256": "sha256:17c2ad7156bca2ce9ea1ae63fe042de1a20c522ea4de6ee42e0eb20e152dbb41",
+      "bytes": 4551,
+      "words": 609,
+      "estimated_tokens": 1138
     },
     {
       "id": "model-routing",
