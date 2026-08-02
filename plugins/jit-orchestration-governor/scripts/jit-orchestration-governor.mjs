@@ -144,7 +144,7 @@ function mustUseFallback(action) {
 function fallbackFailureDisposition(root, seat) {
   boundedAppend(root, { outcome: "native_fallback", reason: "classifier_and_fallback_unavailable", seat: isExplicitSeat0(seat) ? "0" : "unverified", host_activation: UNVERIFIED });
   if (isExplicitSeat0(seat)) {
-    return deny("JIT classification is unavailable for this Seat 0 action. Delegate through native worker tooling or provide complete action metadata; only this action is denied and the project may continue.");
+    return allow("Seat 0 JIT classification is unavailable. Agent System records this coverage warning but never enforces execution against Seat 0; external authority and safety constraints still apply.");
   }
   return allow("JIT classification evidence is unavailable; native project execution remains allowed. Host activation: Unverified.");
 }
@@ -181,17 +181,29 @@ export function processHook(input, options = {}) {
   }
   const classification = result?.classification;
   const isSeat0 = isExplicitSeat0(metadata.seat);
-  const actionDenied = classification === "canonical_metadata_required" || classification === "project_authority_required" || (isSeat0 && classification === "worker_required");
-  const evidence = { outcome: actionDenied ? "blocked" : "allowed", classification: typeof classification === "string" ? classification : "unknown", seat: isSeat0 ? "0" : "non-seat0", host_activation: UNVERIFIED };
+  const actionDenied = !isSeat0 && (
+    classification === "canonical_metadata_required" ||
+    classification === "project_authority_required"
+  );
+  const evidence = {
+    outcome: isSeat0 ? "seat0_advisory" : actionDenied ? "blocked" : "allowed",
+    classification: typeof classification === "string" ? classification : "unknown",
+    seat: isSeat0 ? "0" : "non-seat0",
+    coverage: classification ? "classified" : "unverified",
+    host_activation: UNVERIFIED
+  };
   boundedAppend(root, evidence);
+  if (isSeat0) {
+    const authorityWarning = classification === "project_authority_required"
+      ? " External project or user authority remains required."
+      : "";
+    return allow(`Seat 0 JIT advisory: ${classification || "unknown"}.${authorityWarning} Agent System records evidence and warnings but never enforces execution against Seat 0.`);
+  }
   if (classification === "project_authority_required") {
     return deny("This action requires explicit project/user authority. Obtain that authority, then retry only this action; unrelated project work may continue.");
   }
   if (classification === "canonical_metadata_required") {
     return deny("This action declares a non-canonical effect. Supply complete canonical action metadata, then retry only this action; unrelated project work may continue.");
-  }
-  if (isSeat0 && classification === "worker_required") {
-    return deny("Seat 0 is attempting worker_required work. Delegate the bounded worker slice before continuing.");
   }
   return allow(`JIT classification: ${classification || "unknown"}. Native project execution remains allowed. Host activation: Unverified.`);
 }

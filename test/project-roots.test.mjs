@@ -94,9 +94,8 @@ test("seat terminology reserves zero for the orchestrator without inflating dele
   const readme = fs.readFileSync(path.join(codeRoot, "README.md"), "utf8");
   const metrics = fs.readFileSync(path.join(codeRoot, "docs", "agent-metrics.md"), "utf8");
 
-  assert.match(delegationPolicy, /Reserve seat `0` for the coordinator\/orchestrator/);
-  assert.match(delegationPolicy, /exclude it from the unqualified agent count and seat count/);
-  assert.match(delegationPolicy, /numbered `1` through `N`/);
+  assert.match(delegationPolicy, /seat `0` is the coordinator and excluded from unqualified\s+agent\/seat counts/i);
+  assert.match(delegationPolicy, /`N` means workers `1\.\.N` \(topology `0\.\.N`\)/);
   assert.match(readme, /A count of `2` therefore maps to/);
   assert.match(readme, /`0 orchestrator, 1 UI, 2 security`/);
   assert.match(metrics, /excluded from\s+average, peak, and displayed agent or seat counts/);
@@ -108,12 +107,14 @@ test("JIT orchestration never substitutes for project authority or completion", 
   const rootPolicy = fs.readFileSync(path.join(codeRoot, "AGENTS.md"), "utf8");
   const jitPolicy = fs.readFileSync(path.join(codeRoot, "governance", "modules", "jit-orchestration.md"), "utf8");
 
-  assert.match(rootPolicy, /governs agent use and prompt\s+activation, never project authority, project state, releases, deployment,\s+publication, or business execution/i);
-  assert.match(rootPolicy, /Agent System failure never blocks the\s+project/i);
+  assert.match(rootPolicy, /Agent System governs execution, not engineering/i);
+  assert.match(rootPolicy, /Agent System provides governance through evidence, not control/i);
+  assert.match(rootPolicy, /Evidence, lifecycle\s+records, metrics, and reports never become execution authority/i);
+  assert.match(rootPolicy, /An Agent System\s+or helper failure never blocks Seat `0` or the project/i);
   assert.match(jitPolicy, /does not govern project authority, product state, business decisions,\s+releases, deployment, publication, or execution ownership/i);
   assert.match(jitPolicy, /Removing or declining it leaves rule selection, prompt composition,\s+delegation, native recovery, project-native tooling, and project completion\s+available/i);
   assert.match(jitPolicy, /Only cross-task defect delivery disappears/i);
-  assert.match(jitPolicy, /There is no fixed retry count, but an\s+unchanged relaunch loop is prohibited/i);
+  assert.match(jitPolicy, /There is no fixed retry count, but an\s+unchanged relaunch loop is\s+prohibited/i);
 });
 
 test("JIT orchestration keeps authoritative mechanical data deterministic", () => {

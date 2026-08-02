@@ -8,7 +8,8 @@ is one-way:
 Kernel -> Receipts -> Events -> Metrics
 ```
 
-Metrics consume bounded lifecycle evidence. They do not authorize, deny, block,
+Metrics consume bounded lifecycle evidence from one private append-only evidence
+ledger. They do not authorize, deny, block,
 route, modify, or score governed execution, and no metric is a completion gate.
 
 ## Anti-optimization doctrine
@@ -41,6 +42,16 @@ exceed what operators can understand or workers can reliably execute. Add rules
 only for observed failure classes; every rule needs a clear purpose and
 observable effect. Expose unresolved rule conflicts rather than silently
 choosing, and ensure governance reduces uncertainty rather than creating it.
+
+## Engineered-output reporting hierarchy
+
+Report engineered output before token analytics: accepted decision-complete
+work; validated artifacts or releases; accepted scope per wall-clock hour;
+first-pass acceptance and rework; operator touch and wait; and estimate-based
+conventional engineering effort with its scope, provenance, P50/P80 range, and
+assumptions. Only then report tokens or API-equivalent dollars as cost
+denominators per accepted result. No metric may reward, route, authorize, or
+declare completion; validation and acceptance remain independently evidenced.
 
 ## Local Event Ledger
 
@@ -180,6 +191,9 @@ node bin/acg.mjs metrics ingest-runtime \
 node bin/acg.mjs metrics after-action \
   --project example \
   --thread thread-123
+
+# Operator-requested Canonical Execution Evidence projection
+node bin/acg.mjs metrics execution --execution execution-123
 ```
 
 Every report includes project dashboards and weekly trend data. A thread filter
@@ -191,12 +205,118 @@ no schedule is created without an explicit operator cadence.
 The after-action projection omits ledger diagnostics and raw task/thread IDs;
 it is the bounded payload supplied to the configured Agent System lane.
 
+### Canonical Execution Evidence
+
+`metrics execution` is an operator-triggered, read-only projection of one
+explicit `execution_id`. It reports only normalized ledger rows carrying that
+identifier; task, work, and thread IDs are never inferred as execution links.
+It retains bounded acceptance revision, artifact-validation, and decision
+provenance references plus coverage. Prompts, source, output, secrets,
+reasoning, and free-form decision narrative are not report fields.
+
+The credit benchmark view recognizes only
+`billing.credit_benchmark_started`, `billing.credit_benchmark_exhausted`, and
+`benchmark.project_linked`. Credit amount and currency are observed fields,
+never a hard-coded `$100`; quota percentages and snapshots are never a
+substitute for credit, tokens, or accepted work. Per-credit measures are
+`null` unless all required evidence is complete and currency-consistent.
+
+This is reporting, not an execution control plane. Governance records reality;
+it does not manufacture it, and metrics never influence execution.
+
+### Common execution envelope and full-circle report
+
+Every Canonical Execution Evidence row uses the bounded common envelope:
+`event_id`, `occurred_at`, `recorded_at`, `project`, `source`,
+`evidence_class`, `evidence_authority`, `coverage_status`, `execution_id`,
+`correlation_id`, and `causation_id`. An execution report includes only rows
+with its explicit `execution_id`, its lifecycle, acceptance revisions and
+validation references, material decision provenance, token/cache/reasoning
+attribution, credit-benchmark facts, and coverage. It does not infer legacy
+task/work/thread identifiers as execution links.
+
+The report is full-circle only for the recorded canonical execution: complete
+credit, token, accepted-work, lifecycle, and correlation coverage may prove
+that bounded lifecycle. Missing linkage remains missing. Reports are
+operator-requested only; no metric can trigger a KPI report, execution,
+acceptance, routing, or publication.
+
+### Observed Engineering Capacity Benchmark (OECB)
+
+OECB is a workload-comparison standard, not provider accounting. A case study
+uses the inclusive sample boundary `2026-07-29T00:00:00Z` through validated
+`2026-07-30T15:38:00Z`: 47,939 **Observed** token-attribution rows;
+12,548,725,850 total tokens; 6,331,131,990 input tokens; 6,197,476,608 cached
+input tokens; 15,135,452 output tokens; and 4,981,800 reasoning tokens. The
+cached/input ratio is **Derived** as `6,197,476,608 / 6,331,131,990 = 97.90%`.
+
+#### OECB Snapshot
+
+The citable headline contract is a compact output-first record. This stable
+snapshot is `oecb-2026-07-29-30-v1`; it never fills missing evidence with a
+zero, estimate, or adjacent execution.
+
+| Field | Value | Evidence class |
+| --- | --- | --- |
+| Benchmark ID | `oecb-2026-07-29-30-v1` | Proposed |
+| Period | `2026-07-29T00:00:00Z` through `2026-07-30T15:38:00Z` | Observed |
+| Snapshot/reporting version | `3.3.0` | Proposed until release |
+| Execution Agent System version | `null` (mixed pre-3.3 execution) | Unknown |
+| Method version | OECB v1 | Proposed |
+| Evidence digest | `null` (no tracked raw export) | Unknown |
+| Accepted validated scope | `null` | Unknown |
+| Observed wall-clock / operator touch | `null` / `null` | Unknown |
+| Observed token attribution | 47,939 rows; 12,548,725,850 total; 6,331,131,990 input | Observed |
+| Conventional-effort range and provenance | `null` | Unknown |
+| Compression range | `null` | Unknown |
+| Canonical execution/acceptance coverage | partial; pre-3.3 linkage absent | Observed |
+
+**Headline:** validated accepted output is the benchmark headline; this snapshot
+does not yet have an observed accepted-scope denominator, so it cannot claim
+delivery compression or output-per-token. Derived fields remain `null` until
+their observed inputs and provenance are complete. This record is reporting
+only: it has no KPI authority and cannot route, reward, authorize, or declare
+completion.
+
+OECB keeps two accounting projections separate. First, the **subscription/credit
+benchmark** uses the OpenAI Analytics input or normalized-input controlling
+unit. The Spark and $100-credit comparison was cross-validated by the operator
+against Analytics; that corroboration is **operator-validated**, not raw-ingested,
+because no Analytics export is tracked. For the exact bounded sample above,
+that benchmark records:
+
+```text
+$2,091.45 Observed/Derived Analytics-aligned subscription benchmark per reset cycle
+4 comparable reset cycles × $2,091.45 = $8,365.80 for this exact benchmark method and boundary
+```
+
+Second, **API-equivalent valuation** prices only complete observed token
+attribution by model and category: `uncached_input = input - cached`, cached
+input at that model's cached-input rate, and output at that model's output rate.
+Where authoritative output already aggregates visible and reasoning output, it
+is counted once; cache-write tokens are priced only at the observed
+model-specific 1.25x rate for GPT-5.6; long-context and tool fees appear only
+when observed. Unknown model, category, rate, or coverage makes that component
+and its aggregate valuation `null`. Raw total tokens, subscription normalized
+tokens, and API-equivalent billable tokens are distinct and must never be
+substituted for one another.
+
+OECB can determine the stated bounded sample, its token attribution, cache
+ratio, and stated Analytics-aligned benchmark. It cannot determine an actual
+subscription invoice, settled charge, provider price commitment, subscription
+accounting, or capacity for different workloads/providers. It also cannot claim
+that the entire historical execution was canonically correlated: execution
+linkage was absent before 3.3 instrumentation. Quota percentages and snapshots
+are never substituted for credit, observed token attribution, or accepted work.
+
 ## Metric Semantics
 
 ### Authoritative efficiency trends
 
-For an efficiency trend, retain the raw time series and report these
-authoritative measures for each comparable regime:
+For an efficiency trend, retain the raw time series. Lead with accepted scope
+per wall-clock hour, first-pass/rework, operator touch/wait, and conventional
+effort estimates with their provenance and ranges. Report these supporting
+cost measures for each comparable regime:
 
 - uncached input tokens per hour;
 - output tokens per hour;
@@ -293,6 +413,12 @@ labels, and comparability. A source-task numerator divided by one goal segment
 is reported as a qualified category mismatch and remains ineligible for
 portfolio delivery compression until the complete comparable workstream
 denominator is available.
+
+Planning calibration is owned and version-controlled by the Agent System JIT
+`benchmark-calibration` policy module, not by this metrics layer. Historical
+metrics may inform only a future operator-reviewed release; they never
+automatically adopt, revise, or supersede a planning benchmark, and never
+influence execution.
 
 ### Capture status
 

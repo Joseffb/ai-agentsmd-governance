@@ -9,13 +9,24 @@ Keep the tracked tree portable and publication-safe. Do not commit personal path
 
 Tracked policy consists of the kernel, manifest, generic modules, schemas, router, skill, neutral fixtures, and tests. Runtime releases are derived artifacts.
 
-The canonical public identity is `docs/agent-system-role.md`. Agent System
-dynamically loads the smallest applicable rule set, composes scoped worker
-prompts, selects model and reasoning, and enforces delegation so Seat `0`
-remains the high-level orchestrator. It governs agent use and prompt
-activation, never project authority, project state, releases, deployment,
-publication, or business execution. An Agent System failure never blocks the
-project.
+The canonical public identity is `docs/agent-system-role.md`.
+
+**Agent System governs execution, not engineering.** It dynamically loads the
+smallest applicable rule set, composes scoped worker prompts, selects model and
+reasoning, and enforces worker admission only at named expensive or
+irreversible boundaries. Strategy, topology, implementation, coding, style,
+and optimization differences are observed rather than blocked.
+
+**Agent System provides governance through evidence, not control.** Seat `0`
+remains governed and auditable but is never subject to Agent System execution
+enforcement. Its constraints come only from external platform and safety
+requirements, valid user authority, ownership and data boundaries, destructive
+ambiguity, and project release rules. An explicit user instruction that
+“Seat 0 does not implement” remains user authority. Evidence, lifecycle
+records, metrics, and reports never become execution authority. An Agent System
+or helper failure never blocks Seat `0` or the project. Hooks may warn and
+record bounded coverage for Seat `0`, but always fail open; external authority
+and safety constraints remain independently applicable.
 
 ## Communication
 
@@ -63,6 +74,13 @@ Before changing policy:
 5. Load only policy required for the immediate operation.
 6. Update digests and run authoritative policy validation.
 7. Never edit an active runtime symlink as the source of truth.
+
+Prefer observation over intervention, existing evidence over new
+instrumentation, composition over a new subsystem, and deletion over new
+policy. An elegance-only feature is a removal candidate. Every hard rule must
+state the prevented failure, why it is expensive or irreversible, enforcement
+cost, Seat `0` escalation path, and safe fallback; if it cannot pay that rent,
+do not add it.
 
 Local organization and project policies are private extensions. They must remain ignored, digest-verified, and lazily loaded through the generic local-policy index.
 

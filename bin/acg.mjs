@@ -19,6 +19,7 @@ import {
   buildMetricsReport,
   recordEngineeringEvent
 } from "../lib/engineering-metrics.mjs";
+import { buildExecutionEvidenceReport } from "../lib/execution-evidence-report.mjs";
 import { ingestRuntimeTelemetry } from "../lib/runtime-telemetry.mjs";
 import { attestNativeSubagent } from "../lib/native-model-attestation.mjs";
 import { auditModelRouting } from "../lib/model-routing-audit.mjs";
@@ -116,6 +117,7 @@ function parseArgs(argv) {
     else if (value === "--days") args.days = Number(rest[++index]);
     else if (value === "--log") args.logFile = rest[++index];
     else if (value === "--ledger") args.ledger = rest[++index];
+    else if (value === "--execution") args.execution = rest[++index];
     else if (value === "--thread") args.thread = rest[++index];
     else if (value === "--task") args.task = rest[++index];
     else if (value === "--attempt") args.attempt = rest[++index];
@@ -345,6 +347,11 @@ try {
       days: args.days,
       ledger: args.ledger
     });
+  } else if (args.command === "metrics" && args.positional[0] === "execution") {
+    result = buildExecutionEvidenceReport({
+      execution: args.execution,
+      ledger: args.ledger
+    });
   } else if (args.command === "metrics" && args.positional[0] === "record") {
     let event;
     if (args.file) {
@@ -408,17 +415,17 @@ try {
     result = listPolicyCatalog(args.positional[0] ?? "all", resolvePolicyRoot(args.policyRoot));
   } else {
     result = {
-      commands: ["audit", "orchestrate next", "orchestrate verify", "orchestrate launch", "seat inspect", "seat preflight", "seat assign", "seat recover", "seat continue", "seat finalize", "seat explain", "metrics report", "metrics after-action", "metrics record", "metrics ingest-runtime", "context adopt-current", "context legacy", "profile add-root", "profile remove-root", "profile approval", "profile agent-system", "agent-system record-issue", "handoff verify", "handoff accept", "handoff communicate", "communicate", "route", "deliver", "acknowledge", "attest-native-model", "model-audit", "list", "lock", "local-lock", "local-verify", "traceability", "verify", "canary", "build-release", "activate", "publish-overlays"],
+      commands: ["audit", "orchestrate next", "orchestrate verify", "orchestrate launch", "seat inspect", "seat preflight", "seat assign", "seat recover", "seat continue", "seat finalize", "seat explain", "metrics report", "metrics execution", "metrics after-action", "metrics record", "metrics ingest-runtime", "context adopt-current", "context legacy", "profile add-root", "profile remove-root", "profile approval", "profile agent-system", "agent-system record-issue", "handoff verify", "handoff accept", "handoff communicate", "communicate", "route", "deliver", "acknowledge", "attest-native-model", "model-audit", "list", "lock", "local-lock", "local-verify", "traceability", "verify", "canary", "build-release", "activate", "publish-overlays"],
       audit: "audit --project <slug> --path <absolute-root> [--prior-receipt <file|->]",
       orchestrate: {
         next: "orchestrate next --project <slug> --path <absolute-root> --intent <intent> --facts <json-file|-> [--prior-bundle <absolute-path>]",
         verify: "orchestrate verify --bundle <absolute-path>",
-        launch: "orchestrate launch --bundle <private-v5-bundle> --seat <1..N>"
+        launch: "orchestrate launch --bundle <private-v6-bundle> --seat <1..N>"
       },
       seat: {
-        inspect: "seat inspect --project <slug> --path <absolute-root> --seat <name> --model <id> --reasoning <value> [--attempt 1|2] [--objective <text>] [--prior-receipt <file|->]",
+        inspect: "seat inspect --project <slug> --path <absolute-root> --seat <name> --model <id> --reasoning <value> [--bundle <private-v6-bundle>] [--attempt 1|2] [--objective <text>] [--prior-receipt <file|->]",
         preflight: "seat preflight --assignment <read-only-assignment-package>",
-        assign: "seat assign --project <slug> --repository <repo> --base <sha> --seat <worker-name> --worktree-root <root> --write-scope <path> [--generated-scope <non-integrable-path>]... --model <id> --reasoning <value>",
+        assign: "seat assign --project <slug> --repository <repo> --base <sha> --seat <worker-name> --worktree-root <root> --write-scope <path> [--generated-scope <non-integrable-path>]... --model <id> --reasoning <value> [--bundle <private-v6-bundle>]",
         recover: "seat recover --assignment <governed-mutating-assignment-package>",
         continue: "seat continue --project <slug> --receipt <original-assignment-receipt> --expected-head <sha> [--intent implementation|validate|deploy]",
         finalize: "seat finalize --assignment <assignment-package> [--receipt <continuation-receipt>]",
@@ -437,6 +444,7 @@ try {
       },
       metrics: {
         report: "metrics report [--project <slug>] [--thread <id>] [--days 30] [--ledger <private-jsonl>]",
+        execution: "metrics execution --execution <id> [--ledger <private-jsonl>]",
         after_action: "metrics after-action --project <slug> --thread <id> [--days <n>]",
         record: "metrics record --event <type> --project <slug> [--thread <id>] [--task <id>] [--seat <id>] [bounded event fields]",
         ingest_runtime: "metrics ingest-runtime --session-root <absolute-root> --project <slug> [--path <exact-project-root>] [--thread <exact-task-id>] [--ledger <private-jsonl>] [--diagnostics]; require --path and/or --thread"

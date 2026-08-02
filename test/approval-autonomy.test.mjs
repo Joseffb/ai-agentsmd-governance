@@ -5,6 +5,8 @@ import test from "node:test";
 import { codeRoot } from "../lib/core.mjs";
 
 const kernel = fs.readFileSync(path.join(codeRoot, "governance", "kernel", "AGENTS.md"), "utf8");
+const repositoryPolicy = fs.readFileSync(path.join(codeRoot, "AGENTS.md"), "utf8");
+const role = fs.readFileSync(path.join(codeRoot, "docs", "agent-system-role.md"), "utf8");
 const continuity = fs.readFileSync(path.join(codeRoot, "governance", "modules", "continuity.md"), "utf8");
 const delegation = fs.readFileSync(path.join(codeRoot, "governance", "modules", "delegation.md"), "utf8");
 
@@ -25,6 +27,47 @@ test("approval precedence escalates only on a genuine boundary change", () => {
     assert.match(kernel, new RegExp(boundary));
   }
   assert.match(kernel, /(?:or\s+|\/)create\s+blockers/);
+});
+
+test("light governance constrains workers while Seat 0 remains externally authoritative", () => {
+  for (const text of [repositoryPolicy, role]) {
+    assert.match(text, /Agent System governs execution, not engineering/);
+    assert.match(text, /Agent System provides governance through evidence, not control/);
+  }
+  assert.match(kernel, /Seat `0` is governed and auditable but never subject to Agent System execution\s+enforcement/);
+  assert.match(kernel, /“Seat 0 does not implement” removes this exception; it is direct user authority/);
+  assert.match(kernel, /Agent System never blocks the\s+project\s+or Seat `0`/);
+  assert.match(kernel, /Agent System hooks always fail open for Seat `0`/);
+  assert.match(kernel, /external authority remains independently binding/);
+  assert.match(role, /Unknown actual model identity continues safely as `Unverified`/);
+  assert.match(role, /Incomplete\s+required validation holds automatic admission and escalates to Seat `0`/);
+  assert.match(role, /strategy, topology, implementation, coding, style, or\s+optimization are observed, not blocked/);
+});
+
+test("hard rules pay rent and decision provenance remains observational", () => {
+  for (const field of [
+    "prevented_failure",
+    "why_failure_is_expensive_or_irreversible",
+    "enforcement_cost",
+    "seat0_escalation_path",
+    "safe_fallback"
+  ]) {
+    assert.match(kernel, new RegExp(`\\\`${field}\\\``));
+  }
+  assert.match(kernel, /Prefer observation over intervention/);
+  assert.match(kernel, /existing evidence over new instrumentation/);
+  assert.match(kernel, /composition over a new subsystem/);
+  assert.match(kernel, /deletion over new policy/);
+  assert.match(kernel, /every rule pays rent/i);
+  assert.match(kernel, /A material decision changes authority, scope, ownership/);
+  assert.match(kernel, /Record bounded scope\/type\/action\/normal path/);
+  assert.match(kernel, /external authority\+refs, evidence\/rule refs/);
+  assert.match(kernel, /reason summary \(never prompt or\s+reasoning\)/);
+  assert.match(kernel, /alternatives, risk\/effect, actor, status\/revision\/basis\/artifact/);
+  assert.match(kernel, /Accepted validated scope\/output is reporting's primary numerator/);
+  assert.match(kernel, /tokens\/cost\s+are downstream denominators/);
+  assert.match(kernel, /Provenance write failure is a warning and coverage gap only/);
+  assert.match(kernel, /Lifecycle and reports remain observational/);
 });
 
 test("persistent goals cannot be blocked by artificial confirmation or incomplete work", () => {

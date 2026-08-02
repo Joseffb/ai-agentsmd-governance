@@ -100,6 +100,12 @@
         "project-overlays"
       ]
     },
+    "cleanup": {
+      "effect_class": "filesystem_mutation",
+      "required_modules": [
+        "storage"
+      ]
+    },
     "build": {
       "effect_class": "generated_output",
       "required_modules": [
@@ -272,9 +278,9 @@
   "modules": [
     {
       "id": "storage",
-      "version": 1,
+      "version": 3,
       "path": "modules/storage.md",
-      "digest": "sha256:fbd05cded89126f6a6e13f4f9fd8f2d6a26312a8c2eefb3a289281ccb0cf53b5",
+      "digest": "sha256:fb145af67414f9a2742063247beaf3530028d70cfdb028c5d7064934d7885c96",
       "triggers": {
         "operations": [
           "build",
@@ -285,7 +291,8 @@
           "local_ai_run",
           "install_dependency",
           "launch_mutating_subagent",
-          "mobile_review_export"
+          "mobile_review_export",
+          "cleanup"
         ]
       },
       "dependencies": [
@@ -309,9 +316,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 1415,
-      "words": 188,
-      "estimated_tokens": 354
+      "bytes": 4495,
+      "words": 585,
+      "estimated_tokens": 1124
     },
     {
       "id": "trust-and-data",
@@ -403,17 +410,49 @@
       "estimated_tokens": 366
     },
     {
+      "id": "benchmark-calibration",
+      "version": 1,
+      "path": "modules/benchmark-calibration.md",
+      "digest": "sha256:7de56c97150f68db463382fee8251b1238c57e0f1b57e3777de210f40b414f2a",
+      "triggers": {
+        "operations": []
+      },
+      "dependencies": [
+        "jit-orchestration"
+      ],
+      "conflicts": [],
+      "load_before": [
+        "substantial_plan"
+      ],
+      "precedence": 79,
+      "authority": "workflow",
+      "on_failure": {
+        "block": [
+          "benchmark_calibrated_ai_hour_estimate"
+        ],
+        "allow": [
+          "seat0_manual_or_native_planning_with_calibration_unknown"
+        ]
+      },
+      "applicable_project_profiles": [
+        "*"
+      ],
+      "bytes": 3235,
+      "words": 430,
+      "estimated_tokens": 809
+    },
+    {
       "id": "planning-and-capacity",
-      "version": 4,
+      "version": 6,
       "path": "modules/planning-and-capacity.md",
-      "digest": "sha256:a5bf21eeeff2d1ca020e51f939c0e757023111c84e7e7045992d03a0068ccd0f",
+      "digest": "sha256:17c2ad7156bca2ce9ea1ae63fe042de1a20c522ea4de6ee42e0eb20e152dbb41",
       "triggers": {
         "operations": [
           "plan"
         ]
       },
       "dependencies": [
-        "jit-orchestration"
+        "benchmark-calibration"
       ],
       "conflicts": [],
       "load_before": [
@@ -432,9 +471,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 3268,
-      "words": 433,
-      "estimated_tokens": 817
+      "bytes": 4551,
+      "words": 609,
+      "estimated_tokens": 1138
     },
     {
       "id": "model-routing",
@@ -509,7 +548,7 @@
       "id": "jit-orchestration",
       "version": 7,
       "path": "modules/jit-orchestration.md",
-      "digest": "sha256:9ea4961f2f5d75ac9f077ebc30dedee1bf4193e3e00eb89224b0c9705ac4a617",
+      "digest": "sha256:d7c1bb08d426e1be5d6aac647e71be7754385d01cda85622998ac13fd35ef0ce",
       "triggers": {
         "operations": [
           "repository_inspection",
@@ -561,7 +600,6 @@
       "authority": "workflow",
       "on_failure": {
         "block": [
-          "proven_improper_seat0_direct_worker_required_execution",
           "affected_agent_system_path"
         ],
         "allow": [
@@ -574,15 +612,15 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 13987,
-      "words": 1847,
+      "bytes": 13988,
+      "words": 1788,
       "estimated_tokens": 3497
     },
     {
       "id": "delegation",
-      "version": 18,
+      "version": 20,
       "path": "modules/delegation.md",
-      "digest": "sha256:53341e5cb048fae625c09325dcc6e374a0aef9a2ad27f1e68f39586bf2f2452e",
+      "digest": "sha256:9dd0895ccdc4f97c7f5faebc89f9b8dbfe9d7cde6b45dd5c2f53cadf02dd6ce7",
       "triggers": {
         "operations": [
           "launch_subagent",
@@ -610,15 +648,15 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 13941,
-      "words": 1876,
-      "estimated_tokens": 3486
+      "bytes": 13956,
+      "words": 1850,
+      "estimated_tokens": 3489
     },
     {
       "id": "subagent-git",
-      "version": 5,
+      "version": 7,
       "path": "modules/subagent-git.md",
-      "digest": "sha256:abdd48d45692d2ced2099f2d32ba204666e17714236ba64aeb5e3eb9181eb423",
+      "digest": "sha256:dc40c5c4555694574d4e312b4709ec3e6198964a02057caff6343d65fd0a8b6b",
       "triggers": {
         "operations": [
           "launch_mutating_subagent"
@@ -647,9 +685,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 6661,
-      "words": 848,
-      "estimated_tokens": 1666
+      "bytes": 10938,
+      "words": 1369,
+      "estimated_tokens": 2735
     },
     {
       "id": "continuity",

@@ -10,6 +10,8 @@ import {
   buildMetricsReport,
   ENGINEERING_EVENT_FAMILIES,
   normalizeEngineeringEvent,
+  normalizeEngineeringEventEnvelope,
+  projectExecutionEvidenceLifecycles,
   readEngineeringEvents,
   recordEngineeringEvent
 } from "../lib/engineering-metrics.mjs";
@@ -92,6 +94,176 @@ test("event ledger rejects unbounded data and CLI writes are private and quiet",
   assert.equal(read.valid_lines, 1);
   assert.equal(read.events[0].type, "task.started");
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("canonical execution evidence is bounded, append-only, and observational", () => {
+  assert.deepEqual(ENGINEERING_EVENT_FAMILIES.Execution, [
+    "execution.", "accepted_work.", "correlation.", "decision.", "billing."
+  ]);
+  const running = normalizeEngineeringEvent({
+    type: "execution.running",
+    project: "alpha",
+    execution_id: "execution-1",
+    occurred_at: "2026-07-26T00:00:00.000Z",
+    source: "runtime"
+  });
+  const accepted = normalizeEngineeringEvent({
+    type: "accepted_work.recorded",
+    project: "alpha",
+    execution_id: "execution-1",
+    accepted_work_id: "work-1",
+    acceptance_status: "accepted",
+    revision: "r1",
+    accepted_by: "reviewer-1",
+    artifact_validation_ref: "validation-1",
+    occurred_at: "2026-07-26T00:01:00.000Z"
+  });
+  assert.equal(accepted.artifact_validation_ref, "validation-1");
+  const enrichedAccepted = normalizeEngineeringEvent({
+    ...accepted,
+    event_id: "accepted-enriched",
+    accepted_scope_id: "scope-1",
+    artifact_refs: ["artifact-1"],
+    validation_refs: ["validation-1"],
+    first_pass: true,
+    rework_event_ids: []
+  });
+  assert.equal(enrichedAccepted.accepted_scope_id, "scope-1");
+  assert.throws(() => normalizeEngineeringEvent({ ...running, prompt: "never retained" }), /prohibited or unknown fields/);
+  const projected = projectExecutionEvidenceLifecycles([
+    running,
+    { ...running, event_id: "first-output", type: "execution.first_output", occurred_at: "2026-07-26T00:01:00.000Z" },
+    { ...running, event_id: "validation-complete", type: "execution.validation_completed", occurred_at: "2026-07-26T00:01:30.000Z" },
+    { ...running, event_id: "accepted", type: "execution.accepted", occurred_at: "2026-07-26T00:02:00.000Z" },
+    { ...running, event_id: "out-of-order", type: "execution.allocated", occurred_at: "2026-07-26T00:03:00.000Z" }
+  ]);
+  assert.deepEqual(projected[0].lifecycle, ["Running", "Accepted"]);
+  assert.equal(projected[0].coverage_status, "partial");
+  assert.equal(projected[0].invalid_observation_count, 1);
+  assert.equal(projected[0].timestamps.Queued, undefined, "missing states are never inferred");
+  assert.equal(projected[0].milestones.first_output_at, "2026-07-26T00:01:00.000Z");
+  assert.equal(projected[0].milestones.validation_completed_at, "2026-07-26T00:01:30.000Z");
+  const decision = normalizeEngineeringEvent({
+    type: "decision.material",
+    project: "alpha",
+    execution_id: "execution-1",
+    decision_id: "decision-1",
+    decision_scope: "delivery",
+    decision_authority: "operator",
+    decision_status: "recorded",
+    decision_revision: "r1",
+    decision_basis_ref: "basis-1",
+    occurred_at: "2026-07-26T00:03:00.000Z"
+  });
+  assert.equal(decision.decision_authority, "operator");
+  assert.equal(Object.hasOwn(decision, "event_family"), false, "legacy flat rows stay flat");
+  const enrichedDecisionInput = {
+    type: "decision.material",
+    project: "alpha",
+    execution_id: "execution-1",
+    decision_id: "decision-2",
+    decision_scope: "execution",
+    decision_type: "orchestration_classification",
+    requested_action: "implementation",
+    normal_path: "worker_required",
+    decision_authority: "execution_brief",
+    authority_refs: ["authority-1"],
+    evidence_refs: ["evidence-1"],
+    rule_refs: ["rule-1"],
+    reason_summary: "classifier:worker_required",
+    alternative_codes: [],
+    risk_summary: "declared_effects:1",
+    expected_effect: "observational_execution_evidence_only",
+    actor: "seat_0",
+    decision_status: "recorded",
+    decision_revision: "r1",
+    decision_basis_ref: "basis-2",
+    decision_artifact_ref: "artifact-2",
+    result_event_ids: [],
+    occurred_at: "2026-07-26T00:03:01.000Z"
+  };
+  const enrichedDecision = normalizeEngineeringEvent(enrichedDecisionInput);
+  assert.deepEqual(enrichedDecision.rule_refs, ["rule-1"]);
+  const commonEnvelope = normalizeEngineeringEventEnvelope(enrichedDecisionInput);
+  assert.deepEqual(Object.keys(commonEnvelope), [
+    "event_family", "event_type", "project_id", "authority_level", "typed_payload"
+  ]);
+  assert.equal(commonEnvelope.event_family, "decision");
+  assert.equal(commonEnvelope.event_type, "decision.material");
+  assert.equal(commonEnvelope.project_id, "alpha");
+  assert.equal(commonEnvelope.authority_level, "execution_brief");
+  assert.equal(commonEnvelope.typed_payload.decision_id, "decision-2");
+  assert.throws(() => normalizeEngineeringEvent({
+    ...enrichedDecisionInput,
+    reason_summary: "private reasoning trace"
+  }), /must not contain prompt or reasoning content/);
+  assert.throws(() => normalizeEngineeringEvent({
+    ...enrichedDecisionInput,
+    decision_scope: "delivery"
+  }), /decision_scope for enriched decision\.material/);
+  assert.throws(() => normalizeEngineeringEvent({
+    ...enrichedDecisionInput,
+    authority_refs: []
+  }), /authority_refs must be a non-empty array/);
+  assert.throws(() => normalizeEngineeringEvent({
+    ...enrichedDecisionInput,
+    rule_refs: ["rule-2", "rule-1"]
+  }), /rule_refs must be sorted/);
+  assert.throws(() => normalizeEngineeringEvent({
+    ...enrichedDecisionInput,
+    risk_summary: "x".repeat(241)
+  }), /single-line bounded summary/);
+  assert.throws(() => normalizeEngineeringEvent({
+    ...enrichedDecisionInput,
+    expected_effect: undefined
+  }), /expected_effect is required for enriched decision\.material/);
+  const resultLink = normalizeEngineeringEvent({
+    type: "decision.result_linked",
+    project: "alpha",
+    execution_id: "execution-1",
+    decision_id: "decision-2",
+    result_event_ids: ["result-1"],
+    occurred_at: "2026-07-26T00:03:02.000Z"
+  });
+  assert.deepEqual(resultLink.result_event_ids, ["result-1"]);
+  assert.throws(() => normalizeEngineeringEvent({
+    ...resultLink,
+    event_id: "empty-link",
+    result_event_ids: []
+  }), /requires at least one result_event_id/);
+  assert.throws(() => normalizeEngineeringEvent({
+    ...enrichedAccepted,
+    event_id: "incomplete-acceptance",
+    validation_refs: undefined
+  }), /validation_refs is required for enriched accepted_work\.recorded/);
+  const linked = normalizeEngineeringEvent({
+    type: "correlation.linked",
+    project: "alpha",
+    execution_id: "execution-1",
+    correlation_id: "correlation-1",
+    linked_execution_id: "execution-2",
+    link_type: "retry_of",
+    occurred_at: "2026-07-26T00:03:30.000Z"
+  });
+  assert.equal(linked.linked_execution_id, "execution-2");
+  const legacy = normalizeEngineeringEvent({
+    type: "correlation.legacy_unlinked",
+    project: "alpha",
+    legacy_reference: "legacy-1",
+    occurred_at: "2026-07-26T00:03:31.000Z"
+  });
+  assert.equal(legacy.correlation_id, undefined, "legacy evidence is not retrospectively linked");
+  const billing = normalizeEngineeringEvent({
+    type: "billing.benchmark",
+    project: "alpha",
+    billing_benchmark_id: "benchmark-1",
+    billing_unit: "token",
+    billing_quantity: 10,
+    billing_rate_micros: 15,
+    billing_currency: "USD",
+    occurred_at: "2026-07-26T00:04:00.000Z"
+  });
+  assert.equal(billing.billing_rate_micros, 15);
 });
 
 test("metrics record accepts a closed JSON event without exposing telemetry output", () => {

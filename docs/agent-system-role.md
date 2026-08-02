@@ -7,20 +7,83 @@ The role is intrinsic system behavior, not a custom profile or project overlay.
 
 ## Purpose
 
-Agent System is the JIT orchestration and agent-use governor. Its primary product
-is JIT Agent-file/rule discovery and the smallest-sufficient scoped prompt
-composition for coding agents. Agent-use enforcement is the necessary execution
-control; dependency-aware scheduling is a thin launch-order layer. It dynamically loads the smallest applicable rule set for the immediate intent, composes scoped worker prompts, selects the lowest reliable model and reasoning, and Seat `0` remains the high-level orchestrator. It maintains the kernel, policy router, skills, plugins,
+Agent System is the JIT orchestration and agent-use governor.
+
+**Agent System governs execution, not engineering.** Its primary product is JIT
+Agent-file/rule discovery and the smallest-sufficient scoped prompt composition
+for coding agents. Worker admission enforcement is limited to named expensive
+or irreversible boundaries; dependency-aware scheduling is a thin,
+observational launch-order layer. It
+dynamically loads the smallest applicable rule set for the immediate intent,
+composes scoped worker prompts, selects the
+lowest reliable model and reasoning, and Seat `0` remains the high-level
+orchestrator. It maintains the kernel, policy router, skills, plugins,
 model-routing controls, project overlays, release system, continuity
 interfaces, machine-profile contract, and optional engineering analytics as
 one coherent system.
 
-Agent System governs agent use and prompt activation. It never supplies or
-expands project authority, owns project state, authorizes releases, deployment
-or publication, or performs another project's business execution.
+**Agent System provides governance through evidence, not control.** It never
+supplies or expands project authority, owns project state, authorizes releases,
+deployment or publication, or performs another project's business execution.
+Evidence can establish a named worker boundary, but evidence, receipts,
+lifecycle records, metrics, and reports never become authority or control
+execution.
 
 Its outcome is practical: make governed project work safer, faster, easier to
 supervise, and less likely to stall on the governance machinery itself.
+
+## Light-governance Doctrine
+
+Workers fail closed only at these boundaries:
+
+- missing authority or scope expansion;
+- secret, data, tenancy, or privilege boundaries;
+- destructive or irreversible effects;
+- missing verified Git lineage or worktree;
+- primary integration or merge;
+- a tampered assignment, bundle, or receipt;
+- an authoritatively known costly model mismatch; and
+- mutation of governance, authority, execution contracts, or evidence.
+
+Unknown actual model identity continues safely as `Unverified`. Incomplete
+required validation holds automatic admission and escalates to Seat `0`.
+Differences in strategy, topology, implementation, coding, style, or
+optimization are observed, not blocked.
+
+Every hard rule declares `prevented_failure`,
+`why_failure_is_expensive_or_irreversible`, `enforcement_cost`,
+`seat0_escalation_path`, and `safe_fallback`. Prefer observation over
+intervention, existing evidence over new instrumentation, composition over a
+new subsystem, and deletion over new policy. An elegance-only feature is a
+removal candidate. Every rule must pay rent.
+
+Seat `0` is governed and auditable, but Agent System never enforces execution
+against it. Seat `0` is constrained only by external platform and safety
+requirements, valid user authority, ownership and data boundaries, destructive
+ambiguity, and project release rules. An explicit user instruction that
+“Seat 0 does not implement” remains user authority. Agent System or helper
+failure never blocks Seat `0` or the project.
+Agent System hooks always fail open for Seat `0`: they may record a bounded
+warning or coverage gap, but external authority and safety constraints remain
+independently applicable.
+
+A material decision changes authority, scope, ownership, data/tenancy/
+privilege, destructive reversibility, Git lineage or integration ownership,
+validation admission, release posture, or execution-contract/evidence
+integrity. Its provenance records the exact `decision_scope` and external
+`decision_authority`, bounded authority/evidence/rule references, decision
+type, requested action, normal path, reason summary, alternatives, risk,
+expected effect, actor, status/revision/basis/artifact, result links, and
+supersession. It never records prompts or hidden reasoning. A provenance-write
+failure emits a warning and reduces coverage only; it cannot block, void,
+delay, or reopen execution.
+
+Canonical reporting prioritizes accepted validated scope and engineered output:
+acceptance status, decision-complete scope, artifacts, validation references,
+actor/time, revision, first pass, rework, first-output latency, and operator
+touch/wait. Tokens and cost remain downstream denominators. The bounded OECB
+headline labels Observed, Derived, Proposed, and Unknown evidence explicitly;
+missing effort stays `null`, and no metric influences execution.
 
 ## Responsibilities
 
@@ -40,9 +103,10 @@ The Agent System:
   data; the currently supported conservative fallback is
   `gpt-5.6-terra` at `low` only for exact state `unknown_or_unexposed` with
   `availability_evidence` set to `Unverified`; `authoritatively_unavailable`
-  and `separate_pool_exhausted` are reserved and fail closed until supported
-  host receipt evidence exists, blocking only the affected launch rather than
-  moving the work to Seat `0` or blocking the project;
+  and `separate_pool_exhausted` are reserved evidence states. They hold only an
+  affected launch that establishes an authoritatively known costly model
+  mismatch; unknown actual model identity continues safely as `Unverified`
+  rather than moving the work to Seat `0` or blocking the project;
 - follows the composer no-guess launch path exactly: `orchestrate next` ->
   `orchestrate launch --bundle <path> --seat <N>` -> pass the returned
   `native_quarantine.spawn_request` verbatim -> attest -> send the returned
@@ -52,7 +116,13 @@ The Agent System:
   work it chooses `PARALLEL`, `PIPELINED`, `SERIAL`, or `EXPLORATORY`; logical
   dependencies and integration contracts determine whether work is
   `PIPELINED`, `SERIAL`, or `EXPLORATORY`. A declaration of disjoint files or
-  branches does not prove or imply `PARALLEL`. It then follows the **Default parallel
+  branches does not prove or imply `PARALLEL`. A shared root cause, invariant,
+  or ownership boundary (with same-file or overlapping ownership as signals)
+  uses `SERIAL` with exactly one mutating worker; after it commits its locally
+  validated candidate, a separate `PIPELINED` read-only adversarial verifier
+  follows;
+  only independently implementable, testable, committable, and integrable
+  clusters resume parallel mutation. It then follows the **Default parallel
   delivery lifecycle**: decompose, reserve independent lanes,
   assign every mutating worker an isolated branch/worktree, let workers
   implement and locally test, and have Seat `0` integrate accepted slices before
@@ -61,6 +131,15 @@ The Agent System:
   truly read-only workers need no new worktree, and non-Git mutation needs
   equivalent isolated mutable state. Read-only shared-checkout access and
   equivalent non-Git isolation exceptions never weaken mutating Git isolation;
+- follows the `subagent-git` worker-lane lifecycle: workers return
+  candidate/evidence and clean only assignment-owned ephemeral state, never
+  self-dispose; Seat `0` preserves candidates until acceptance-gated disposal
+  after authoritative validation and evidence/continuity preservation, while a
+  cleanup failure preserves the exact lane as a residual obligation;
+- applies the single `storage` policy to contained environments: establish
+  run identity and ownership, retention class, bounded usage, exact teardown,
+  and residual evidence while preserving shared, persistent, unknown, and
+  evidence state by default; Docker.raw bloat is an observed example only;
 - treats tiny, tightly coupled, or unsafe-overlap work as an explicitly bounded
   smaller-topology exception, never as an escape hatch from useful safe
   parallelism;
@@ -68,6 +147,15 @@ The Agent System:
   persistent workflow state machine; uncertainty yields `SERIAL` or
   `EXPLORATORY`, while helper/classifier failure uses a bounded manual/native
   worker fallback under unchanged delegation boundaries without blocking the project;
+- treats lifecycle records and operator-requested reports as observational
+  evidence only, never admission, routing, authority, completion, or execution
+  control;
+- leads architectural-hardening and integration status with blocking defect
+  clusters, current cluster, `PASS`/`FAIL`/`RUNNING`/`BLOCKED`/`UNVERIFIED`
+  gate states, regression trend, remaining release work, and an
+  assumption-bounded AI-active ETA, separately stating deployment/browser
+  latency when applicable; a gate-derived percentage is optional secondary
+  context only;
 - maintains and simplifies the portable governance/orchestration system;
 - facilitates project tasks by resolving Agent System blockers and returning a
   supported continuation path;
@@ -107,8 +195,8 @@ project ownership, authorize work, or become a governance input. Repair work
 must preserve the reporting project's state. After one consent-selected report
 or local log, the reporting project immediately continues within existing
 authority using its existing tool definitions or native tools. There is no
-wait-for-Agent-System state. Agent System may block an improper Seat `0` action,
-but it never blocks the project.
+wait-for-Agent-System state. Agent System may warn and preserve evidence about
+a Seat `0` decision, but it never blocks Seat `0` or the project.
 
 ## Post-goal Analysis
 

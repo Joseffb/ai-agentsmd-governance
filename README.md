@@ -2,7 +2,7 @@
 
 ![AI Coding Agent Governance workflow](docs/assets/ai-coding-agent-governance.png)
 
-> **Current release line:** RC-3.0 (`3.1.0`).
+> **Current release line:** RC-3.0 (`3.3.0`).
 > Immutable releases include the tracked source plugins, but bundling does not
 > prove that any host installed, loaded, or activated those plugins.
 
@@ -11,6 +11,12 @@
 > scoped prompt composition. Agent-use enforcement is the necessary execution
 > control; dependency-aware scheduling is a thin launch-order layer. Optional
 > telemetry and defect/reporting support are secondary and never authority.
+
+> **Public evidence philosophy:** Canonical Execution Evidence is a read-only,
+> operator-requested projection of one private append-only evidence ledger.
+> Coverage is never inferred where authoritative evidence is unavailable;
+> governance records reality and does not manufacture it. Metrics remain
+> downstream-only and never influence execution.
 
 > **Incident and adoption contract:** Each bounded governance/runtime incident
 > is privately appended to JSONL under a failure class. A persistent Agent
@@ -28,6 +34,13 @@
 > **Status: available and verified.** The optional local event and reporting layer is released. It is not the product contract; KPI history appears only after truthful lifecycle evidence is recorded.
 
 Governance tells an agent how to work safely. **Agent KPIs answer the larger engineering question: is the Agent System helping people ship better software faster, with less waiting and less intervention?**
+
+The reporting hierarchy starts with engineered output: accepted decision-complete
+work, validated artifacts or releases, accepted scope per wall-clock hour,
+first-pass versus rework, operator touch/wait, and conventional engineering
+effort estimates with provenance and ranges. Tokens and API-equivalent dollars
+are cost denominators per accepted result, never the headline or a completion
+proxy.
 
 The primary view is a portfolio dashboard grouped by project, not by task. Any project using the Agent System can share one event model without embedding analytics in the project itself.
 
@@ -98,6 +111,31 @@ that handoff.
 See the [engineering metrics operator reference](docs/agent-metrics.md) for the
 event and report commands, coverage rules, and scheduling boundary.
 
+### Observed Engineering Capacity Benchmark
+
+The Observed Engineering Capacity Benchmark (OECB) compares a bounded,
+validated workload sample using evidence rather than quota displays or provider
+billing assumptions. Its July 2026 case study covers the inclusive interval
+`2026-07-29T00:00:00Z` through validated `2026-07-30T15:38:00Z`: 47,939
+observed token-attribution rows, 12,548,725,850 total tokens, 6,331,131,990
+input tokens, 6,197,476,608 cached input tokens (97.90% cached/input),
+15,135,452 output tokens, and 4,981,800 reasoning tokens.
+
+The operator cross-validated comparable Spark and $100-credit work against an
+OpenAI Analytics usage report. The **Analytics-aligned subscription benchmark**
+uses input or normalized-input as its controlling unit and records `$2,091.45`
+per reset cycle and `$8,365.80` for four cycles only for that exact boundary
+and benchmark method. Analytics corroboration is operator-validated, not
+raw-ingested here. A separate API-equivalent valuation uses official
+per-model categories only when each category and model are observed; it is not
+the same projection as raw total tokens or the subscription benchmark. Neither
+projection is an actual subscription invoice, settled charge, or provider price
+commitment. The full method and limits are in the [OECB standard](docs/agent-metrics.md#observed-engineering-capacity-benchmark-oecb).
+
+The citable [OECB Snapshot](docs/agent-metrics.md#oecb-snapshot) leads with
+accepted validated output and marks every value Observed, Derived, Proposed, or
+Unknown; unavailable values are `null`, and the record has no KPI authority.
+
 <!-- agent-kpi-overview:end -->
 
 A compact, modular JIT orchestration and agent-use governance system for AI
@@ -136,6 +174,14 @@ by OpenAI, Anthropic, or another model provider.
 The policy corpus and router are portable. Runtime-specific skills, plugins,
 model attestations, and interception guarantees are not silently generalized
 to runtimes that do not expose equivalent capabilities.
+
+### Approval progression
+
+Private evidence and local validation may inform a proposed change, but they do
+not authorize publication. The explicit progression is **private immutable
+evidence -> public beta -> public main**. Each transition requires its own
+operator approval; no receipt, report, test, or metric substitutes for that
+approval.
 
 For native read-only quarantine attestation, `--agent` accepts either the
 runtime UUID or the exact canonical collaboration task path (for example,
@@ -211,12 +257,33 @@ disjointness: isolated branches do not prove independent contracts. The default
 delivery loop is **decompose -> reserve independent lanes -> isolated
 branch/worktree per mutating worker -> worker implementation and local tests ->
 Seat `0` integration -> authoritative final validation on the integrated
-candidate**. Workers never merge, integrate, or touch the primary checkout.
+candidate**. Workers never merge, integrate, or touch the primary checkout. A
+defect cluster sharing a root cause, invariant, or ownership boundary (with
+same-file or overlapping ownership as signals) uses `SERIAL` with exactly one
+mutating worker, then—after it commits its locally validated candidate—a
+separate `PIPELINED` read-only adversarial verifier; parallel mutation resumes only for independently implementable,
+testable, committable, and integrable clusters.
 Truly read-only workers need no new worktree; non-Git mutation uses equivalent
 isolated mutable state. Worker contracts state the expected artifact, upstream
 assumptions, validation, and integration order; shared-resource exclusions are
 only for non-file mutable state such as schemas, migrations, lockfiles, ports,
 databases, generated registries, or mutable fixtures.
+
+Worker lanes use the `subagent-git` teardown contract: workers return
+candidate/evidence, clean only assignment-owned ephemeral state, and never
+self-dispose. Seat `0` preserves candidates until acceptance-gated disposal
+after authoritative validation and evidence/continuity preservation; cleanup
+failure keeps the exact lane as a residual obligation. This prevents leaked
+runtime state, orphan accumulation, storage/disk exhaustion, and cross-run
+collision/leak without a sweeper or automatic deletion. Seat `0` inventories
+and reports exact worker-owned run artifacts at closeout, preserving anything
+uncertain, shared, persistent, or project-retained.
+
+Contained-environment storage hygiene has one detailed owner: the `storage`
+policy. It applies the same owned-scope identity, retention, exact-teardown,
+and residual-evidence contract to containers, VMs, simulators, browser
+profiles, build/test sandboxes, caches, temporary databases, worktrees, and
+remote previews; Docker.raw bloat is only an observed example.
 
 Topology is JIT launch-order metadata, not broader context or a persistent
 workflow state machine. Uncertainty yields `SERIAL` or `EXPLORATORY`; a
@@ -502,10 +569,16 @@ supervise multiple seats without reading governance transcripts.
 
 For material multi-phase work, updates appear at meaningful phase transitions,
 blockers, estimate changes, validation milestones, completion, or a required
-heartbeat. They include the current phase, a gate-derived percentage (or
-`Unknown`), and an Estimated AI-active-time range. Substantial forecasts keep
-conventional human P50/P80 effort separate from AI wall-clock, critical-path,
-seat, validation, rework, and operator-time estimates. Forecasts are not
+heartbeat. Architectural-hardening and integration updates lead with
+independent blocking defect clusters, the current cluster, `PASS`/`FAIL`/
+`RUNNING`/`BLOCKED`/`UNVERIFIED` gate states, regression trend, remaining
+release work, and an assumption-bounded Estimated AI-active-time range;
+deployment/browser latency is stated separately when applicable. A gate-derived
+percentage (or `Unknown`) is optional secondary context only.
+Substantial forecasts keep conventional human P50/P80 effort separate from AI
+wall-clock, critical-path, seat, validation, rework, and operator-time
+estimates. Planning consumes the Agent System JIT benchmark-calibration policy
+only when estimating AI time; its AI-hour forecasts are ROM estimates, not
 promises, telemetry, or completion gates.
 
 ## Agent System Defect Lane
@@ -637,5 +710,4 @@ cadence; it does not create an automatic scheduler.
 
 ## License
 
-No license is granted until a license file is added. Source visibility alone
-does not grant permission to reuse or redistribute the project.
+This project is licensed under the [MIT License](LICENSE).

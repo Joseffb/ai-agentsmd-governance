@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -15,8 +14,11 @@ import {
 } from "../scripts/model-routing-gate.mjs";
 import {
   buildOrchestrationBundle,
-  bundleDigest
+  bundleDigest,
+  canonicalJson,
+  sha256
 } from "../../../lib/orchestration.mjs";
+import { orchestrateLaunch } from "../../../lib/orchestration-cli.mjs";
 
 const sessionId = "thread-model-gate-test";
 const pluginRoot = path.resolve(import.meta.dirname, "..");
@@ -53,18 +55,6 @@ function message(seat, options = {}) {
     ...(options.composerAssignment === undefined ? {} : { composer_assignment: options.composerAssignment })
   };
   return `${ENVELOPE_PREFIX}${JSON.stringify(envelope)}\nPerform only the assigned bounded objective. SECRET_PROMPT_TEXT`;
-}
-
-function canonicalJson(value) {
-  if (value === null || typeof value === "boolean" || typeof value === "string" || typeof value === "number") {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
-}
-
-function sha256(value) {
-  return `sha256:${crypto.createHash("sha256").update(value).digest("hex")}`;
 }
 
 function composerAssignment(t, {
@@ -108,18 +98,27 @@ function composerAssignment(t, {
   assert.ok(worker, "fixture worker seat must exist");
   const bundlePath = path.join(bundleRoot, `${bundle.bundle_digest.slice("sha256:".length)}.json`);
   fs.writeFileSync(bundlePath, `${JSON.stringify(bundle, null, 2)}\n`, { mode: 0o600 });
-  return {
-    schema_version: 1,
-    bundle_path: bundlePath,
-    bundle_digest: bundle.bundle_digest,
-    worker_seat: workerSeat,
-    worker_assignment_ids: worker.assignment_ids,
-    worker_prompt_envelope_sha256: sha256(canonicalJson(worker.prompt_envelope)),
-    requested_model: worker.requested_model,
-    requested_reasoning_raw: worker.requested_reasoning_raw,
-    spark_gate: bundle.model_recommendation.spark_gate,
-    availability_evidence: "Unverified"
-  };
+  if (["authoritatively_unavailable", "separate_pool_exhausted"].includes(availability)) {
+    return {
+      schema_version: 1,
+      bundle_path: bundlePath,
+      bundle_digest: bundle.bundle_digest,
+      execution_id: bundle.execution_id,
+      correlation_id: bundle.correlation_id,
+      causation_id: bundle.causation_id,
+      worker_seat: workerSeat,
+      worker_assignment_ids: worker.assignment_ids,
+      worker_prompt_envelope_sha256: sha256(canonicalJson(worker.prompt_envelope)),
+      requested_model: worker.requested_model,
+      requested_reasoning_raw: worker.requested_reasoning_raw,
+      spark_gate: bundle.model_recommendation.spark_gate,
+      availability_evidence: "Unverified"
+    };
+  }
+  const launch = orchestrateLaunch({ bundlePath, seat: String(workerSeat) });
+  const firstLine = launch.native_quarantine.spawn_request.message.split(/\r?\n/u, 1)[0];
+  assert.ok(firstLine.startsWith(ENVELOPE_PREFIX), "composer launch fixture must use the gate envelope");
+  return structuredClone(JSON.parse(firstLine.slice(ENVELOPE_PREFIX.length)).composer_assignment);
 }
 
 function pre(stateRoot, toolUseId, seat, options = {}) {
@@ -393,6 +392,52 @@ test("composer-bound launch rejects a missing expected assignment field", (t) =>
   });
   assert.equal(result.hookSpecificOutput.permissionDecision, "deny");
   assert.match(result.hookSpecificOutput.permissionDecisionReason, /Missing composer_assignment field: requested_model/);
+});
+
+test("composer-bound v6 execution identity is exact, bundle-bound, and tamper-evident", (t) => {
+  const accepted = composerAssignment(t);
+  for (const [field, prefix] of [
+    ["execution_id", "execution"],
+    ["correlation_id", "correlation"],
+    ["causation_id", "causation"]
+  ]) {
+    assert.match(accepted[field], new RegExp(`^${prefix}-[a-f0-9]{32}$`));
+  }
+  assert.equal(pre(root(t), "composer-v6-identity", "seat-1", {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    composerAssignment: accepted
+  }).hookSpecificOutput.permissionDecision, "allow");
+
+  for (const [field, prefix] of [
+    ["execution_id", "execution"],
+    ["correlation_id", "correlation"],
+    ["causation_id", "causation"]
+  ]) {
+    const missing = composerAssignment(t);
+    delete missing[field];
+    assert.match(pre(root(t), `composer-missing-${field}`, "seat-1", {
+      model: "gpt-5.3-codex-spark",
+      reasoning: "low",
+      composerAssignment: missing
+    }).hookSpecificOutput.permissionDecisionReason, new RegExp(`Missing composer_assignment field: ${field}`));
+
+    const tampered = composerAssignment(t);
+    tampered[field] = `${prefix}-${"0".repeat(32)}`;
+    assert.match(pre(root(t), `composer-tampered-${field}`, "seat-1", {
+      model: "gpt-5.3-codex-spark",
+      reasoning: "low",
+      composerAssignment: tampered
+    }).hookSpecificOutput.permissionDecisionReason, /execution identity differs from the verified bundle/);
+  }
+
+  const selfAuthored = composerAssignment(t);
+  selfAuthored.identity_claim = "self-authored";
+  assert.match(pre(root(t), "composer-self-authored-identity", "seat-1", {
+    model: "gpt-5.3-codex-spark",
+    reasoning: "low",
+    composerAssignment: selfAuthored
+  }).hookSpecificOutput.permissionDecisionReason, /Unknown composer_assignment field: identity_claim/);
 });
 
 test("tampered composer assignment cannot relabel a Spark-required seat as Terra", (t) => {

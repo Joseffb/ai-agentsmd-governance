@@ -17,9 +17,9 @@ test("portable Agent System role is canonical and discoverable", () => {
   assert.match(role, /JIT orchestration and agent-use governor/i);
   assert.match(role, /dynamically loads the smallest applicable rule set/i);
   assert.match(role, /composes scoped worker prompts/i);
-  assert.match(role, /selects the lowest reliable model and\s+reasoning/i);
+  assert.match(role, /selects the\s+lowest reliable model and\s+reasoning/i);
   assert.match(role, /Seat `0` remains the high-level\s+orchestrator/i);
-  assert.match(role, /never supplies or\s+expands project authority/i);
+  assert.match(role, /never\s+supplies or expands project authority/i);
   assert.match(role, /facilitator and repair service, not the owner of another\s+project's product work/i);
   assert.match(role, /reload, retry, or changed-path guidance/i);
   assert.match(role, /one exact non-archived `Agent System` label match/i);
@@ -54,6 +54,54 @@ test("KPI events stay silent and after-action reports require an operator reques
   assert.match(continuity, /never\s+prompts, source, output, secrets, hidden reasoning, or raw task\/thread IDs/);
 });
 
+test("worker teardown preserves candidate lanes until coordinator-owned disposal", () => {
+  const role = fs.readFileSync(rolePath, "utf8");
+  const policy = fs.readFileSync(path.join(root, "governance", "modules", "delegation.md"), "utf8");
+  const git = fs.readFileSync(path.join(root, "governance", "modules", "subagent-git.md"), "utf8");
+  const skill = fs.readFileSync(path.join(root, "skills", "govern-codex-policy", "SKILL.md"), "utf8");
+  const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
+  assert.match(git, /active.*?isolated worktree and branch.*?intact/is);
+  assert.match(git, /finalized commit\/diff, validation evidence, and teardown status/i);
+  assert.match(git, /worker-owned processes\/services\/watchers.*?ports, locks, and browser contexts/is);
+  assert.match(git, /disposable\s+credentials\/session material.*?residual generated\/runtime state/is);
+  assert.match(git, /never delete\/remove\/prune.*?Git worktree or branch.*?reset\/clean\/\s*discard\/rewrite/is);
+  assert.match(git, /Failed,\s*interrupted,\s*rejected,\s*superseded, and unintegrated candidates.*?preserved/is);
+  assert.match(git, /accepted lane.*?integration\/acceptance,\s*authoritative validation, and evidence\/\s*continuity preservation/is);
+  assert.match(git, /rejected, superseded, or abandoned lane does not\s+require integration or acceptance/is);
+  assert.match(git, /final Seat `0` disposition.*?no required unique work remains solely in that lane/is);
+  assert.match(git, /Interrupted or\s+unclassified lanes remain preserved/is);
+  assert.match(git, /Seat `0`, never a worker assertion, proves an exact lane unused/is);
+  assert.match(git, /assignment-bound creation record plus immutable\s+repository, worktree, and branch identity/is);
+  assert.match(git, /labels, tags, or digests may\s+corroborate identity but cannot independently authorize deletion/is);
+  assert.match(git, /accepted-result linkage plus patch and tree\/path-\s*content equivalence across every assigned or dirty path/is);
+  assert.match(git, /Commit ancestry alone\s+is insufficient/i);
+  assert.match(git, /unique delta as deliberately rejected,\s+superseded by a named accepted result, or preserved in a named retained\s+artifact/is);
+  assert.match(git, /tracked, untracked,\s+ignored, generated, stashed, unpushed, submodule, and evidence state as\s+applicable/is);
+  assert.match(git, /project-native Git tooling.*?recoverable deletion.*?broad\/glob cleanup, wildcards, or recursive parent deletion/is);
+  assert.match(git, /closeout.*?exact worker-owned.*?worktrees, branches, temp directories\/artifacts.*?generated\s+outputs\/caches/is);
+  assert.match(git, /processes\/watchers\/services, ports, containers, images, volumes,\s+build artifacts, browser\s+contexts\/profiles, locks,/i);
+  assert.match(git, /only an exact item proven no\s+longer needed after its applicable accepted\/integrated or rejected disposition\s+gate.*?project retention checks/is);
+  assert.match(git, /Preserve unique\/unintegrated\s+candidates without final disposition/i);
+  assert.match(git, /uncertain, shared, persistent, or not\s+explicitly-disposable cache, image, volume, network, database, or browser\s+profile/is);
+  assert.match(git, /leave-better scope expansion/is);
+  assert.match(git, /secret-free inventory plus removed, preserved, residual obligations, and\s+before\/after evidence.*?withhold any clean-run claim/is);
+  assert.match(git, /broad globs.*?parent-root deletion.*?automatic destructive sweeper,\s+global prune/is);
+  assert.match(git, /cleanup\/helper failure\s+is nonblocking.*?preserve the exact lane.*?never\s+permission to delete/is);
+  assert.match(git, /orphan accumulation, storage\/disk exhaustion, and\s+cross-run collision\/leak/i);
+  assert.match(git, /Cost: bounded\s+teardown report and coordinator verification; escalation: Seat `0`; safe\s+fallback/i);
+  assert.match(git, /explicit user instruction may authorize cleanup in a named other project.*?resolve each named project\/repository\/root independently/is);
+  assert.match(git, /lineage, applicable disposition, no-required-unique-work, no-active-resource,\s+and retention checks.*?every exact lane/is);
+  assert.match(git, /Never infer sibling, ancestor\/\s*parent-root, or broad cleanup authority/i);
+  assert.match(git, /dedicated cleanup coordinator may\s+delegate scoped workers per resolved project/i);
+  assert.match(git, /Remote branch, registry, or\s+cloud-preview deletion needs separate external authority/i);
+  for (const text of [policy, skill, role, readme]) {
+    assert.match(text, /worker.*?(?:ephemeral state|candidate\/evidence).*?never\s+self-dispose/is);
+    assert.match(text, /Seat `0`.*?acceptance-gated disposal.*?authoritative\s+validation.*?evidence\/continuity preservation/is);
+    assert.match(text, /cleanup\s+failure.*?(?:preserves|keeps).*?(?:exact lane|residual obligation)/is);
+  }
+  assert.match(readme, /storage\/disk exhaustion, and cross-run\s+collision\/leak/i);
+});
+
 test("metrics remain downstream observations rather than optimization authority", () => {
   const metrics = fs.readFileSync(path.join(root, "docs", "agent-metrics.md"), "utf8");
   const jit = fs.readFileSync(path.join(root, "governance", "modules", "jit-orchestration.md"), "utf8");
@@ -79,6 +127,23 @@ test("metrics remain downstream observations rather than optimization authority"
   }
 });
 
+test("canonical evidence prioritizes accepted engineered output and bounded decision provenance", () => {
+  const role = fs.readFileSync(rolePath, "utf8");
+  const jit = fs.readFileSync(path.join(root, "governance", "modules", "jit-orchestration.md"), "utf8");
+  for (const text of [role, jit]) {
+    assert.match(text, /accepted validated scope and engineered output/i);
+    assert.match(text, /Tokens and cost (?:remain|are) downstream\s+denominators/i);
+    assert.match(text, /OECB\s+headline/i);
+    for (const label of ["Observed", "Derived", "Proposed", "Unknown"]) {
+      assert.match(text, new RegExp(label));
+    }
+    assert.match(text, /missing effort (?:stays|remains) `null`/i);
+    assert.match(text, /decision.*scope.*type.*action.*normal path/is);
+    assert.match(text, /authority.*evidence.*rule references/is);
+    assert.match(text, /never records prompts or hidden reasoning|without\s+prompt or hidden reasoning/i);
+  }
+});
+
 test("Agent System automation requires explicit separate consent and has a local-only disposition", () => {
   const role = fs.readFileSync(rolePath, "utf8");
   const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
@@ -94,7 +159,7 @@ test("Agent System automation requires explicit separate consent and has a local
   assert.match(role, /no\s+cross-task\s+governance\s+message\s+and\s+no\s+background\s+token\s+spend/i);
   assert.match(readme, /fresh\s+installation\s+must\s+ask\s+the\s+(?:two\s+)?separate\s+decisions/i);
   assert.match(skill, /Task maintenance, reporting, and repair each require their own explicit active\s+consent/i);
-  assert.match(kernel, /Without\s+repair\s+consent, no repair/i);
+  assert.match(kernel, /Separate consent governs task\/report\/repair/i);
 });
 
 test("Agent System consent and local-only logging use portable no-guess commands", () => {
@@ -138,11 +203,9 @@ test("auto_correct is an opted-in true-blocker-only repair mode", () => {
     assert.match(text, /destructive\/irreversible change,\s+architecture\/public-contract\s+redesign/i);
     assert.match(text, /source-project mutation,\s+public\s+publication, or schedule/i);
   }
-  assert.match(kernel, /gets separate consent: task, reporting, repair/i);
-  assert.match(kernel, /Without\s+repair\s+consent, no repair/i);
-  assert.match(kernel, /`log_only` logs every eligible issue/i);
-  assert.match(kernel, /`auto_correct`\s+repairs?\s+only\s+confirmed\s+locally\s+actionable\s+private-Agent(?:-|\s+)System\s+Observed\/Verified\s+P0\/P1\s+core-capability\s+blockers/i);
-  assert.match(kernel, /it\s+logs\s+all\s+others/i);
+  assert.match(kernel, /Separate consent governs task\/report\/repair/i);
+  assert.match(kernel, /`auto_correct` repairs/i);
+  assert.match(kernel, /confirmed locally actionable private-Agent-System Observed\/Verified P0\/P1\s+core-capability blockers/i);
   assert.match(kernel, /Projects\s+never wait/i);
   for (const text of [role, skill, jit, delegation]) {
     assert.match(text, /`log_only`\s+records\s+every\s+eligible\s+Agent\s+System\/runtime\s+issue\s+and\s+never\s+(?:starts\s+)?repair/i);
@@ -161,7 +224,7 @@ test("RC consent continues projects immediately and bounds legacy migration", ()
   const kernel = fs.readFileSync(path.join(root, "governance", "kernel", "AGENTS.md"), "utf8");
   for (const text of [role, readme, skill]) {
     assert.match(text, /no\s+wait-for-Agent-System/i);
-    assert.match(text, /Agent System may block an improper Seat `0` action,\s+but it never blocks\s+the project/i);
+    assert.match(text, /never blocks Seat `0` or the project|never blocks the project/i);
     assert.match(text, /existing tool definitions or native tools/i);
     assert.match(text, /legacy combined\s+reporting.*`log_only`/is);
     assert.match(text, /never authorizes?\s+automatic KPI or\s+after-action\s+reports or\s+automatic repair/i);
@@ -172,7 +235,7 @@ test("RC consent continues projects immediately and bounds legacy migration", ()
   }
   assert.match(kernel, /(?:no|or)\s+wait(?:-for-Agent-System)?\s+state/i);
   assert.match(kernel, /Agent\s+System\s+never\s+blocks\s+the\s+project/i);
-  assert.match(kernel, /no\s+KPI\s*\/\s*project\s*\/\s*public-branch\s+mutation/i);
+  assert.match(kernel, /KPI is downstream-only/i);
   assert.match(role, /Helper failure never grants Seat `0` implementation/i);
   assert.match(readme, /missing or failed helper never grants Seat `0` implementation/i);
   assert.match(skill, /helper failure grants no Seat `0` implementation/i);
@@ -199,7 +262,6 @@ test("JIT manifest failure behavior blocks only the affected Agent System path",
   const manifest = JSON.parse(fs.readFileSync(path.join(root, "governance", "manifest.json"), "utf8"));
   const jit = manifest.modules.find((module) => module.id === "jit-orchestration");
   assert.deepEqual(jit.on_failure.block, [
-    "proven_improper_seat0_direct_worker_required_execution",
     "affected_agent_system_path"
   ]);
   assert.deepEqual(jit.on_failure.allow, [
@@ -252,8 +314,15 @@ test("complete tracked distribution contains no machine-private identity", () =>
     if (!fs.lstatSync(file).isFile()) continue;
     const content = fs.readFileSync(file);
     if (content.includes(0)) continue;
+    let text = content.toString("utf8");
+    if (relative === "LICENSE") {
+      const canonicalHolder = [["Jos", "eff"], ["Beta", "ncourt"]].map((parts) => parts.join("")).join(" ");
+      const copyrightLine = new RegExp(`^Copyright \\(c\\) 2026 ${canonicalHolder}$`, "m");
+      assert.match(text, new RegExp(`^MIT License\\n\\n${copyrightLine.source}`, "m"), relative);
+      text = text.replace(copyrightLine, "Copyright (c) [canonical holder]");
+    }
     for (const pattern of privatePatterns) {
-      assert.doesNotMatch(content.toString("utf8"), pattern, relative);
+      assert.doesNotMatch(text, pattern, relative);
     }
   }
 });

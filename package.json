@@ -1,10 +1,11 @@
 {
   "name": "ai-agentsmd-governance",
-  "version": "3.1.0",
+  "version": "3.3.3",
   "display_channel": "RC-3.0",
   "private": true,
   "type": "module",
   "description": "JIT orchestration and agent-use governor for AI coding agents",
+  "license": "MIT",
   "scripts": {
     "lock": "node bin/acg.mjs lock",
     "traceability": "node bin/acg.mjs traceability",

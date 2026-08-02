@@ -23,12 +23,13 @@ MODEL_ROUTING_GATE_V1 {"schema_version":1,"seat_id":"rpc-review","model_critical
 
 Every governed seat needs an explicit model and reasoning assignment, including non-critical seats. Keep the four audit strings concise and free of secrets or project data. `weaker_insufficient` is required for Sol or `xhigh`/stronger assignments. Set `model_critical:false` unless result validity or safety explicitly depends on attested model identity; it controls output-admission rigor and does not authorize inheritance.
 
-For a composer v5 Spark or Terra/low mechanical launch, pass the emitted
+For a composer v6 Spark or Terra/low mechanical launch, pass the emitted
 top-level `composer_assignment` unchanged. It binds the private bundle path and
-digest, worker seat and assignment IDs, prompt-envelope digest, expected
-model/reasoning, complete Spark gate, and availability evidence. The gate
-re-reads the owner-private content-addressed bundle and fails closed on any
-missing or changed mapping. Selectable work requires exact Spark/low. While
+digest, execution/correlation/causation identity, worker seat and assignment
+IDs, prompt-envelope digest, expected model/reasoning, complete Spark gate, and
+availability evidence. The gate re-reads the owner-private content-addressed
+bundle and fails closed on any missing, changed, unknown, or self-authored
+mapping. Selectable work requires exact Spark/low. While
 availability evidence is `Unverified`, only `unknown_or_unexposed` may use
 conservative Terra/low; unavailable or exhausted claims are rejected until a
 supported host receipt exists. Legacy ordinary non-Spark launches remain

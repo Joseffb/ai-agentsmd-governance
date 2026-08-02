@@ -25,6 +25,12 @@ Never preload future phases or scan policy trees. Accounting is monotonic. A
 matching local index may add only the router-returned organization policy and
 one project policy; repository `AGENTS.md` remains most specific.
 
+For contained-environment storage hygiene, load the single `storage` policy.
+It owns identity, retention, exact teardown, before/after usage, and residual
+evidence for containers, VMs, simulators, browser profiles, sandboxes, caches,
+temporary databases, worktrees, and previews; Docker.raw is an example, not a
+separate tool policy.
+
 For inspect-only work, `--project null` is the unbound
 `projectless_unbound` sentinel, not a configured project alias. It is permitted
 only for a narrow generated directory with no overlap or ancestor/descendant
@@ -271,6 +277,12 @@ out-of-scope files. A tracked out-of-scope dirty path fails recovery. `seat
 finalize` records declared generated-output paths separately from integrable
 write-scope paths and fails closed on an overlap or an undeclared path.
 
+Use `subagent-git` for worker-lane teardown: workers return candidate/evidence,
+clean only assignment-owned ephemeral state, and never self-dispose. Seat `0`
+preserves candidates until acceptance-gated disposal after authoritative
+validation and evidence/continuity preservation; cleanup failure preserves the
+exact lane as a residual obligation.
+
 Stop only the affected delegated action on failure. Never share or improvise a
 mutating worktree; helper failure grants no Seat `0` implementation,
 commit, cleanup, or authority. Report or local-log the defect once and continue
@@ -397,7 +409,7 @@ bootstrap defect and remains fail-closed for the affected governed operation.
 
 Keep routine governance internals silent unless they fail, materially change the assignment, or the operator asks. Normal shows task, owner, scope, status, meaningful change, and result; Warning shows a blocker, scope or authority conflict, unsafe dirty state, failed proof, or model mismatch; Diagnostic returns requested receipts, modules, routes, hashes, provenance, and accounting.
 
-On material multi-phase work, update only at phase boundaries, material changes, blockers, validation milestones, completion, or required heartbeats. State phase, gate-derived percent (else `Unknown`), and ranged `Estimated` AI-active time with basis and confidence. Revise on critical-path evidence. Never give unadjusted human time, clock promises, or filler.
+On material multi-phase work, update only at phase boundaries, material changes, blockers, validation milestones, completion, or required heartbeats. For architectural hardening or integration, state independent blocking defect clusters, the current cluster, each applicable gate as `PASS`, `FAIL`, `RUNNING`, `BLOCKED`, or `UNVERIFIED`, the evidenced regression trend, remaining release work, and a ranged `Estimated` AI-active time with assumptions and confidence; separately state deployment/browser latency when applicable. When estimating AI time, consume the JIT-owned `benchmark-calibration` policy; every derived AI-hour output remains ROM. If its integrity fails, only that governed estimate path is blocked: do not claim automatic CLI fallback, and immediately continue project/Seat `0` native/manual planning with calibrated AI hours `Unknown` plus coverage warning. A gate-derived percentage is optional secondary context (else `Unknown`), never the status lead or a substitute for a cluster or gate. Revise on critical-path evidence. Never give unadjusted human time, clock promises, or filler.
 
 Keep the initial completion window beside current P50/P80 ETA. When its target
 moves materially faster than elapsed time, state the gate, scope, failure,

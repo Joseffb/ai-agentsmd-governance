@@ -16,7 +16,7 @@ test("always-loaded kernel is a bounded JIT bootstrap with monotonic context", a
   assert.match(text, /Classify immediate intent\/effects/i);
   assert.match(text, /future plans trigger nothing/i);
   assert.match(text, /Policy context grows monotonically/i);
-  assert.match(text, /never force compaction, rollover, handoff, or fresh task/i);
+  assert.match(text, /never force compaction, rollover,\s+handoff, or fresh task/i);
   assert.match(text, /authoritative hosting-runtime capacity failure/i);
   assert.match(text, /Before\s+governed\s+work\s+use\s+the\s+`govern-codex-policy`\s+skill\s+and\s+a\s+high-level\s+command/i);
   assert.match(text, /For\s+governed\s+handoffs\s+verify\s+before\s+accept/i);
@@ -81,5 +81,5 @@ test("JIT module keeps the optional support lane out of project completion", asy
   assert.match(text, /Removing or declining it leaves rule selection, prompt composition,\s+delegation, native recovery, project-native tooling, and project completion\s+available/i);
   assert.match(text, /Only cross-task defect delivery disappears/i);
   assert.match(text, /KPI lifecycle facts are silent private JSONL writes/i);
-  assert.match(text, /only in response to a direct\s+operator request/i);
+  assert.match(text, /KPI and after-action reports are produced only in response to a direct\s+operator\s+request/i);
 });
