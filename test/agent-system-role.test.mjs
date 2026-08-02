@@ -54,6 +54,54 @@ test("KPI events stay silent and after-action reports require an operator reques
   assert.match(continuity, /never\s+prompts, source, output, secrets, hidden reasoning, or raw task\/thread IDs/);
 });
 
+test("worker teardown preserves candidate lanes until coordinator-owned disposal", () => {
+  const role = fs.readFileSync(rolePath, "utf8");
+  const policy = fs.readFileSync(path.join(root, "governance", "modules", "delegation.md"), "utf8");
+  const git = fs.readFileSync(path.join(root, "governance", "modules", "subagent-git.md"), "utf8");
+  const skill = fs.readFileSync(path.join(root, "skills", "govern-codex-policy", "SKILL.md"), "utf8");
+  const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
+  assert.match(git, /active.*?isolated worktree and branch.*?intact/is);
+  assert.match(git, /finalized commit\/diff, validation evidence, and teardown status/i);
+  assert.match(git, /worker-owned processes\/services\/watchers.*?ports, locks, and browser contexts/is);
+  assert.match(git, /disposable\s+credentials\/session material.*?residual generated\/runtime state/is);
+  assert.match(git, /never delete\/remove\/prune.*?Git worktree or branch.*?reset\/clean\/\s*discard\/rewrite/is);
+  assert.match(git, /Failed,\s*interrupted,\s*rejected,\s*superseded, and unintegrated candidates.*?preserved/is);
+  assert.match(git, /accepted lane.*?integration\/acceptance,\s*authoritative validation, and evidence\/\s*continuity preservation/is);
+  assert.match(git, /rejected, superseded, or abandoned lane does not\s+require integration or acceptance/is);
+  assert.match(git, /final Seat `0` disposition.*?no required unique work remains solely in that lane/is);
+  assert.match(git, /Interrupted or\s+unclassified lanes remain preserved/is);
+  assert.match(git, /Seat `0`, never a worker assertion, proves an exact lane unused/is);
+  assert.match(git, /assignment-bound creation record plus immutable\s+repository, worktree, and branch identity/is);
+  assert.match(git, /labels, tags, or digests may\s+corroborate identity but cannot independently authorize deletion/is);
+  assert.match(git, /accepted-result linkage plus patch and tree\/path-\s*content equivalence across every assigned or dirty path/is);
+  assert.match(git, /Commit ancestry alone\s+is insufficient/i);
+  assert.match(git, /unique delta as deliberately rejected,\s+superseded by a named accepted result, or preserved in a named retained\s+artifact/is);
+  assert.match(git, /tracked, untracked,\s+ignored, generated, stashed, unpushed, submodule, and evidence state as\s+applicable/is);
+  assert.match(git, /project-native Git tooling.*?recoverable deletion.*?broad\/glob cleanup, wildcards, or recursive parent deletion/is);
+  assert.match(git, /closeout.*?exact worker-owned.*?worktrees, branches, temp directories\/artifacts.*?generated\s+outputs\/caches/is);
+  assert.match(git, /processes\/watchers\/services, ports, containers, images, volumes,\s+build artifacts, browser\s+contexts\/profiles, locks,/i);
+  assert.match(git, /only an exact item proven no\s+longer needed after its applicable accepted\/integrated or rejected disposition\s+gate.*?project retention checks/is);
+  assert.match(git, /Preserve unique\/unintegrated\s+candidates without final disposition/i);
+  assert.match(git, /uncertain, shared, persistent, or not\s+explicitly-disposable cache, image, volume, network, database, or browser\s+profile/is);
+  assert.match(git, /leave-better scope expansion/is);
+  assert.match(git, /secret-free inventory plus removed, preserved, residual obligations, and\s+before\/after evidence.*?withhold any clean-run claim/is);
+  assert.match(git, /broad globs.*?parent-root deletion.*?automatic destructive sweeper,\s+global prune/is);
+  assert.match(git, /cleanup\/helper failure\s+is nonblocking.*?preserve the exact lane.*?never\s+permission to delete/is);
+  assert.match(git, /orphan accumulation, storage\/disk exhaustion, and\s+cross-run collision\/leak/i);
+  assert.match(git, /Cost: bounded\s+teardown report and coordinator verification; escalation: Seat `0`; safe\s+fallback/i);
+  assert.match(git, /explicit user instruction may authorize cleanup in a named other project.*?resolve each named project\/repository\/root independently/is);
+  assert.match(git, /lineage, applicable disposition, no-required-unique-work, no-active-resource,\s+and retention checks.*?every exact lane/is);
+  assert.match(git, /Never infer sibling, ancestor\/\s*parent-root, or broad cleanup authority/i);
+  assert.match(git, /dedicated cleanup coordinator may\s+delegate scoped workers per resolved project/i);
+  assert.match(git, /Remote branch, registry, or\s+cloud-preview deletion needs separate external authority/i);
+  for (const text of [policy, skill, role, readme]) {
+    assert.match(text, /worker.*?(?:ephemeral state|candidate\/evidence).*?never\s+self-dispose/is);
+    assert.match(text, /Seat `0`.*?acceptance-gated disposal.*?authoritative\s+validation.*?evidence\/continuity preservation/is);
+    assert.match(text, /cleanup\s+failure.*?(?:preserves|keeps).*?(?:exact lane|residual obligation)/is);
+  }
+  assert.match(readme, /storage\/disk exhaustion, and cross-run\s+collision\/leak/i);
+});
+
 test("metrics remain downstream observations rather than optimization authority", () => {
   const metrics = fs.readFileSync(path.join(root, "docs", "agent-metrics.md"), "utf8");
   const jit = fs.readFileSync(path.join(root, "governance", "modules", "jit-orchestration.md"), "utf8");

@@ -269,6 +269,22 @@ assumptions, validation, and integration order; shared-resource exclusions are
 only for non-file mutable state such as schemas, migrations, lockfiles, ports,
 databases, generated registries, or mutable fixtures.
 
+Worker lanes use the `subagent-git` teardown contract: workers return
+candidate/evidence, clean only assignment-owned ephemeral state, and never
+self-dispose. Seat `0` preserves candidates until acceptance-gated disposal
+after authoritative validation and evidence/continuity preservation; cleanup
+failure keeps the exact lane as a residual obligation. This prevents leaked
+runtime state, orphan accumulation, storage/disk exhaustion, and cross-run
+collision/leak without a sweeper or automatic deletion. Seat `0` inventories
+and reports exact worker-owned run artifacts at closeout, preserving anything
+uncertain, shared, persistent, or project-retained.
+
+Contained-environment storage hygiene has one detailed owner: the `storage`
+policy. It applies the same owned-scope identity, retention, exact-teardown,
+and residual-evidence contract to containers, VMs, simulators, browser
+profiles, build/test sandboxes, caches, temporary databases, worktrees, and
+remote previews; Docker.raw bloat is only an observed example.
+
 Topology is JIT launch-order metadata, not broader context or a persistent
 workflow state machine. Uncertainty yields `SERIAL` or `EXPLORATORY`; a
 helper/classifier failure keeps delegation boundaries and uses a bounded

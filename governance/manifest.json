@@ -100,6 +100,12 @@
         "project-overlays"
       ]
     },
+    "cleanup": {
+      "effect_class": "filesystem_mutation",
+      "required_modules": [
+        "storage"
+      ]
+    },
     "build": {
       "effect_class": "generated_output",
       "required_modules": [
@@ -272,9 +278,9 @@
   "modules": [
     {
       "id": "storage",
-      "version": 1,
+      "version": 3,
       "path": "modules/storage.md",
-      "digest": "sha256:fbd05cded89126f6a6e13f4f9fd8f2d6a26312a8c2eefb3a289281ccb0cf53b5",
+      "digest": "sha256:fb145af67414f9a2742063247beaf3530028d70cfdb028c5d7064934d7885c96",
       "triggers": {
         "operations": [
           "build",
@@ -285,7 +291,8 @@
           "local_ai_run",
           "install_dependency",
           "launch_mutating_subagent",
-          "mobile_review_export"
+          "mobile_review_export",
+          "cleanup"
         ]
       },
       "dependencies": [
@@ -309,9 +316,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 1415,
-      "words": 188,
-      "estimated_tokens": 354
+      "bytes": 4495,
+      "words": 585,
+      "estimated_tokens": 1124
     },
     {
       "id": "trust-and-data",
@@ -611,9 +618,9 @@
     },
     {
       "id": "delegation",
-      "version": 19,
+      "version": 20,
       "path": "modules/delegation.md",
-      "digest": "sha256:a1473232e58bf4b17414f2f4d83d47e8ffcf95d39cb77d4628555e431e827de5",
+      "digest": "sha256:9dd0895ccdc4f97c7f5faebc89f9b8dbfe9d7cde6b45dd5c2f53cadf02dd6ce7",
       "triggers": {
         "operations": [
           "launch_subagent",
@@ -641,15 +648,15 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 13993,
-      "words": 1860,
-      "estimated_tokens": 3499
+      "bytes": 13956,
+      "words": 1850,
+      "estimated_tokens": 3489
     },
     {
       "id": "subagent-git",
-      "version": 5,
+      "version": 7,
       "path": "modules/subagent-git.md",
-      "digest": "sha256:abdd48d45692d2ced2099f2d32ba204666e17714236ba64aeb5e3eb9181eb423",
+      "digest": "sha256:dc40c5c4555694574d4e312b4709ec3e6198964a02057caff6343d65fd0a8b6b",
       "triggers": {
         "operations": [
           "launch_mutating_subagent"
@@ -678,9 +685,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 6661,
-      "words": 848,
-      "estimated_tokens": 1666
+      "bytes": 10938,
+      "words": 1369,
+      "estimated_tokens": 2735
     },
     {
       "id": "continuity",

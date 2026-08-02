@@ -25,6 +25,12 @@ Never preload future phases or scan policy trees. Accounting is monotonic. A
 matching local index may add only the router-returned organization policy and
 one project policy; repository `AGENTS.md` remains most specific.
 
+For contained-environment storage hygiene, load the single `storage` policy.
+It owns identity, retention, exact teardown, before/after usage, and residual
+evidence for containers, VMs, simulators, browser profiles, sandboxes, caches,
+temporary databases, worktrees, and previews; Docker.raw is an example, not a
+separate tool policy.
+
 For inspect-only work, `--project null` is the unbound
 `projectless_unbound` sentinel, not a configured project alias. It is permitted
 only for a narrow generated directory with no overlap or ancestor/descendant
@@ -270,6 +276,12 @@ inside the original write scope, and records neutral exclusions for untracked
 out-of-scope files. A tracked out-of-scope dirty path fails recovery. `seat
 finalize` records declared generated-output paths separately from integrable
 write-scope paths and fails closed on an overlap or an undeclared path.
+
+Use `subagent-git` for worker-lane teardown: workers return candidate/evidence,
+clean only assignment-owned ephemeral state, and never self-dispose. Seat `0`
+preserves candidates until acceptance-gated disposal after authoritative
+validation and evidence/continuity preservation; cleanup failure preserves the
+exact lane as a residual obligation.
 
 Stop only the affected delegated action on failure. Never share or improvise a
 mutating worktree; helper failure grants no Seat `0` implementation,

@@ -64,7 +64,7 @@ test("complete policy tree verifies", () => {
   assert.equal(result.module_count, 17);
   assert.equal(result.traceability_rules, 0);
   assert.equal(result.traceability, "optional_local_migration_provenance");
-  assert.equal(result.system_version, "3.3.2");
+  assert.equal(result.system_version, "3.3.3");
   assert.equal(result.display_channel, "RC-3.0");
 });
 
@@ -355,6 +355,30 @@ test("planning loads the benchmark calibration only through its declared depende
     "benchmark-calibration",
     "planning-and-capacity"
   ]);
+});
+
+test("cleanup is a mutation operation routed through storage without granting remote deletion", () => {
+  const manifest = readJson(path.join(policyRoot, "manifest.json"));
+  assert.deepEqual(manifest.operation_catalog.cleanup, {
+    effect_class: "filesystem_mutation",
+    required_modules: ["storage"]
+  });
+  const storage = manifest.modules.find((module) => module.id === "storage");
+  assert.ok(storage.triggers.operations.includes("cleanup"));
+  const routed = resolveRoute({
+    mode: "mutation",
+    phase: "implementation",
+    project: "*",
+    operations: ["cleanup"],
+    tools: ["filesystem_write"],
+    paths: [codeRoot],
+    authorities: ["filesystem_mutation"],
+    mutation_authority: true
+  }, policyRoot);
+  assert.ok(routed.active_modules.some((module) => module.id === "storage"));
+  assert.deepEqual(routed.authorization_decision.effect_classes, ["filesystem_mutation"]);
+  assert.equal(routed.authorization_decision.effect_classes.includes("network_write"), false);
+  assert.equal(routed.authorization_decision.effect_classes.includes("publication"), false);
 });
 
 test("accumulated policy context can grow beyond an advisory mode target", () => {

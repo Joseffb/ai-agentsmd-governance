@@ -3,7 +3,7 @@
   "manifest": {
     "id": "ai-codex-governance",
     "version": 1,
-    "sha256": "sha256:e5ef8233136f94ecefcbc85bce8931980fc9d02aa8bc5b0c8e0e234dcf719f1e"
+    "sha256": "sha256:6cc9377c6188daea098dd9350330169926f9297707cc67e9c03bdb27079d123e"
   },
   "estimator": {
     "id": "utf8-bytes-div-4-ceil",
@@ -22,20 +22,20 @@
   },
   "skill": {
     "path": "skills/govern-codex-policy/SKILL.md",
-    "sha256": "sha256:e6af00a1252c3785ad84abc7e8f5bfa0716fce2ce6b05b824bb845991a8dd7f9",
-    "bytes": 28438,
-    "words": 3625,
-    "estimated_tokens": 7110
+    "sha256": "sha256:6f16c07605eb9d67b44106cf34e9731c8cb2fe62007aee53d218eade6b789aea",
+    "bytes": 29121,
+    "words": 3706,
+    "estimated_tokens": 7281
   },
   "modules": [
     {
       "id": "storage",
-      "version": 1,
+      "version": 3,
       "path": "modules/storage.md",
-      "sha256": "sha256:fbd05cded89126f6a6e13f4f9fd8f2d6a26312a8c2eefb3a289281ccb0cf53b5",
-      "bytes": 1415,
-      "words": 188,
-      "estimated_tokens": 354
+      "sha256": "sha256:fb145af67414f9a2742063247beaf3530028d70cfdb028c5d7064934d7885c96",
+      "bytes": 4495,
+      "words": 585,
+      "estimated_tokens": 1124
     },
     {
       "id": "trust-and-data",
@@ -102,21 +102,21 @@
     },
     {
       "id": "delegation",
-      "version": 19,
+      "version": 20,
       "path": "modules/delegation.md",
-      "sha256": "sha256:a1473232e58bf4b17414f2f4d83d47e8ffcf95d39cb77d4628555e431e827de5",
-      "bytes": 13993,
-      "words": 1860,
-      "estimated_tokens": 3499
+      "sha256": "sha256:9dd0895ccdc4f97c7f5faebc89f9b8dbfe9d7cde6b45dd5c2f53cadf02dd6ce7",
+      "bytes": 13956,
+      "words": 1850,
+      "estimated_tokens": 3489
     },
     {
       "id": "subagent-git",
-      "version": 5,
+      "version": 7,
       "path": "modules/subagent-git.md",
-      "sha256": "sha256:abdd48d45692d2ced2099f2d32ba204666e17714236ba64aeb5e3eb9181eb423",
-      "bytes": 6661,
-      "words": 848,
-      "estimated_tokens": 1666
+      "sha256": "sha256:dc40c5c4555694574d4e312b4709ec3e6198964a02057caff6343d65fd0a8b6b",
+      "bytes": 10938,
+      "words": 1369,
+      "estimated_tokens": 2735
     },
     {
       "id": "continuity",

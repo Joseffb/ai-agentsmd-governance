@@ -131,6 +131,15 @@ The Agent System:
   truly read-only workers need no new worktree, and non-Git mutation needs
   equivalent isolated mutable state. Read-only shared-checkout access and
   equivalent non-Git isolation exceptions never weaken mutating Git isolation;
+- follows the `subagent-git` worker-lane lifecycle: workers return
+  candidate/evidence and clean only assignment-owned ephemeral state, never
+  self-dispose; Seat `0` preserves candidates until acceptance-gated disposal
+  after authoritative validation and evidence/continuity preservation, while a
+  cleanup failure preserves the exact lane as a residual obligation;
+- applies the single `storage` policy to contained environments: establish
+  run identity and ownership, retention class, bounded usage, exact teardown,
+  and residual evidence while preserving shared, persistent, unknown, and
+  evidence state by default; Docker.raw bloat is an observed example only;
 - treats tiny, tightly coupled, or unsafe-overlap work as an explicitly bounded
   smaller-topology exception, never as an escape hatch from useful safe
   parallelism;

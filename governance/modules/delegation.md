@@ -83,22 +83,32 @@ Apply `model-routing` to every seat: choose the lowest capable family and reason
 
 Each seat owns a fresh governance ledger. Never pass a parent policy acknowledgment as a child's `prior_receipt`. If releases may differ, use bounded non-forked context; the child routes without a prior receipt. Keep ledgers separate. Mutating seats receive only their verified worktree receipt.
 
-Reuse a seat only while objective, project, repository state, model/reasoning,
-authority, and context remain valid. Do not reuse it for independent/adversarial
-review or changed model, authority, project, worktree, or write ownership.
-Promptly close completed, failed, redundant, or idle seats; exact agent limits
-are runtime metadata, not hard-coded constants.
+Reuse a seat only while objective, project, state, model/reasoning, authority,
+and context remain valid. Do not reuse it for independent/adversarial review or
+changed model, authority, project, worktree, or write ownership. Promptly close
+completed, failed, redundant, or idle seats; limits are runtime metadata.
 
 Every significant prompt states role, objective, project/repository/work ID,
-relevant worktree/base, bounded continuity/references, allowed scope,
-acceptance/stop/artifact, assumptions, validation, Git, integration, evidence,
-and return. Name shared non-file mutable resources only when needed.
+worktree/base, scope, acceptance/stop/artifact, validation, Git, integration,
+evidence, and return. Name shared non-file resources only when needed.
 
-Load `model-routing` before launch. Also load `subagent-git` and `continuity` before mutating launch. Read-only seats must not mutate source, Git, tracked generated files, locks, formatter output, or continuity.
+Load `model-routing`, `subagent-git`, and `continuity` before mutating launch.
+Read-only seats must not mutate source, Git, tracked generated files, locks,
+formatter output, or continuity.
 
-Use route mode `delegation` for subagent planning and read-only launch. Keep `mutation_authority:false` for read-only seats and grant only `delegation`. Mutating seats use mutation mode and the isolated-worktree contract.
+Use route mode `delegation` for subagent planning/read-only launch with
+`mutation_authority:false`; mutating seats use mutation mode and isolation.
 
-Returned work is advisory until the coordinator verifies claimed files, candidate commit, diff scope, and validation evidence. Seat `0` alone integrates accepted candidates; authoritative validation runs only after integration against the integrated candidate. Centralize conflicts and shared-contract decisions. Stop or redirect satisfied, superseded, or redundant seats; report why beneficial delegation was safely skipped.
+Returned work is advisory until the coordinator verifies files, candidate,
+scope, and validation evidence. Seat `0` alone integrates accepted candidates;
+authoritative validation runs only after integration. Centralize conflicts and
+shared-contract decisions.
+
+Mutating Git lanes follow `subagent-git`: workers clear only assignment-owned
+ephemeral state and return candidate/evidence, never self-dispose. Seat `0`
+preserves candidates until acceptance-gated disposal after authoritative
+validation and evidence/continuity preservation; cleanup failure preserves the
+exact lane as a residual obligation.
 
 ## Coordination Recovery
 
