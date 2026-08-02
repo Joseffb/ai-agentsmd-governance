@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   CANONICAL_ORCHESTRATION_EFFECTS,
+  COMPLETION_CONTRACT_PREFIX,
   diagnosticPath,
   processHook
 } from "../scripts/jit-orchestration-governor.mjs";
@@ -20,8 +21,8 @@ test("plugin package manifest remains installable and delegates hooks to hooks.j
   const hookConfig = JSON.parse(fs.readFileSync(path.join(pluginRoot, "hooks", "hooks.json"), "utf8"));
 
   assert.equal(manifest.name, path.basename(pluginRoot));
-  assert.match(manifest.version, /^3\.0\.0-rc\.1$/);
-  assert.equal(manifest.description, "Bounded JIT guard for immediate orchestration actions");
+  assert.match(manifest.version, /^3\.0\.0-rc\.2$/);
+  assert.match(manifest.description, /JIT refresh/);
   assert.equal(manifest.author.name, "AI Codex Governance");
   assert.equal(manifest.interface.displayName, "JIT Orchestration Governor");
   assert.equal(manifest.interface.developerName, "AI Codex Governance");
@@ -30,7 +31,54 @@ test("plugin package manifest remains installable and delegates hooks to hooks.j
   assert.ok(manifest.interface.longDescription);
   assert.ok(manifest.interface.defaultPrompt);
   assert.equal(Object.hasOwn(manifest, "hooks"), false);
+  assert.equal(hookConfig.hooks.SessionStart[0].matcher, "^(startup|resume|clear|compact)$");
   assert.equal(hookConfig.hooks.PreToolUse[0].hooks[0].command, "node \"$PLUGIN_ROOT/scripts/jit-orchestration-governor.mjs\" hook");
+  assert.equal(hookConfig.hooks.SubagentStop[0].matcher, ".*");
+});
+
+test("SessionStart refreshes bounded JIT context on startup resume clear and compact", (t) => {
+  const state = root(t);
+  for (const source of ["startup", "resume", "clear", "compact"]) {
+    const result = processHook({ hook_event_name: "SessionStart", source }, { stateRoot: state });
+    assert.equal(result.hookSpecificOutput.hookEventName, "SessionStart");
+    assert.match(result.hookSpecificOutput.additionalContext, new RegExp(`refresh \\(${source}\\)`));
+    assert.match(result.hookSpecificOutput.additionalContext, /smallest current policy delta/i);
+    assert.match(result.hookSpecificOutput.additionalContext, /not execution admission or a persistent workflow/i);
+  }
+  assert.deepEqual(processHook({ hook_event_name: "SessionStart", source: "other" }, { stateRoot: state }), {});
+});
+
+test("SubagentStop gives one stateless completion-contract feedback pass", (t) => {
+  const state = root(t);
+  const missing = processHook({
+    hook_event_name: "SubagentStop",
+    agent_type: "worker",
+    stop_hook_active: false,
+    last_assistant_message: "Done."
+  }, { stateRoot: state });
+  assert.equal(missing.decision, "block");
+  assert.match(missing.reason, new RegExp(COMPLETION_CONTRACT_PREFIX.trim()));
+
+  const accepted = processHook({
+    hook_event_name: "SubagentStop",
+    agent_type: "explorer",
+    stop_hook_active: false,
+    last_assistant_message: `${COMPLETION_CONTRACT_PREFIX}${JSON.stringify({
+      status: "complete",
+      artifact: "commit abc123",
+      validation: "node --test passed",
+      residuals: "none"
+    })}`
+  }, { stateRoot: state });
+  assert.deepEqual(accepted, {});
+
+  const exhausted = processHook({
+    hook_event_name: "SubagentStop",
+    agent_type: "custom_role",
+    stop_hook_active: true,
+    last_assistant_message: "Still missing."
+  }, { stateRoot: state });
+  assert.deepEqual(exhausted, {});
 });
 
 test("observes and warns on Seat 0 worker-required work without denying execution", (t) => {

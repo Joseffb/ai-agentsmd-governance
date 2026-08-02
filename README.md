@@ -25,7 +25,9 @@
 > continue through fallback. After verified tracked edits are released and
 > activated, known active project tasks receive one nonblocking exact-label
 > reload/adopt notice before their next governed operation. The notice never
-> retrofits hooks; app Reload is only needed for plugin/hook host refresh.
+> retrofits hooks. After a plugin hook changes, review and re-trust its exact
+> definition through `/hooks`, then use app Reload for host refresh; neither
+> action alone proves hook activation.
 
 <!-- agent-kpi-overview:start -->
 
@@ -183,18 +185,29 @@ evidence -> public beta -> public main**. Each transition requires its own
 operator approval; no receipt, report, test, or metric substitutes for that
 approval.
 
-For native read-only quarantine attestation, `--agent` accepts either the
-runtime UUID or the exact canonical collaboration task path (for example,
-`/root/review-seat`). Nicknames, partial paths, ordering, and output style are
-not identity evidence. This post-launch transcript binding does not prove host
-activation, pre-launch interception, chained-action enforcement, or actual
-reasoning identity.
+Native delegation is the normal path. Built-in Codex roles are `default`,
+`worker`, and `explorer`; specialized roles may be defined in
+`.codex/agents/<name>.toml` or `~/.codex/agents/` with `name`, `description`,
+and `developer_instructions` plus optional model, reasoning, sandbox, MCP, and
+skill configuration. On the current app collaboration surface, use
+`spawn_agent` to start a bounded seat, `followup_task` for its next turn,
+`wait_agent` for status or completion, and `interrupt_agent` only to stop the
+active turn. Another Codex surface may expose equivalent capabilities under
+different names.
 
-If the host encrypts or otherwise withholds launch-message transcript content,
-native envelope attestation fails closed: no current-host admission is implied
-and actual model/reasoning remain Unverified. Close that quarantine seat and
-continue the project through a permitted native fallback; do not treat the
-attestation failure as project blocking.
+The official `SubagentStart` hook includes Codex's common active-model
+extension plus lifecycle fields, but no reasoning field or requested-to-actual
+assignment binding. The plugin records the reported model only as passive
+context; configured model/reasoning remain requested values and actual routing
+remains `Unverified` without a separate authoritative runtime evidence
+provider.
+
+The JIT plugin refreshes bounded bootstrap context on `SessionStart` sources
+`startup`, `resume`, `clear`, and `compact`; it re-resolves the exact project/worktree,
+authority, immediate intent, and available native capabilities without
+creating durable workflow state. Its generic `SubagentStop` hook may request
+one bounded completion contract from any subagent type;
+`stop_hook_active` prevents a second continuation.
 
 The structured worker-envelope reference returned by `acg orchestrate next`
 binds scope, non-authority, acceptance, stop conditions, validation, isolation,
@@ -202,11 +215,14 @@ evidence, return fields, requested model/reasoning, and fallback. It is not a
 raw prompt, source snapshot, model output, hidden reasoning record, or project
 authority grant. See [the public compatibility matrix](docs/compatibility.md).
 
-For a composer-derived worker, use the no-guess launch path exactly:
-`orchestrate next` -> `orchestrate launch --bundle <path> --seat <N>` -> pass
-the returned `native_quarantine.spawn_request` verbatim -> attest -> send the
-returned `admitted_assignment.message` verbatim as a new turn. Never construct,
-summarize, reformat, or infer either native message.
+For a composer-derived worker, keep deterministic composition exact:
+`orchestrate next` -> `orchestrate launch --bundle <path> --seat <N>`, then
+launch the returned bounded assignment through native collaboration.
+Quarantine and attestation are optional diagnostic compatibility, not normal
+launch prerequisites. The legacy diagnostic sequence remains readable as
+`native_quarantine.spawn_request` verbatim -> attest -> send the returned
+`admitted_assignment.message` verbatim, but is never imposed on ordinary
+delegation.
 
 The currently supported conservative Spark fallback is
 `gpt-5.6-terra` at `low` only when the composer state is exactly
@@ -303,9 +319,12 @@ After an Agent System/helper failure, report or local-log unchanged evidence
 once, then continue through any safe available path: another supported
 high-level path, direct native collaboration, same-seat retry only after
 changed conditions or a transient failure, a replacement or rescoped worker, a
-bounded manual worker prompt, then project-native tooling. There is no hard
-retry count and no unchanged relaunch loop. No fallback grants substantial
-Seat `0` implementation or creates a wait-for-Agent-System state.
+bounded manual worker prompt, then project-native tooling. Detect capabilities
+at the point of use and automatically choose the first safe suitable option; a
+reversible fallback already within the objective and authority needs no
+operator reconfirmation. There is no hard retry count and no unchanged
+relaunch loop. No fallback grants substantial Seat `0` implementation or
+creates a wait-for-Agent-System state.
 
 ## Requirements
 
@@ -465,20 +484,16 @@ node ~/.codex/policies/bin/acg.mjs seat inspect \
   --objective <bounded-read-only-objective>
 ```
 
-The compact result contains one shell-free child `seat preflight` invocation,
-an exact native quarantine spawn request, and one exact admitted assignment.
-Pass each object verbatim at its documented lifecycle point; never rewrite the
-quarantine message. Wait for the completed exact
-`READY_FOR_NATIVE_ATTESTATION` response, attest, then send the admitted
-assignment as a new turn. Accept only a result carrying its unique final
-sentinel; a late completion without it belongs to the quarantine turn and is
-not task output. The private package retains the bounded audit contract, fresh
-child ledger, retry rules, and the exact integrity-validated admitted
-assignment (message, final sentinel, stale rule, and close rule). If normal
-output is truncated, use the returned package path directly with `seat explain
---assignment <package>` (or read its `admitted_assignment` object); do not
-reconstruct, guess, or rerun the consumed attempt. Replacement seats use
-`--attempt 2`.
+The compact result contains one shell-free child `seat preflight` invocation
+and one bounded assignment. Pass the assignment directly through the current
+runtime's native worker capability with its exact scope, requested
+model/reasoning, and final sentinel. Quarantine and transcript attestation are
+optional diagnostic compatibility only; they must not delay normal delegation
+and do not prove host activation, model, reasoning, or chained enforcement.
+The private package retains the bounded audit contract, fresh child ledger,
+retry rules, and the integrity-validated assignment. If normal output is
+truncated, use the returned package path directly with `seat explain
+--assignment <package>`; do not reconstruct or guess it.
 
 For a user-authorized machine-root bootstrap:
 

@@ -90,11 +90,39 @@ availability evidence. Block only that launch; never move the work to Seat `0`
 or block the project. Actual model and reasoning remain `Unverified` absent
 authoritative metadata.
 
-For a composer-derived worker, use the no-guess path exactly:
-`orchestrate next` -> `orchestrate launch --bundle <path> --seat <N>` -> pass
-the returned `native_quarantine.spawn_request` verbatim -> attest -> send the
-returned `admitted_assignment.message` verbatim as a new turn. Do not guess,
-construct, summarize, or reformat either message.
+For a composer-derived worker, keep deterministic composition exact:
+`orchestrate next` -> `orchestrate launch --bundle <path> --seat <N>`, then
+launch the returned bounded assignment through the current runtime's native
+worker capability. Quarantine and attestation are optional diagnostic
+compatibility, not normal launch prerequisites. The legacy diagnostic sequence
+remains readable as `native_quarantine.spawn_request` verbatim -> attest ->
+send the returned `admitted_assignment.message` verbatim as a new turn, but do
+not impose it on ordinary delegation.
+
+Use native Codex roles by capability and contract fit. Built-in roles are
+`default`, `worker`, and `explorer`; project custom roles live in
+`.codex/agents/<name>.toml` and personal roles in `~/.codex/agents/`. Each
+custom role defines `name`, `description`, and `developer_instructions`, with
+optional model, reasoning, sandbox, MCP, and skill configuration. On the
+current app collaboration surface, use `spawn_agent` for a new bounded seat,
+`followup_task` to continue work on that seat, `wait_agent` to collect status
+or completion, and `interrupt_agent` only to stop its active turn. If names
+vary on another Codex surface, use the equivalent exposed capability.
+
+The official `SubagentStart` schema includes the common active-model extension
+plus lifecycle context (`turn_id`, `agent_id`, `agent_type`, and
+`permission_mode`), but no reasoning field or requested-to-actual assignment
+binding. Record the reported model only as a passive non-authoritative hint;
+actual model/reasoning remain `Unverified` without a separate authoritative
+runtime evidence provider. Never infer them from role, nickname, timing, style,
+or output quality.
+
+A bounded `SessionStart` hook may refresh JIT context on `startup`, `resume`,
+`clear`, and `compact` by re-resolving project/worktree, authority, immediate intent,
+and available native capabilities and loading only the smallest current policy
+delta. It never creates persistent workflow state. Generic `SubagentStop`
+handling may give one bounded completion-contract feedback prompt for any
+subagent type; once `stop_hook_active` is true, it must not continue again.
 
 Topology is JIT launch-order metadata: never load broader context or create a
 persistent workflow state machine for it. Uncertainty yields `SERIAL` or
@@ -106,8 +134,11 @@ once according to consent, then immediately use any safe available option:
 another supported high-level path, direct native collaboration, same-seat retry
 only after changed conditions or a transient failure, a replacement or
 rescoped worker, a bounded manual worker prompt, then project-native tooling.
-Do not impose a hard retry count or repeat an unchanged launch. No fallback
-grants Seat `0` substantial implementation, expands authority, or creates a
+Detect available capabilities at the point of use and automatically select the
+first safe suitable option; do not ask the operator to reconfirm a reversible
+fallback already within the objective and authority. Do not impose a hard
+retry count or repeat an unchanged launch. No fallback grants Seat `0`
+substantial implementation, expands authority, or creates a
 wait-for-Agent-System state. Ask only for genuine authority, destructive
 ambiguity, or an absent required resource.
 
@@ -300,31 +331,14 @@ preflight; zero-governance bypasses are inadmissible. Follow remediation once
 and reuse only while assignment and release remain unchanged. Never give raw
 lifecycle syntax, command `--help`, parent acknowledgment, or shell wrappers.
 
-For an ungated native read-only fallback, `seat inspect` also returns an
-integrity-bound `native_quarantine.spawn_request`. Pass that object verbatim;
-never compose, summarize, or reformat its message. Wait for the exact completed
-`READY_FOR_NATIVE_ATTESTATION` response, then attest. After acceptance, pass
-`admitted_assignment.message` verbatim using a runtime input that starts a new
-turn. Accept only the completion carrying its unique required final sentinel;
-an untagged late quarantine completion is stale and inadmissible. Use
-`--attempt 2` only for the one permitted replacement launch. If normal output
-is truncated, recover only through the returned `--assignment` package: `seat
-explain --assignment <package>` returns its exact integrity-validated
-`admitted_assignment`; never reconstruct the message, guess a filename, or
-rerun an already-consumed attempt.
-
-Native attestation accepts a runtime UUID or an exact canonical collaboration
-task path. Nicknames, partial paths, ordering, and output style are not identity
-evidence. It remains post-launch evidence only: host activation, pre-launch
-interception, chained-action enforcement, and actual reasoning identity remain
-Unverified without authoritative runtime metadata.
-
-If a host encrypts or otherwise withholds launch-message transcript content,
-native envelope attestation fails closed. It grants no current-host admission,
-and actual model/reasoning remain Unverified. Close only the quarantine seat and
-continue the project through a permitted native fallback; do not report a host
-activation or chained-action guarantee, and do not treat this as project
-blocking.
+For a native read-only fallback, pass the returned bounded assignment directly
+to the current runtime's worker capability with its explicit scope, requested
+model/reasoning, and final sentinel. Quarantine and native envelope attestation
+remain optional diagnostic compatibility only. They do not prove host
+activation, pre-launch interception, chained-action enforcement, model
+identity, or reasoning identity and must not delay normal delegation. If
+diagnostic transcript metadata is unavailable, record actual model/reasoning
+as `Unverified` and continue through the safe native path.
 
 ## Model Routing Audit
 
@@ -379,7 +393,15 @@ Receipts prove chain consistency, not runtime enforcement or model assignment. R
 ### Receipt-pinned release resolution
 
 With a prior acknowledgment, the CLI selects the immutable release matching its manifest, kernel, and skill. Supply the receipt once; do not guess a router, reload, or reset accounting. If no release matches, follow the fresh-context instruction.
-Running tasks never reload or mix routers; new tasks use the active release. For a Codex desktop plugin install or update, app Reload is the supported refresh action; use a new top-level proof task only when launch-time enforcement must be proven. If Reload does not refresh the plugin, mark enforcement `Unverified`, continue projects through the permitted fallback, and leave any restart or diagnostic action to explicit operator choice. Neither Reload nor a fresh task retrofits transcript history or proves hook interception.
+Running tasks never reload or mix routers; new tasks use the active release. For
+a Codex desktop plugin install or update, review and trust its hooks through
+`/hooks`, re-trust each exact changed definition, then use app Reload as the
+supported refresh action. Use a new top-level proof task only when launch-time
+enforcement must be proven. If Reload does not refresh the plugin, mark
+enforcement `Unverified`, continue projects through the permitted fallback,
+and leave any restart or diagnostic action to explicit operator choice.
+Neither hook trust, Reload, nor a fresh task retrofits transcript history or
+proves hook interception.
 
 ### Legacy task compatibility
 

@@ -1,14 +1,14 @@
 {
   "name": "jit-orchestration-governor",
-  "version": "3.0.0-rc.1",
-  "description": "Bounded JIT guard for immediate orchestration actions",
+  "version": "3.0.0-rc.2",
+  "description": "Bounded JIT refresh, advisory orchestration guard, and completion feedback",
   "author": {
     "name": "AI Codex Governance"
   },
   "interface": {
     "displayName": "JIT Orchestration Governor",
-    "shortDescription": "Guard JIT orchestration metadata before material actions.",
-    "longDescription": "Evaluates complete PreToolUse orchestration metadata, denies only an improper Seat 0 worker action or a missing-authority action, and records bounded private diagnostics without blocking the project.",
+    "shortDescription": "Refresh JIT context and check bounded orchestration contracts.",
+    "longDescription": "Refreshes bounded JIT context on startup, resume, clear, and compaction; evaluates complete PreToolUse orchestration metadata; and gives every subagent type at most one stateless completion-contract feedback pass. It records private diagnostics without becoming a workflow engine or project dependency.",
     "developerName": "AI Codex Governance",
     "category": "Developer Tools",
     "capabilities": [

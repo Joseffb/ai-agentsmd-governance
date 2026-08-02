@@ -64,7 +64,7 @@ test("complete policy tree verifies", () => {
   assert.equal(result.module_count, 17);
   assert.equal(result.traceability_rules, 0);
   assert.equal(result.traceability, "optional_local_migration_provenance");
-  assert.equal(result.system_version, "3.3.3");
+  assert.equal(result.system_version, "3.4.0");
   assert.equal(result.display_channel, "RC-3.0");
 });
 
@@ -74,20 +74,32 @@ test("canary routing contract passes", () => {
   assert.ok(result.cases.every((entry) => entry.passed));
 });
 
-test("portable Spark guidance preserves deterministic mechanics and exact fail-closed fallback", () => {
+test("portable Spark guidance preserves deterministic mechanics without quarantining normal native workers", () => {
+  assert.equal(readJson(path.join(codeRoot, "package.json")).version, "3.4.0");
+  assert.equal(readJson(path.join(codeRoot, "package-lock.json")).version, "3.4.0");
   const readme = fs.readFileSync(path.join(codeRoot, "README.md"), "utf8");
   const role = fs.readFileSync(path.join(codeRoot, "docs", "agent-system-role.md"), "utf8");
   const orchestration = fs.readFileSync(path.join(policyRoot, "modules", "jit-orchestration.md"), "utf8");
   const modelRouting = fs.readFileSync(path.join(policyRoot, "modules", "model-routing.md"), "utf8");
   const skill = fs.readFileSync(path.join(codeRoot, "skills", "govern-codex-policy", "SKILL.md"), "utf8");
-  for (const source of [readme, role, orchestration, modelRouting, skill]) {
+  for (const source of [readme, role, orchestration, skill]) {
     assert.match(source, /`orchestrate next` ->\s+`orchestrate launch --bundle <path> --seat <N>`/i);
-    assert.match(source, /`native_quarantine\.spawn_request` verbatim -> attest -> send (?:the\s+)?(?:returned\s+)?`admitted_assignment\.message` verbatim/i);
     assert.match(source, /`unknown_or_unexposed`/);
     assert.match(source, /`availability_evidence` (?:is|set to|equal to) `Unverified`/i);
     assert.match(source, /`authoritatively_unavailable`[\s\S]*`separate_pool_exhausted`[\s\S]*reserved/i);
     assert.match(source, /fail\s+closed[\s\S]*supported\s+host\s+(?:capability\s+)?receipt|authoritatively known costly model mismatch/i);
   }
+  assert.match(orchestration, /launch the returned\s+bounded assignment through the current runtime's native worker capability/i);
+  assert.match(orchestration, /quarantine and attestation are optional diagnostic compatibility, never normal\s+launch prerequisites/i);
+  assert.match(orchestration, /Configured model\/reasoning are requests; actual values stay\s+`Unverified` without authoritative runtime evidence/i);
+  assert.match(modelRouting, /Direct native workers are normal workers/i);
+  assert.match(modelRouting, /requested configuration, not a receipt/i);
+  assert.match(modelRouting, /actual model and\s+reasoning as `Unverified` unless\s+authoritative runtime selection metadata/i);
+  assert.match(modelRouting, /`SubagentStart` is neither a launch gate nor binding evidence/i);
+  assert.match(modelRouting, /Native Diagnostic Compatibility/i);
+  assert.match(modelRouting, /Codex-managed\s+chat worktrees distinct from Agent-System-owned child worktrees/i);
+  assert.match(modelRouting, /reload the Codex app and review the\s+`\/hooks` trust state/i);
+  assert.doesNotMatch(modelRouting, /For a composer-derived worker, the no-guess launch path is exact/i);
   for (const source of [role, orchestration, modelRouting, skill]) {
     assert.match(source, /composer(?:-derived|'s exact| classifies as|-classified) `mechanical`/i);
     assert.match(source, /integrity-bound (?:Model\s+Routing )?gate/i);

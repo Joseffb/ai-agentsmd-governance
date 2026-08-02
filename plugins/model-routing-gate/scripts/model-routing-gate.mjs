@@ -229,6 +229,13 @@ function cleanString(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function passiveModelHint(value) {
+  if (typeof value !== "string") return null;
+  const compact = value.trim().replace(/\s+/g, " ");
+  if (!compact || compact.length > 160) return null;
+  return compact;
+}
+
 function exactObject(value, fields, label) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`${label} must be an object`);
@@ -730,10 +737,10 @@ function finalStatus(request, start) {
       : "mismatch";
 
   let status = "accepted";
-  let reason = "Requested model matches authoritative SubagentStart model metadata";
+  let reason = "Requested model matches separately supplied compatibility runtime evidence";
   if (modelAttestation !== "verified") {
     status = request.attempt === 2 ? "blocked_runtime_routing_defect" : "rejected";
-    reason = modelAttestation === "mismatch" ? "Runtime model differs from requested model" : "Authoritative SubagentStart model evidence is missing";
+    reason = modelAttestation === "mismatch" ? "Runtime model differs from requested model" : "Separate authoritative runtime model evidence is missing";
   } else if (reasoningAttestation === "mismatch") {
     status = request.attempt === 2 ? "blocked_runtime_routing_defect" : "rejected";
     reason = "Runtime reasoning differs from requested reasoning";
@@ -813,12 +820,12 @@ function reconcileAgent(root, sessionId, agentId) {
       status: "pending_runtime_evidence",
       output_admissible: false,
       close_required: false,
-      reason: "Awaiting authoritative SubagentStart evidence",
+      reason: "Awaiting separate authoritative runtime model evidence",
       evidence: {
         pre_tool_use: true,
         post_tool_use: true,
         subagent_start: false,
-        source: "Codex lifecycle hook metadata"
+        source: "separate compatibility runtime evidence"
       }
     };
     atomicWrite(p.receipt(agentId), pending);
@@ -1056,7 +1063,7 @@ function postSpawn(root, input) {
   }
   return {
     systemMessage: receipt?.status === "pending_runtime_evidence"
-      ? "Model Routing Gate bound the agent and is awaiting SubagentStart evidence; do not collect output yet."
+      ? "Model Routing Gate bound the agent and is awaiting separate compatibility runtime evidence; do not collect output yet."
       : `Model Routing Gate accepted ${receipt.actual_model} for seat ${receipt.seat_id}.`,
     hookSpecificOutput: {
       hookEventName: "PostToolUse",
@@ -1068,64 +1075,30 @@ function postSpawn(root, input) {
 }
 
 function onSubagentStart(root, input) {
-  if (!cleanString(input.session_id) || !cleanString(input.agent_id)) {
-    return startContext("Model Routing Gate could not correlate this subagent; its output is inadmissible.");
-  }
-  const p = pathsFor(root, input.session_id);
-  const existing = readJson(p.start(input.agent_id));
-  const observed = {
-    agent_id: input.agent_id,
-    model: cleanString(input.model) || UNVERIFIED,
-    ...(cleanString(input.reasoning_effort) ? { reasoning_effort: input.reasoning_effort } : {}),
-    ...(cleanString(input.reasoning) ? { reasoning: input.reasoning } : {}),
-    ...(cleanString(input.reasoning_level) ? { reasoning_level: input.reasoning_level } : {})
-  };
-  if (existing && JSON.stringify(existing) !== JSON.stringify(observed)) {
-    return startContext("Conflicting SubagentStart evidence detected; this agent output is inadmissible.");
-  }
-  atomicWrite(p.start(input.agent_id), observed);
-  const receipt = reconcileAgent(root, input.session_id, input.agent_id);
-  if (!receipt) return startContext("Model Routing Gate captured runtime model evidence and is awaiting deterministic spawn binding.");
   appendRoutingEvent(root, {
-    event_type: "runtime_attestation",
-    session_id: input.session_id,
-    agent_id: input.agent_id,
-    seat_id: receipt.seat_id,
-    requested_model: receipt.requested_model,
-    requested_reasoning_raw: receipt.requested_reasoning_raw,
-    ...composerBinding(receipt),
-    actual_model: receipt.actual_model,
-    actual_reasoning_raw: receipt.actual_reasoning_raw,
-    model_attestation: receipt.model_attestation,
-    reasoning_attestation: receipt.reasoning_attestation,
-    output_admissible: receipt.output_admissible,
-    status: receipt.status
+    event_type: "subagent_started",
+    session_id: input?.session_id || null,
+    agent_id: input?.agent_id || null,
+    agent_type: input?.agent_type || null,
+    permission_mode: input?.permission_mode || null,
+    reported_model: passiveModelHint(input?.model),
+    reported_model_evidence: "passive_non_authoritative_context",
+    actual_model: UNVERIFIED,
+    actual_reasoning_raw: UNVERIFIED,
+    status: "lifecycle_observed"
   });
-  if (!receipt.output_admissible) return startContext(`${receipt.reason}. Stop work; this seat is rejected and must be closed.`);
-  return startContext(`Runtime model ${receipt.actual_model} accepted for seat ${receipt.seat_id}. Reasoning attestation: ${receipt.reasoning_attestation}.`);
+  return startContext("Model Routing Gate observed the native subagent lifecycle and passive active-model context. SubagentStart exposes no reasoning or requested-to-actual binding, so actual routing remains Unverified; continue through native collaboration.");
 }
 
 function onSubagentStop(root, input) {
-  if (!cleanString(input.session_id) || !cleanString(input.agent_id)) {
-    const reason = "Subagent stopped without correlatable model-routing evidence; output is inadmissible";
-    return { continue: false, stopReason: reason, systemMessage: reason };
-  }
-  const receipt = readJson(pathsFor(root, input.session_id).receipt(input.agent_id));
-  if (!receipt?.output_admissible) {
-    const reason = `Subagent output is inadmissible (${receipt?.status || "missing_receipt"}); do not synthesize or integrate it`;
-    return { continue: false, stopReason: reason, systemMessage: reason };
-  }
   appendRoutingEvent(root, {
-    event_type: "seat_stopped",
-    session_id: input.session_id,
-    agent_id: input.agent_id,
-    seat_id: receipt.seat_id,
-    requested_model: receipt.requested_model,
-    requested_reasoning_raw: receipt.requested_reasoning_raw,
-    ...composerBinding(receipt),
-    actual_model: receipt.actual_model,
-    actual_reasoning_raw: receipt.actual_reasoning_raw,
-    status: "completed"
+    event_type: "subagent_stopped",
+    session_id: input?.session_id || null,
+    agent_id: input?.agent_id || null,
+    agent_type: input?.agent_type || null,
+    actual_model: UNVERIFIED,
+    actual_reasoning_raw: UNVERIFIED,
+    status: "lifecycle_observed"
   });
   return {};
 }
@@ -1134,13 +1107,6 @@ export function processHook(input, options = {}) {
   const root = stateRoot(options.stateRoot);
   ensurePrivateDirectory(root);
   const event = input?.hook_event_name;
-  if (event === "PreToolUse") {
-    if (isClose(input.tool_name)) return allow("close_agent is permitted for rejected-seat cleanup.");
-    if (isWait(input.tool_name)) return preWait(root, input);
-    if (isSpawn(input.tool_name)) return preSpawn(root, input);
-    return {};
-  }
-  if (event === "PostToolUse" && isSpawn(input.tool_name)) return postSpawn(root, input);
   if (event === "SubagentStart") return onSubagentStart(root, input);
   if (event === "SubagentStop") return onSubagentStop(root, input);
   return {};

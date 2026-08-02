@@ -1,35 +1,32 @@
 # Model Routing Gate
 
-A narrow Codex plugin that, on hook-covered subagent paths:
+A narrow, passive Codex compatibility plugin. The installed hook observes
+`SubagentStart` lifecycle metadata and appends bounded private diagnostics. It
+does not intercept or gate native spawn, follow-up, wait, interrupt, or
+completion.
 
-- rejects inherited, missing, or unsupported per-seat assignments;
-- binds optional composer-derived assignment and Spark-eligibility metadata to launch receipts;
-- records requested model and raw reasoning before launch;
-- correlates `tool_use_id` with runtime `agent_id`;
-- verifies the actual model from `SubagentStart`;
-- preserves unverified reasoning honestly;
-- blocks collection of inadmissible subagent output;
-- appends compact launch lifecycle metadata to a private JSONL ledger;
-- permits one governed relaunch after rejection.
+The official Codex `SubagentStart` schema includes the common active-model
+extension plus `turn_id`, `agent_id`, `agent_type`, and `permission_mode`; it
+does not expose reasoning or a requested-to-actual assignment binding.
+Consequently:
 
-The repository copy is canonical. Runtime receipts are private and untracked.
+- requested model and reasoning are configuration evidence only;
+- the hook-reported model is recorded only as passive, non-authoritative
+  context;
+- actual model and reasoning remain `Unverified` unless a separate
+  authoritative runtime provider supplies them;
+- nickname, role, timing, output style, and result quality are never model
+  evidence; and
+- a missing receipt or hook event never makes normal worker output
+  inadmissible.
 
-The ledger defaults to `~/.codex/plugin-data/model-routing-gate/model-routing-events.jsonl`. It excludes prompts, source, subagent output, secrets, and hidden reasoning. Use the governance CLI's `model-audit` command to backfill native launches that bypass hooks and summarize a task or time window.
-
-Composer v6 Spark and Terra/low mechanical launches require the exact
-`composer_assignment` emitted with the launch. The gate reads its owner-private
-`bundle_path` beneath `ACG_ORCHESTRATION_BUNDLE_ROOT` (defaulting to the
-private Codex orchestration store), recomputes the bounded v6 bundle's
-canonical digest, and verifies its execution, correlation, and causation IDs
-against both the bundle and selected worker prompt before checking the worker
-seat, assignment IDs, prompt-envelope digest, model/reasoning, and complete
-Spark gate. Unknown or self-authored identity fields fail closed. Selectable
-work requires exact Spark/low. With `availability_evidence:"Unverified"`, only
-`unknown_or_unexposed` may use conservative Terra/low; unavailable or exhausted
-claims require a future supported host receipt and currently fail closed.
-Receipts exclude the private bundle path and retain only bounded binding
-metadata. Legacy ordinary non-Spark envelopes remain supported. Hook
-interception and actual routing remain `Unverified` without runtime evidence.
+The repository copy is canonical. Runtime diagnostics are private and
+untracked. The ledger defaults to
+`~/.codex/plugin-data/model-routing-gate/model-routing-events.jsonl` and
+excludes prompts, source, subagent output, secrets, and hidden reasoning.
+Legacy envelope parsing and composer-binding code remains available only for
+bounded offline diagnostics and compatibility tests; quarantine and native
+attestation are not normal launch prerequisites.
 
 ## Hook runtime resolution
 
@@ -37,11 +34,24 @@ Every hook invokes the bundled POSIX launcher rather than a bare `node` command.
 
 ## Compatibility boundary
 
-Native collaboration interception is capability-dependent: some Codex paths bypass local-function `PreToolUse` and `PostToolUse` while still emitting `SubagentStart`. On an unhooked path the plugin cannot prove the requested-to-actual binding or technically block output. A failed negative canary is telemetry for that runtime/path, never a project stop and not a claim that every host bypasses hooks. Normal workers may proceed with explicit model/reasoning requests, exact scope, isolation, and validation; report actual routing as `Unverified` without authoritative metadata. Reserve `model_critical:true` for work whose result validity or safety explicitly depends on attested model identity; it defaults to `false`. A mutating model-critical seat that truly needs attestation must use a hook-covered path or an operator-approved redesign, while unrelated work continues.
+Capability detection is per runtime and path. Normal workers proceed through
+native collaboration with explicit requested model/reasoning where supported,
+exact scope, isolation, and validation. Set `model_critical:false` unless
+result validity or safety explicitly depends on independently attested model
+identity. If a truly model-critical operation lacks an authoritative evidence
+provider, block or redesign only that operation and continue unrelated work.
+Do not run a canary, quarantine turn, or attestation handshake as the default.
 
 ## Install
 
-Add the plugin to a local marketplace, install it, and trust its hooks through `/hooks`. After installing or updating it in Codex desktop, use app Reload as the supported refresh action. Create a new top-level proof task only when launch-time enforcement needs proof. If Reload does not refresh the plugin, mark enforcement `Unverified`, continue projects through the permitted fallback, and leave any restart or diagnostic action to explicit operator choice. Reload does not retrofit transcript history or prove hook interception, and starting a fresh task alone does not reload a process-cached plugin.
+Add the plugin to a local marketplace and install it. Review and trust its hook
+through `/hooks`; after an update changes the hook definition, review and
+re-trust that exact definition. Then use app Reload as the supported refresh
+action in Codex desktop. If Reload does not refresh the plugin, mark
+coverage `Unverified`, continue projects through the permitted fallback, and
+leave any restart or diagnostic action to explicit operator choice. Reload
+does not retrofit transcript history or prove hook interception, and starting
+a fresh task alone does not reload a process-cached plugin.
 
 ## Test
 
@@ -49,21 +59,13 @@ Add the plugin to a local marketplace, install it, and trust its hooks through `
 npm run test:model-routing-gate
 ```
 
-## Native collaboration fallback
+## Native collaboration
 
-If the negative canary is accepted, the native path is not hook-gated. Use the governance CLI's read-only quarantine flow instead:
-
-1. Pass the exact `seat inspect` native spawn request with explicit model/reasoning and its canonical quarantine-ready instruction.
-2. Wait for the completed exact `READY_FOR_NATIVE_ATTESTATION` response, then run `node ~/.codex/policies/bin/acg.mjs attest-native-model --parent-thread <id> --agent <runtime-uuid-or-canonical-task-path>`. A task-path selector must be exact and canonical; nicknames, partial paths, ordering, and output style are not identity evidence.
-3. Deliver `admitted_assignment.message` as a new turn only when `output_admissible` is `true`, and accept only a completion carrying its required final sentinel; otherwise close the seat.
-
-This binds native parent and child session metadata after launch. It does not
-prove host activation, pre-launch interception, chained-action enforcement, or
-actual reasoning identity, so it is not allowed for mutating model-critical
-seats.
-
-If a host encrypts or otherwise withholds launch-message transcript content,
-native envelope attestation fails closed: it creates no current-host admission,
-and actual model/reasoning remain Unverified. Close only that quarantine seat
-and continue the project through a permitted native fallback; this does not
-block the project or prove host activation or chained-action enforcement.
+Use the native collaboration capabilities exposed by the current runtime.
+Spawn the bounded worker, send follow-up work to the same worker when useful,
+wait for results, and interrupt only when its current turn should stop.
+Unavailable or unsuitable capabilities are skipped automatically in favor of a
+safe replacement, rescope, manual worker prompt, or project-native tool under
+unchanged authority. No fallback requires operator reconfirmation unless it
+needs new authority, a destructive/irreversible decision, or an actually
+missing required resource.

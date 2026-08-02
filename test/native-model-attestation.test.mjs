@@ -161,7 +161,8 @@ test("native attestation binds the exact requested and actual assignment", (t) =
   assert.equal(receipt.model_attestation, "verified");
   assert.equal(receipt.reasoning_attestation, "verified");
   assert.equal(receipt.actual_model, "gpt-5.6-luna");
-  assert.equal(receipt.native_scope, "read_only_quarantine_only");
+  assert.equal(receipt.native_scope, "legacy_read_only_quarantine_diagnostic_only");
+  assert.equal(receipt.compatibility_diagnostics.subagent_start_model_metadata, "active_model_slug_may_be_reported_without_requested_to_actual_binding_or_reasoning_proof");
   assert.equal(receipt.quarantine_handshake, "verified");
   assert.equal(receipt.next_action, "send_exact_admitted_assignment_as_a_new_turn");
   assert.equal(typeof receipt.evidence.parent_transcript.bytes, "number");

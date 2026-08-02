@@ -16,6 +16,20 @@ The router reads `~/.codex/governance-machine-profile.json` by default; `ACG_MAC
 
 Use `profile add-root` for an authorized repository or worktree where project mutation may occur. Use `profile add-read-root` for an authorized external repository that may only be inspected. Read roots never authorize mutation mode; add only that root and retry once. Never authorize a broad parent for convenience.
 
+For an explicitly requested read-only Git repository, the router may verify the
+canonical worktree and its Git common directory. A worktree derived from one
+registered project repository is then inspectable even when its filesystem
+location differs. This Git-lineage exception never authorizes mutation,
+profile writes, cleanup, a sensitive root, a symlink target, an unrelated
+registered project, or ambiguous project lineage. An unbound repository is
+inspectable only when its verified worktree root itself is named; descendant
+paths still require a narrow project/read-root binding.
+
+Codex owns cleanup of Codex-created task worktrees. Agent System owns cleanup
+only of an Agent-System-prepared worktree receipt it created and only through
+its scoped helper lifecycle. Read-only Git lineage grants neither cleanup
+authority nor ownership transfer.
+
 ## Explicit Projectless Read-Only Fallback
 
 `--project null` is an inspect-only `projectless_unbound` sentinel, never an
