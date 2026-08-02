@@ -1,6 +1,6 @@
 {
   "name": "jit-orchestration-governor",
-  "version": "3.0.0-rc.2",
+  "version": "3.0.0-rc.3",
   "description": "Bounded JIT refresh, advisory orchestration guard, and completion feedback",
   "author": {
     "name": "AI Codex Governance"

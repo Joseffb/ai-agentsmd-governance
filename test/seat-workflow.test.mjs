@@ -39,7 +39,7 @@ function fixture() {
     schema_version: 1,
     approval_mode: "approve_for_me",
     approved_roots: [],
-    project_roots: { fixture: [root] },
+    project_roots: { fixture: [repository] },
     project_read_roots: {}
   }));
   const env = {
@@ -81,6 +81,26 @@ function seatArgs(value, command, seat, writeScope = "src/owned.rs") {
     "--model", "gpt-5.6-terra",
     "--reasoning", "high"
   ];
+}
+
+function seatArgsForExistingWorktree(value, seat, worktree, writeScope = "src/owned.rs") {
+  return [
+    cli, "seat", "assign",
+    "--project", "fixture",
+    "--repository", value.repository,
+    "--base", value.base,
+    "--seat", seat,
+    "--worktree", worktree,
+    "--write-scope", writeScope,
+    "--model", "gpt-5.6-terra",
+    "--reasoning", "high"
+  ];
+}
+
+function createCleanDerivedWorktree(value, seat) {
+  const worktree = path.join(value.root, `existing-${seat}`);
+  git(value.repository, ["worktree", "add", "-b", `codex/${seat}/${seat}`, worktree, value.base]);
+  return worktree;
 }
 
 function inspectArgs(value, seat = "reader") {
@@ -436,6 +456,88 @@ test("seat assign hides protocol and emits a private assignment package", () => 
   assert.equal(events[1].execution_id, assignment.execution_id);
   assert.equal(events[1].correlation_id, assignment.correlation_id);
   assert.equal(events[1].causation_id, assignment.causation_id);
+});
+
+test("seat assign receipt-binds a clean existing derived worktree outside profile roots", () => {
+  const value = fixture();
+  const worktree = createCleanDerivedWorktree(value, "existing-clean");
+  const assigned = JSON.parse(execFileSync(process.execPath, seatArgsForExistingWorktree(value, "existing-clean", worktree), {
+    encoding: "utf8", env: value.env
+  }));
+  const assignment = JSON.parse(fs.readFileSync(assigned.assignment_package, "utf8"));
+  assert.equal(assignment.worktree, fs.realpathSync(worktree));
+  const receipt = JSON.parse(fs.readFileSync(assignment.active_worktree_receipt, "utf8"));
+  assert.equal(receipt.adopted_existing_clean_worktree, true);
+  const preflight = JSON.parse(execFileSync(assigned.child_preflight.executable, assigned.child_preflight.args, {
+    encoding: "utf8", env: value.env
+  }));
+  assert.equal(preflight.seat_preflight_ready, true);
+});
+
+test("seat assign rejects a dirty receipt-less derived worktree with continuation guidance", () => {
+  const value = fixture();
+  const worktree = createCleanDerivedWorktree(value, "existing-dirty");
+  fs.writeFileSync(path.join(worktree, "src", "owned.rs"), "candidate\\n");
+  const rejected = spawnSync(process.execPath, seatArgsForExistingWorktree(value, "existing-dirty", worktree), {
+    encoding: "utf8", env: value.env
+  });
+  assert.notEqual(rejected.status, 0);
+  assert.match(rejected.stderr, /dirty and has no governed assignment receipt/u);
+  assert.match(rejected.stderr, /seat continue/u);
+  assert.match(rejected.stderr, /native\/manual recovery workflow/u);
+});
+
+test("seat assign rejects an unrelated repository, symlink alias, and ambiguous project lineage", () => {
+  const value = fixture();
+  const unrelatedRepository = path.join(value.root, "unrelated-repository");
+  const unrelatedWorktree = path.join(value.root, "unrelated-worktree");
+  fs.mkdirSync(unrelatedRepository);
+  git(unrelatedRepository, ["init"]);
+  git(unrelatedRepository, ["config", "user.email", "acg@example.invalid"]);
+  git(unrelatedRepository, ["config", "user.name", "ACG Test"]);
+  fs.writeFileSync(path.join(unrelatedRepository, "owned.txt"), "base\\n");
+  git(unrelatedRepository, ["add", "."]);
+  git(unrelatedRepository, ["commit", "-m", "base"]);
+  git(unrelatedRepository, ["worktree", "add", "-b", "codex/unrelated/unrelated", unrelatedWorktree]);
+  const unrelated = spawnSync(process.execPath, seatArgsForExistingWorktree(value, "unrelated", unrelatedWorktree), {
+    encoding: "utf8", env: value.env
+  });
+  assert.notEqual(unrelated.status, 0);
+  assert.match(unrelated.stderr, /different repository/u);
+
+  const derived = createCleanDerivedWorktree(value, "symlink-alias");
+  const alias = path.join(value.root, "derived-alias");
+  fs.symlinkSync(derived, alias);
+  const symlink = spawnSync(process.execPath, seatArgsForExistingWorktree(value, "symlink-alias", alias), {
+    encoding: "utf8", env: value.env
+  });
+  assert.notEqual(symlink.status, 0);
+  assert.match(symlink.stderr, /must not be a symlink or alias/u);
+
+  const profile = JSON.parse(fs.readFileSync(value.env.ACG_MACHINE_PROFILE, "utf8"));
+  profile.project_roots.alternate = [value.repository];
+  fs.writeFileSync(value.env.ACG_MACHINE_PROFILE, JSON.stringify(profile));
+  const target = path.join(value.worktrees, "ambiguous");
+  const ambiguous = spawnSync(process.execPath, seatArgsForExistingWorktree(value, "ambiguous", target), {
+    encoding: "utf8", env: value.env
+  });
+  assert.notEqual(ambiguous.status, 0);
+  assert.match(ambiguous.stderr, /ambiguous registered project lineage/u);
+  assert.equal(fs.existsSync(target), false);
+});
+
+test("seat assign creates and receipts a new external worktree only after its Git lineage is verifiable", () => {
+  const value = fixture();
+  const assigned = JSON.parse(execFileSync(process.execPath, seatArgs(value, "assign", "new-external"), {
+    encoding: "utf8", env: value.env
+  }));
+  const assignment = JSON.parse(fs.readFileSync(assigned.assignment_package, "utf8"));
+  assert.equal(assignment.worktree.startsWith(`${fs.realpathSync(value.worktrees)}${path.sep}`), true);
+  const commonDirectory = (cwd) => fs.realpathSync(path.resolve(cwd, git(cwd, ["rev-parse", "--git-common-dir"])));
+  assert.equal(commonDirectory(assignment.worktree), commonDirectory(value.repository));
+  assert.equal(JSON.parse(execFileSync(assigned.child_preflight.executable, assigned.child_preflight.args, {
+    encoding: "utf8", env: value.env
+  })).seat_preflight_ready, true);
 });
 
 test("mutating preflight records the observed subtask start with its execution correlation", () => {
@@ -897,6 +999,9 @@ test("legacy receipt continuation requires unique project-profile provenance", (
   const legacyReceipt = path.join(value.root, "legacy-receipt.json");
   fs.writeFileSync(legacyReceipt, JSON.stringify(legacy));
   fs.writeFileSync(path.join(original.worktree, "src", "owned.rs"), "continued\\n");
+  const initialProfile = JSON.parse(fs.readFileSync(value.env.ACG_MACHINE_PROFILE, "utf8"));
+  initialProfile.project_roots.fixture.push(original.worktree);
+  fs.writeFileSync(value.env.ACG_MACHINE_PROFILE, JSON.stringify(initialProfile));
   const continued = JSON.parse(execFileSync(process.execPath, [
     cli, "seat", "continue", "--project", "fixture", "--receipt", legacyReceipt,
     "--expected-head", value.base

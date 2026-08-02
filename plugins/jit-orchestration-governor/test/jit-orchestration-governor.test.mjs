@@ -20,8 +20,8 @@ test("plugin package manifest remains installable and delegates hooks to hooks.j
   const manifest = JSON.parse(fs.readFileSync(path.join(pluginRoot, ".codex-plugin", "plugin.json"), "utf8"));
   const hookConfig = JSON.parse(fs.readFileSync(path.join(pluginRoot, "hooks", "hooks.json"), "utf8"));
 
-  assert.equal(manifest.name, path.basename(pluginRoot));
-  assert.match(manifest.version, /^3\.0\.0-rc\.2$/);
+  assert.equal(manifest.name, "jit-orchestration-governor");
+  assert.match(manifest.version, /^3\.0\.0-rc\.3$/);
   assert.match(manifest.description, /JIT refresh/);
   assert.equal(manifest.author.name, "AI Codex Governance");
   assert.equal(manifest.interface.displayName, "JIT Orchestration Governor");

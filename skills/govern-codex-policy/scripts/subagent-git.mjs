@@ -83,6 +83,23 @@ function newAbsolute(value, label) {
   return path.join(fs.realpathSync(parent), path.basename(absolute));
 }
 
+function existingCleanWorktree(value, repository, branch, baseCommit) {
+  if (!path.isAbsolute(value)) fail(`Worktree must be absolute: ${value}`);
+  const requested = path.resolve(value);
+  if (!fs.existsSync(requested)) fail(`Worktree is unreadable: ${requested}`);
+  if (fs.lstatSync(requested).isSymbolicLink()) fail(`Existing worktree must not be a symlink or alias: ${requested}`);
+  const worktree = fs.realpathSync(requested);
+  if (within(worktree, repository)) fail("Worktree must be outside the repository of record");
+  if (commonGitDirectory(repository) !== commonGitDirectory(worktree)) fail("Existing worktree belongs to a different repository");
+  if (fs.realpathSync(git(worktree, ["rev-parse", "--show-toplevel"])) !== worktree) fail("Existing worktree must be a Git worktree root");
+  if (git(worktree, ["branch", "--show-current"]) !== branch) fail(`Existing worktree branch mismatch: expected ${branch}`);
+  if (git(worktree, ["rev-parse", "HEAD"]).toLowerCase() !== baseCommit) fail("Existing worktree moved from the requested base; create a new clean worktree");
+  if (git(worktree, ["status", "--porcelain=v1", "--untracked-files=all"])) {
+    fail("Existing derived worktree is dirty and has no governed assignment receipt. Reuse its original receipt with seat continue; if it is unavailable, preserve the candidate and use the project's native/manual recovery workflow instead of seat assign.");
+  }
+  return worktree;
+}
+
 function slug(value, label) {
   const normalized = value.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
   if (!normalized || normalized.length > 64) fail(`${label} cannot form a safe Git branch segment`);
@@ -292,17 +309,25 @@ function prepare(values) {
     }
   }
   const branch = `codex/${slug(workId, "Work ID")}/${seat}`;
-  const worktree = newAbsolute(required(values, "worktree"), "Worktree");
-  if (within(worktree, repository)) fail("Worktree must be outside the repository of record");
-
-  const branchCheck = spawnSync("git", ["-C", repository, "show-ref", "--verify", "--quiet", `refs/heads/${branch}`]);
-  if (branchCheck.status === 0) fail(`Assigned branch already exists: ${branch}`);
-  if (![0, 1].includes(branchCheck.status)) fail(`Unable to inspect assigned branch: ${branch}`);
-
-  execFileSync("git", ["-C", repository, "worktree", "add", "-b", branch, worktree, baseCommit], {
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"]
-  });
+  const worktreeInput = required(values, "worktree");
+  const adoptingExisting = fs.existsSync(path.resolve(worktreeInput));
+  let worktree;
+  if (adoptingExisting) {
+    if (values["allow-existing-clean-worktree"] !== "yes") {
+      fail("Existing worktree requires a governed assignment receipt; use seat continue with the original receipt, or create a new clean worktree.");
+    }
+    worktree = existingCleanWorktree(worktreeInput, repository, branch, baseCommit);
+  } else {
+    worktree = newAbsolute(worktreeInput, "Worktree");
+    if (within(worktree, repository)) fail("Worktree must be outside the repository of record");
+    const branchCheck = spawnSync("git", ["-C", repository, "show-ref", "--verify", "--quiet", `refs/heads/${branch}`]);
+    if (branchCheck.status === 0) fail(`Assigned branch already exists: ${branch}`);
+    if (![0, 1].includes(branchCheck.status)) fail(`Unable to inspect assigned branch: ${branch}`);
+    execFileSync("git", ["-C", repository, "worktree", "add", "-b", branch, worktree, baseCommit], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+  }
 
   const assignment = {
     schema_version: 1,
@@ -317,6 +342,7 @@ function prepare(values) {
     seat,
     write_scope: writeScope,
     generated_output_scope: generatedOutputScope,
+    ...(adoptingExisting ? { adopted_existing_clean_worktree: true } : {}),
     fork_context_provides_git_isolation: false
   };
   const { receipt, receiptPath } = writeReceipt(assignment, "worktree");

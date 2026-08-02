@@ -3,8 +3,9 @@
 ![AI Coding Agent Governance workflow](docs/assets/ai-coding-agent-governance.png)
 
 > **Current release line:** RC-3.0 (`3.3.0`).
-> Immutable releases include the tracked source plugins, but bundling does not
-> prove that any host installed, loaded, or activated those plugins.
+> Activation registers the immutable release-local marketplace and verifies its
+> mandatory plugins are installed and enabled. This does not prove that a host
+> loaded, trusted, or activated their hooks.
 
 > **Agent System identity:** [Read the canonical portable role contract](docs/agent-system-role.md).
 > Its primary product is JIT Agent-file/rule discovery and smallest-sufficient
@@ -343,7 +344,9 @@ The implementation uses only the Node.js standard library.
 5. Copy the returned release ID.
 6. Run `node bin/acg.mjs activate --release-id <release-id>`.
 
-Activation installs stable links for Codex:
+Activation installs stable links and registers the release-local marketplace
+with the supported `codex plugin` CLI. It verifies every mandatory bundled
+plugin is installed and enabled before the runtime pointer changes:
 
 ```text
 ~/.codex/AGENTS.md
@@ -351,8 +354,16 @@ Activation installs stable links for Codex:
 ~/.codex/skills/govern-codex-policy
 ```
 
-The runtime pointer changes only after the complete candidate validates. A
-failed activation leaves the prior release active.
+The runtime pointer changes only after the complete candidate validates. If a
+mandatory plugin cannot be verified, activation restores the prior plugin and
+configuration state where feasible and leaves the candidate release inactive.
+
+After a successful activation, plugin installation is not hook trust. Start an
+interactive terminal session with `codex -C <project>`, run `/hooks`, and trust
+each required handler for the installed plugins. Exit that CLI session, then
+fully relaunch Codex Desktop. `/hooks` is not a Desktop composer command, and
+installed/enabled status does not prove host hook interception. Do not use
+`--dangerously-bypass-hook-trust`.
 
 ## Agent Setup Protocol
 
