@@ -1,0 +1,32 @@
+{
+  "name": "ai-codex-governance",
+  "interface": {
+    "displayName": "AI Codex Governance"
+  },
+  "plugins": [
+    {
+      "name": "jit-orchestration-governor",
+      "source": {
+        "source": "local",
+        "path": "./plugins/jit-orchestration-governor"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "model-routing-gate",
+      "source": {
+        "source": "local",
+        "path": "./plugins/model-routing-gate"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
