@@ -58,7 +58,14 @@ test("explicit CLI --project null uses a bounded non-reporting projectless read-
   assert.equal(output.native_read_only_fallback.unregistered_root_absence_agent_system_defect_report_eligible, false);
   assert.equal(output.native_read_only_fallback.immediate_next_action, "native_or_manual_read_only_delegation");
   assert.equal(output.native_read_only_fallback.wait_for_agent_system, false);
-  assert.equal(output.native_spawn_request.model, "gpt-5.6-terra");
+  assert.equal(output.requested_model, "gpt-5.6-terra");
+  assert.equal(output.requested_reasoning_raw, "high");
+  assert.equal(output.native_assignment.contract, "native_direct_read_only_assignment");
+  assert.equal(output.native_assignment.start_request.fork_turns, "none");
+  assert.equal(output.native_assignment.start_request.model, "gpt-5.6-terra");
+  assert.equal(output.native_assignment.start_request.reasoning_effort, "high");
+  assert.equal(output.native_assignment.compatibility_diagnostics.subagent_start_model_metadata, "active_model_slug_may_be_reported_without_requested_to_actual_binding_or_reasoning_proof");
+  assert.equal(output.automatic_fallback.ordered, true);
   assert.equal(output.admitted_assignment.pass_message_verbatim, true);
   assert.equal(fs.readFileSync(value.profile, "utf8"), beforeProfile);
   assert.match(output.completion_sentinel, /^ACG_PROJECTLESS_READ_ONLY_FALLBACK:[a-f0-9]{16}$/u);

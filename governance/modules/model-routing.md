@@ -6,14 +6,77 @@ Use standard mode. Never enable, request, or recommend Fast mode for the coordin
 
 Bias against `ultra` reasoning. First re-prompt or clarify, narrow or decompose, gather better evidence, and use independent `xhigh` evaluation. Consider `ultra` only if those steps cannot resolve a material blocker. For each use, explain why `xhigh` is insufficient, why the expected correctness benefit outweighs the added token, compute, and cost footprint, and obtain explicit user agreement for that exact incident. Silence, standing authority, or prior agreement does not carry forward.
 
-Families:
+Families, in capability-and-safety-first order (then wall-clock, then tokens
+and cost):
 
-- Luna: deterministic documentation, formatting, fixtures, and narrow edits; usually Low or Medium.
-- Terra: default feature, test, debugging, migration, integration, and multi-file work; usually Medium or High.
+- Luna Max: preferred lowest-cost bounded routine implementer for clear
+  implementation, focused tests, fixtures, documentation, formatting, and
+  repeatable engineering work; request `gpt-5.6-luna` with `max` reasoning.
+  Do not use Luna merely because it is cheap for security-critical, authority,
+  migration, destructive, privacy, release, deployment, or high-ambiguity
+  work.
+- Terra Max: complex implementation, debugging, migration, integration, and
+  multi-file work; request `gpt-5.6-terra` with `max` reasoning. The narrow
+  Spark availability fallback remains the separately governed Terra `low`
+  exception below.
 - GPT-5.3-Codex-Spark: mandatory only for composer-derived `mechanical` bounded delegated AI transformation or mechanical-edit work when explicitly selectable from its separate pool. Use the exact runtime ID `gpt-5.3-codex-spark` with `low` reasoning.
-- Sol: architecture, authority, distributed systems, difficult concurrency, security-critical design, conflict resolution, and final high-risk verdicts; usually High or stronger when supported. Minimize use without lowering quality.
+- Sol High: adversarial work, architecture, authority review, distributed
+  systems, difficult concurrency, security-critical design, conflict
+  resolution, and final high-risk verdicts; request `gpt-5.6-sol` with `high`
+  reasoning. Minimize use without lowering quality.
 
 ## Subagent Assignment
+
+### Luna Native and Installed-CLI Worker Path
+
+An observed native collaboration override can exclude Luna even when the
+installed Codex CLI authoritatively supports the Luna runtime ID. Prefer
+native collaboration or the configured custom `luna_worker` whenever that
+selection is exposed. This is proactive eligible routing, not a failure-only
+fallback: when the collaboration override excludes Luna but the installed CLI
+authoritatively supports it, Seat 0 may launch one bounded manual Luna worker.
+This CLI path is a bounded manual-worker adapter, not a native-collaboration
+subagent and not an equivalent source of lifecycle, steering, or attestation
+evidence.
+
+Before that launch, preserve the ordinary worker contract: capability and
+safety fit first, participant and capacity limits, one exact isolated worktree
+for mutation, bounded scope and acceptance criteria, proportionate validation,
+and a defined lifecycle/evidence return. Reserve one available worker slot
+before launch and record its owner, exact isolated worktree/cwd, process or
+session identity, and expected return. Do not use a user-owned `create_thread`
+as a subagent substitute.
+
+The coordinator creates one self-contained, secret-free prompt file with the
+entire assignment, isolation, acceptance, validation, and return contract.
+Launch exactly once as a non-TTY process; it has no interactive steering,
+follow-up turns, or resume path. For mutation, a portable shell-safe invocation
+is:
+
+```sh
+codex exec --cd "$worker_worktree" --model gpt-5.6-luna -c 'model_reasoning_effort="max"' --sandbox workspace-write --json - < "$prompt_file"
+```
+
+`$worker_worktree` is the pre-verified exact isolated worktree and
+`$prompt_file` is the coordinator-owned self-contained prompt file; neither
+shell variable is a machine path or a place to embed secrets. For read-only
+work, replace `--sandbox workspace-write` with the read-only sandbox. Keep the
+JSON lifecycle/evidence output private and ingest only bounded lifecycle and
+evidence facts into the normal coordination record.
+
+The recorded lifecycle owner owns the CLI PID or session, observes verified
+exit or interruption, and performs bounded cancellation and process/session
+cleanup when needed. Release the reserved worker slot only after that verified
+exit or interruption and the bounded cleanup outcome are recorded. Never
+delete, reset, or otherwise disturb the isolated candidate/worktree during
+cancellation or cleanup. If process ownership or exit is unverified, preserve
+candidate state, retain the reservation, and escalate or use another safe
+worker path; do not relaunch or imply a completed cleanup.
+
+The command records requested configuration only. CLI JSON, a PID, a session,
+or a worker report is not a public claim or model attestation: requested model
+and reasoning remain configuration, and actual model and reasoning remain
+`Unverified` unless authoritative runtime metadata attests them.
 
 ### Spark-Eligible Bounded Delegated Work
 
@@ -43,11 +106,12 @@ integration or conflict resolution, release or acceptance work, or a final
 verdict. Route those scopes under their ordinary capability and reasoning
 requirements.
 
-For a composer-derived worker, the no-guess launch path is exact:
-`orchestrate next` -> `orchestrate launch --bundle <path> --seat <N>` -> pass
-the returned `native_quarantine.spawn_request` verbatim -> attest -> send the
-returned `admitted_assignment.message` verbatim as a new turn. Never construct,
-summarize, reformat, or infer either message.
+For a composer-derived worker, use the composition and launch tooling when it
+is available, but do not require a quarantine handshake for a normal native
+worker. Direct native workers are normal workers: give them the assigned scope,
+isolation, acceptance criteria, and proportionate validation. An explicit
+model ID or raw reasoning effort is a requested configuration, not a receipt
+that the runtime selected or honored it.
 
 The currently supported conservative Spark fallback is `gpt-5.6-terra` with
 `low` reasoning only when the composer state is exactly
@@ -58,73 +122,108 @@ provides authoritative availability evidence. An unverified claim of either
 reserved state is not permission to launch Terra. Never move the work to Seat
 `0`; block only the affected launch and continue the project through another
 safe supported path. Report actual model and reasoning as `Unverified` unless
-authoritative runtime metadata attests them.
+authoritative runtime selection metadata attests them.
 
-On a hook-covered path, a missing, altered, or non-matching composer request is
-inadmissible for that Spark launch. On an unhooked path, do not claim that this
-routing is enforced; request the explicit Spark assignment or the supported
-`unknown_or_unexposed` Terra fallback and continue the project under unchanged
-worker boundaries.
+On a hook-covered path, a missing, altered, or non-matching composer request
+is inadmissible for that Spark launch. On an unhooked path, do not claim that
+this routing is enforced; request the explicit Spark assignment or the
+supported `unknown_or_unexposed` Terra fallback and continue the project under
+unchanged worker boundaries. Neither path converts a requested model or
+reasoning effort into an actual-runtime claim.
 
-When explicit per-seat selection exists, every new or resumed seat must receive an exact runtime model ID and raw reasoning value. Never use `Inherit current` or silently accept a selectable default. Before launch, record seat, objective, exact requested model and reasoning, fit, why weaker is insufficient when applicable, and why stronger is unnecessary when applicable. Retrospective routing analysis does not correct an inherited launch.
+For explicit per-seat selection, record the exact model ID and reasoning as
+requested configuration, not runtime attestation; otherwise record no explicit
+request. Before a material request, record seat, objective, fit, and applicable
+weaker/stronger justification.
 
-If family selection is unavailable, say so, claim none, and optimize decomposition with the lowest suitable model. Report unavailable reasoning selection separately and imply no level.
+If family selection is unavailable, say so and optimize decomposition with the
+lowest suitable model; separately report unavailable reasoning and imply none.
 
-Use the Model Routing Gate plugin only after a runtime-specific negative canary proves that direct launch and output collection traverse its `PreToolUse` and `PostToolUse` hooks. When proven, it must block missing or inherited assignments, bind the launch request to the runtime `agent_id`, and reject missing or mismatched evidence. Native collaboration interception is capability-dependent. A negative canary that is denied is evidence that this runtime and path are hook-covered; a canary that starts is evidence that this path is not hook-gated, not a universal expectation for every host. On an unhooked path, normal workers may still proceed with explicit model and reasoning requests, exact scope, verified isolation when mutating, and proportionate validation; report `Actual model: Unverified` unless authoritative runtime metadata attests it. `SubagentStart` model metadata alone may prove the actual model, but not the requested-to-actual binding.
+Use the Model Routing Gate only after a runtime-specific negative canary proves
+direct launch and output collection traverse its `PreToolUse` and `PostToolUse`
+hooks; then it may enforce that covered request. Native collaboration
+interception is capability-dependent. A denied canary is evidence this path is
+hook-covered; a started canary is telemetry that this path is not hook-gated,
+not a universal expectation for every host. On an unhooked path, normal workers
+may still proceed with explicit model and reasoning requests, exact scope,
+verified mutation isolation, and proportionate validation; report actual model
+and reasoning as `Unverified` unless authoritative runtime selection metadata
+attests them. `SubagentStart` is neither a launch gate nor binding evidence.
 
-Set `model_critical:false` by default. Set it to `true` only when the result's validity or safety explicitly depends on attested model identity; it is not a proxy for task importance. A mutating model-critical seat that truly requires that attestation must use a hook-covered path or an operator-approved redesign. Block only that attestation-dependent seat and continue unrelated work through the available normal-worker or native fallback path.
+Set `model_critical:false` by default; set it `true` only when validity or
+safety depends on attested model identity, never as a task-importance proxy. An
+actual-model or actual-reasoning attestation requirement needs authoritative
+runtime selection metadata or operator-approved redesign. Block only that
+action and continue unrelated work through a normal-worker or native fallback.
 
-Reuse only an accepted, model-compatible seat. Close rejected seats; permit one explicitly assigned relaunch, then block the seat as a runtime-routing defect.
+Reuse only an accepted, model-compatible seat. Close rejected seats; allow one
+assigned relaunch, then block that seat as a runtime-routing defect.
 
-After completion record requested and actual family and reasoning, whether honored, fallback, and reason. Actual model requires authoritative runtime selection response, hook, tool, session, or API metadata. Narrative, behavior, style, seat name, or plan is not evidence; otherwise report it as `Unverified`.
+After completion record requested/actual family and reasoning, honored,
+fallback, and reason. Actual fields need authoritative runtime, tool, session,
+or API metadata; narrative, behavior, style, seat name, plan, or
+`SubagentStart` is not evidence, so otherwise report `Unverified`.
 
-Preserve requested reasoning exactly as submitted. It is the configured assignment, not runtime proof. Until authoritative reasoning metadata exists, set `actual_reasoning_raw` to `Unverified` and `reasoning_attestation` to `configured_not_runtime_attested`. A matching model is admissible for an ordinary model-critical seat despite unverified reasoning; a `reasoning_critical` seat is not.
+Preserve requested reasoning exactly: it is configuration, not runtime proof.
+Without authoritative reasoning metadata, set `actual_reasoning_raw` to
+`Unverified` and `reasoning_attestation` to `configured_not_runtime_attested`.
+A matching model is admissible for an ordinary model-critical seat despite
+unverified reasoning; a `reasoning_critical` seat is not.
 
-Record coordinator selection only with authoritative routing or metadata; predetermined coordinator routing is not a defect. Justify changes materially affecting architecture, security, migration, release, validation, capacity, or implementation risk. The coordinator owns routing, decomposition, reconciliation, integration, and final verdict.
+Record coordinator selection only with authoritative routing or metadata;
+predetermined routing is not a defect. Justify material architecture, security,
+migration, release, validation, capacity, or implementation-risk changes. The
+coordinator owns routing, decomposition, reconciliation, integration, and
+final verdict.
 
 ## Routing Audit Ledger
 
-Record every observed launch in the local untracked model-routing JSONL ledger. Store task and agent IDs, seat, compact objective and routing rationale, requested model/reasoning, criticality, lifecycle state, actual runtime metadata when authoritative, and evidence source. Never store prompts, source, subagent output, secrets, or hidden reasoning.
+Record each observed launch in the local untracked model-routing JSONL ledger:
+task/agent IDs, seat, compact objective/rationale, requested model/reasoning,
+criticality, lifecycle, authoritative runtime metadata, and evidence source.
+Never store prompts, source, subagent output, secrets, or hidden reasoning.
 
-Use `node ~/.codex/policies/bin/acg.mjs model-audit --thread <task-id> --days 14` to backfill native launches from authoritative task transcripts and report model/reasoning allocation. Hook events are automatic only where hooks execute; transcript backfill is required for bypassed native paths. Missing ledger rows are not proof that no launch occurred.
+Use `node ~/.codex/policies/bin/acg.mjs model-audit --thread <task-id> --days 14`
+to inventory native launches and preserve any authoritative runtime metadata
+already available. A transcript can record the requested configuration, but
+does not by itself attest actual model or reasoning. Hook events are automatic
+only where hooks execute. Missing ledger rows are not proof that no launch
+occurred.
 
-For Sol or `xhigh`/stronger assignments, record before launch why a cheaper model or lower reasoning tier is insufficient. A generic statement that the assignment “fits” is not proportionality evidence. Audit repeated concentration over a representative window; do not infer waste from one justified security-critical burst.
+For Sol or `xhigh`/stronger assignments, record before launch why cheaper/lower
+is insufficient. Audit repeated concentration over a representative window;
+one justified security-critical burst does not prove waste.
 
-## Native Spawn Quarantine
+## Native Diagnostic Compatibility
 
-Some native collaboration paths may bypass plugin `PreToolUse` and `PostToolUse` hooks. A negative canary proves launch enforcement only when the unenveloped launch is denied before start; accepting it is telemetry that this path is not hook-gated. It never stops the project or requires waiting for an Agent System repair.
+Some native collaboration paths may bypass plugin `PreToolUse` and
+`PostToolUse` hooks. A negative canary proves launch enforcement only when the
+unenveloped launch is denied before start; accepting it is telemetry that this
+path is not hook-gated. It never stops the project or requires waiting for an
+Agent System repair.
 
-For a read-only model-critical seat on an ungated native path:
+`native_quarantine.spawn_request`, `attest-native-model`, and related
+quarantine envelopes remain diagnostic compatibility mechanisms for an
+existing integration. They are optional, read-only diagnostics; they are not a
+normal native-worker admission path, are not required before direct launch,
+and must not discard, delay, or quarantine an otherwise authorized normal
+worker. Their receipt cannot prove pre-launch interception or bind requested
+model/reasoning to actual runtime selection.
 
-1. Prepare the seat with `acg.mjs seat inspect`; pass its returned `native_quarantine.spawn_request` verbatim. It owns `fork_context:false`, the exact `model` and `reasoning_effort`, and the message containing only the one-line `MODEL_ROUTING_GATE_V1` JSON envelope, `MODEL_ROUTING_GATE_QUARANTINE_V1`, and the canonical exact-ready instruction. Never construct or reformat this envelope manually.
-2. Do not include the task, repository, worktree, secrets, project data, or mutation authority.
-3. Wait for the completed exact `READY_FOR_NATIVE_ATTESTATION` response, then run `node ~/.codex/policies/bin/acg.mjs attest-native-model --parent-thread <id> --agent <runtime-uuid-or-canonical-task-path>`. Premature attestation returns a wait-and-retry disposition; host hooks and chained enforcement remain Unverified.
-4. When the receipt says `output_admissible:true`, send `admitted_assignment.message` verbatim as a new turn. Accept only the completion carrying its required final sentinel; an untagged completion is pre-admission, stale, or inadmissible. Otherwise close the seat.
+If an operator explicitly runs this diagnostic, use its returned material
+verbatim and report only the fields that authoritative runtime metadata
+attests. Transcript absence, ambiguity, schema drift, missing metadata,
+premature attestation, or assignment mismatch leaves actual model and
+reasoning `Unverified`; it is a diagnostic result, not a project blocker. Do
+not repeat unchanged diagnostic launches or wait for Agent System repair.
 
-The command binds the parent spawn request, returned agent ID, completed
-tool-free quarantine handshake, and authoritative child session metadata.
-Transcript absence, ambiguity, schema drift, missing metadata, premature
-attestation, or assignment mismatch fails closed.
+`SubagentStart` context cannot stop a seat, cannot establish requested-to-
+actual model or reasoning binding, and is not a substitute for an authoritative
+runtime selection record.
 
-When a host encrypts or otherwise withholds launch-message transcript content,
-native envelope attestation fails closed and provides no current-host admission;
-actual model and reasoning remain `Unverified`. Close only that quarantine seat
-and continue the project through a permitted native fallback. Do not present
-this as host activation, chained-action enforcement, or project blocking.
-
-A marker-only first line, descriptive key/value envelope, changed instruction,
-or other multiline rewrite is not equivalent to the canonical envelope and is
-rejected with fresh-`seat inspect` remediation. Do not weaken the parser to
-infer missing seat, criticality, or attempt evidence.
-
-If native spawn returns no opaque agent ID or the parent transcript contains no
-binding, close the quarantine seat, discard its output, and report or local-log
-the runtime defect once through the Agent System disposition selected by
-consent. Do not repeat quarantine launches or wait for Agent System. The
-inadmissible launch remains blocked, but the project immediately continues with
-other existing tool definitions or native paths inside current authority. A
-failed helper or gateway never grants Seat `0` implementation. Use an
-authoritative gateway when available or leave only the model-critical
-delegation action blocked.
-
-This is post-launch quarantine attestation, not proof of pre-launch interception. It is permitted only for read-only seats. Mutating model-critical seats remain blocked on an ungated native path. `SubagentStart` context cannot stop a seat and is not a substitute for a pre-launch gate.
+Native association is not a worktree-ownership receipt. Keep Codex-managed
+chat worktrees distinct from Agent-System-owned child worktrees and report that
+association as `Unverified` unless the host provides authoritative ownership
+metadata. After a hook-definition change, reload the Codex app and review the
+`/hooks` trust state before treating hook coverage as current. Those steps do
+not prove native interception or actual model/reasoning selection.

@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { resolveRoute } from "../lib/core.mjs";
+import { buildNativeQuarantineLaunch } from "../lib/native-model-attestation.mjs";
 
 const cli = path.resolve("bin/acg.mjs");
 const helper = path.resolve("skills/govern-codex-policy/scripts/subagent-git.mjs");
@@ -117,7 +118,7 @@ test("seat inspect owns the read-only lifecycle and emits a one-command child pr
     "preflight",
     "--assignment", output.assignment_package
   ]);
-  assert.match(output.child_instruction, /runs it exactly once/);
+  assert.match(output.child_instruction, /Start the native child directly/u);
 
   const assignment = JSON.parse(fs.readFileSync(output.assignment_package, "utf8"));
   assert.equal(assignment.package_type, "governed_read_only_seat_assignment");
@@ -127,18 +128,28 @@ test("seat inspect owns the read-only lifecycle and emits a one-command child pr
   assert.match(assignment.execution_id, /^execution-[a-f0-9]{32}$/u);
   assert.match(assignment.correlation_id, /^correlation-[a-f0-9]{32}$/u);
   assert.match(assignment.causation_id, /^causation-[a-f0-9]{32}$/u);
-  assert.deepEqual(output.native_quarantine, assignment.native_quarantine);
-  assert.equal(assignment.native_quarantine.pass_spawn_request_verbatim, true);
-  assert.equal(assignment.native_quarantine.spawn_request.fork_context, false);
-  assert.equal(assignment.native_quarantine.spawn_request.model, "gpt-5.6-terra");
-  assert.equal(assignment.native_quarantine.spawn_request.reasoning_effort, "high");
-  assert.match(
-    assignment.native_quarantine.spawn_request.message,
-    /^MODEL_ROUTING_GATE_V1 \{.*"seat_id":"reader".*"attempt":1\}\nMODEL_ROUTING_GATE_QUARANTINE_V1\nReply with exactly READY_FOR_NATIVE_ATTESTATION\./u
-  );
-  assert.doesNotMatch(assignment.native_quarantine.spawn_request.message, /Inspect the bounded repository/u);
-  assert.doesNotMatch(assignment.native_quarantine.spawn_request.message, /acg-seat-workflow-/u);
-  assert.match(output.native_quarantine_instruction, /pass native_quarantine\.spawn_request verbatim/i);
+  assert.deepEqual(output.native_assignment, assignment.native_assignment);
+  assert.equal(assignment.native_assignment.contract, "native_direct_read_only_assignment");
+  assert.equal(assignment.native_assignment.admission, "direct");
+  assert.equal(assignment.native_assignment.requested_model, "gpt-5.6-terra");
+  assert.equal(assignment.native_assignment.requested_reasoning_raw, "high");
+  assert.equal(assignment.native_assignment.actual_model, "Unverified");
+  assert.equal(assignment.native_assignment.actual_reasoning_raw, "Unverified");
+  assert.deepEqual(assignment.native_assignment.required_capabilities, ["native_subagent_start", "filesystem_read", "local_runtime", "thread_coordination"]);
+  assert.deepEqual(assignment.native_assignment.start_request, {
+    task_name: "read-only-reader",
+    fork_turns: "none",
+    model: "gpt-5.6-terra",
+    reasoning_effort: "high",
+    message: output.admitted_assignment.message
+  });
+  assert.equal(assignment.native_assignment.automatic_fallback.ordered, true);
+  assert.deepEqual(assignment.native_assignment.automatic_fallback.steps.map(({ order, action }) => ({ order, action })), [
+    { order: 1, action: "start_native_subagent_with_exact_start_request" },
+    { order: 2, action: "delegate_exact_admitted_assignment_manually" },
+    { order: 3, action: "return_bounded_read_only_blocker_without_mutation" }
+  ]);
+  assert.equal(assignment.native_assignment.compatibility_diagnostics.subagent_start_model_metadata, "active_model_slug_may_be_reported_without_requested_to_actual_binding_or_reasoning_proof");
   assert.equal(output.admitted_assignment.pass_message_verbatim, true);
   assert.equal(output.admitted_assignment.starts_new_turn, true);
   assert.match(output.admitted_assignment.message, /'seat' 'preflight'/u);
@@ -280,6 +291,7 @@ test("seat inspect persists the exact admitted assignment for truncation-safe re
   assert.equal(persisted.admitted_assignment.required_final_sentinel, output.admitted_assignment.required_final_sentinel);
   assert.equal(persisted.admitted_assignment.stale_notification_rule, output.admitted_assignment.stale_notification_rule);
   assert.equal(persisted.admitted_assignment.close_rule, output.admitted_assignment.close_rule);
+  assert.deepEqual(persisted.native_assignment, output.native_assignment);
 
   const explained = JSON.parse(execFileSync(process.execPath, [
     cli, "seat", "explain", "--assignment", output.assignment_package
@@ -312,6 +324,12 @@ test("seat preflight supports legacy read-only packages without an admitted payl
   }));
   const legacy = JSON.parse(fs.readFileSync(output.assignment_package, "utf8"));
   delete legacy.admitted_assignment;
+  delete legacy.native_assignment;
+  legacy.native_quarantine = buildNativeQuarantineLaunch({
+    seatId: legacy.seat,
+    model: legacy.requested_model,
+    reasoning: legacy.requested_reasoning_raw
+  });
   const legacyIdentity = crypto.createHash("sha256").update(JSON.stringify(legacy)).digest("hex").slice(0, 16);
   const legacyPath = path.join(path.dirname(output.assignment_package), `read-only-assignment-${legacyIdentity}.json`);
   fs.writeFileSync(legacyPath, JSON.stringify(legacy, null, 2) + "\n");
@@ -326,14 +344,15 @@ test("seat preflight supports legacy read-only packages without an admitted payl
   assert.match(explained.admitted_assignment.message, /Run this exact child preflight command once/u);
 });
 
-test("seat inspect emits an exact attempt-two native quarantine retry", () => {
+test("seat inspect keeps direct native admission independent of legacy quarantine attempts", () => {
   const value = fixture();
   const output = JSON.parse(execFileSync(process.execPath, [
     ...inspectArgs(value, "reader-retry"),
     "--attempt", "2"
   ], { encoding: "utf8", env: value.env }));
-  assert.equal(output.native_quarantine.attempt, 2);
-  assert.match(output.native_quarantine.spawn_request.message, /"attempt":2/u);
+  assert.equal(output.native_assignment.admission, "direct");
+  assert.equal(output.native_assignment.start_request.model, "gpt-5.6-terra");
+  assert.equal(output.native_assignment.start_request.reasoning_effort, "high");
 });
 
 test("seat inspect rejects seat zero before assignment, provenance, or metrics effects", () => {

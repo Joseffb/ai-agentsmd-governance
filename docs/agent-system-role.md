@@ -107,10 +107,35 @@ The Agent System:
   affected launch that establishes an authoritatively known costly model
   mismatch; unknown actual model identity continues safely as `Unverified`
   rather than moving the work to Seat `0` or blocking the project;
-- follows the composer no-guess launch path exactly: `orchestrate next` ->
-  `orchestrate launch --bundle <path> --seat <N>` -> pass the returned
-  `native_quarantine.spawn_request` verbatim -> attest -> send the returned
-  `admitted_assignment.message` verbatim as a new turn;
+- keeps composer-derived mechanical composition deterministic:
+  `orchestrate next` -> `orchestrate launch --bundle <path> --seat <N>`, then
+  launches the returned bounded assignment through the current runtime's
+  native worker capability. Quarantine and attestation are optional diagnostic
+  compatibility, not normal launch prerequisites. The legacy diagnostic
+  sequence remains readable as `native_quarantine.spawn_request` verbatim ->
+  attest -> send the returned `admitted_assignment.message` verbatim, but is
+  never imposed on ordinary delegation;
+- uses native Codex roles by capability and contract fit: built-in `default`,
+  `worker`, and `explorer`, or custom roles from `.codex/agents/<name>.toml`
+  and `~/.codex/agents/` with required `name`, `description`, and
+  `developer_instructions`. On the current app collaboration surface it uses
+  `spawn_agent` for a new bounded seat, `followup_task` for a useful next turn
+  on that seat, `wait_agent` for status/completion, and `interrupt_agent` only
+  to stop an active turn; another Codex surface uses its equivalent exposed
+  capability;
+- treats the official `SubagentStart` hook as passive context: its common
+  fields include an active-model extension and its event-specific schema adds
+  `turn_id`, `agent_id`, `agent_type`, and `permission_mode`, but it exposes no
+  reasoning or requested-to-actual assignment binding. The reported model is
+  recorded only as a non-authoritative hint; configured values remain requests,
+  and actual model/reasoning are `Unverified` without a separate authoritative
+  runtime evidence provider;
+- permits a bounded `SessionStart` JIT refresh on `startup`, `resume`, `clear`,
+  and `compact` that re-resolves project/worktree, authority, immediate intent,
+  and available native capabilities and loads only the smallest current policy
+  delta. It creates no persistent workflow state. Generic `SubagentStop`
+  handling may provide one bounded completion-contract feedback prompt for any
+  subagent type, then stops feedback when `stop_hook_active` is true;
 - keeps Seat `0` focused on orchestration, synthesis, acceptance, and
   reporting, with worker counts excluding the orchestrator; for substantial
   work it chooses `PARALLEL`, `PIPELINED`, `SERIAL`, or `EXPLORATORY`; logical
@@ -341,9 +366,12 @@ the project preserves that boundary and uses any safe available path: another
 supported high-level path, direct native collaboration, a same-seat retry only
 after changed conditions or a transient failure, a replacement or rescoped
 worker, a bounded manual worker prompt, then project-native tooling within
-current authority. There is no hard retry count, but unchanged relaunch loops
-are prohibited. Ask the operator only for genuine authority, destructive
-ambiguity, or an absent required resource.
+current authority. It detects capability availability at the point of use and
+automatically selects the first safe suitable option; a reversible fallback
+already within the objective and authority needs no operator reconfirmation.
+There is no hard retry count, but unchanged relaunch loops are prohibited. Ask
+the operator only for genuine authority, destructive ambiguity, or an absent
+required resource.
 
 Reversible work already authorized by the objective does not require a new
 operator confirmation. Material destructive, irreversible, security-critical,

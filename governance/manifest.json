@@ -479,7 +479,7 @@
       "id": "model-routing",
       "version": 13,
       "path": "modules/model-routing.md",
-      "digest": "sha256:c6413d3741ccf52cf43838e428cdb817bfe3417147c1f5ee6321ff3d0d1cface",
+      "digest": "sha256:d691f9ef17baf160572dddc3fdc16c5440b8e4df14baf9d9a9991e0eac569791",
       "triggers": {
         "operations": [
           "launch_subagent",
@@ -506,9 +506,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 12352,
-      "words": 1628,
-      "estimated_tokens": 3088
+      "bytes": 13914,
+      "words": 1828,
+      "estimated_tokens": 3479
     },
     {
       "id": "context-routing",
@@ -548,7 +548,7 @@
       "id": "jit-orchestration",
       "version": 7,
       "path": "modules/jit-orchestration.md",
-      "digest": "sha256:d7c1bb08d426e1be5d6aac647e71be7754385d01cda85622998ac13fd35ef0ce",
+      "digest": "sha256:bbaef762714924bb380158655aacc7192a696480f21be9e4b7e528c273c0af83",
       "triggers": {
         "operations": [
           "repository_inspection",
@@ -612,9 +612,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 13988,
-      "words": 1788,
-      "estimated_tokens": 3497
+      "bytes": 13978,
+      "words": 1787,
+      "estimated_tokens": 3495
     },
     {
       "id": "delegation",
@@ -860,7 +860,7 @@
       "id": "project-overlays",
       "version": 2,
       "path": "modules/project-overlays.md",
-      "digest": "sha256:b57ed1cb85a47a3e76c8ca050988e3dcc01b78fae43c7f08b0bf41df34c5725a",
+      "digest": "sha256:421c90417731185947b4f7f7a0884539003941cdcb144d1f6e687ac9ff51ecc8",
       "triggers": {
         "operations": [
           "implementation",
@@ -888,9 +888,9 @@
       "applicable_project_profiles": [
         "*"
       ],
-      "bytes": 2715,
-      "words": 356,
-      "estimated_tokens": 679
+      "bytes": 3567,
+      "words": 473,
+      "estimated_tokens": 892
     },
     {
       "id": "mobile-review",

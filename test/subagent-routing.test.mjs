@@ -183,7 +183,6 @@ test("medium-agent instructions do not reauthorize preapproved swarm communicati
   assert.match(skill, /registered\/ambiguous\s+binding/);
   assert.match(skill, /not project work/);
   assert.match(skill, /self-service commands/);
-  assert.match(skill, /never reload or mix routers/);
   assert.match(releaseText, /Running tasks use their ledger release/);
   assert.match(delegationText, /Never pass a parent policy acknowledgment as a child's `prior_receipt`/);
   assert.match(delegationText, /Keep ledgers separate/);
@@ -198,10 +197,9 @@ test("runtime-defect fallback blocks only the affected action and keeps repair p
 
   assert.match(delegation, /immediately\s+continues\s+through\s+existing\s+tools\s+or\s+native\s+tools\s+within\s+current\s+authority/);
   assert.match(delegation, /Agent\s+System\s+may\s+reject\s+an\s+improper\s+Seat\s+`0`\s+action\s+but\s+never\s+blocks\s+the\s+project/);
-  assert.match(modelRouting, /report or local-log\s+the runtime defect once/);
-  assert.match(modelRouting, /Do not repeat quarantine launches or wait for Agent System/);
-  assert.match(modelRouting, /failed helper or gateway never grants Seat `0` implementation/);
-  assert.match(modelRouting, /leave only the model-critical\s+delegation action blocked/);
+  assert.match(modelRouting, /accepting it is telemetry that this\s+path is not hook-gated/);
+  assert.match(modelRouting, /Do\s+not repeat unchanged diagnostic launches or wait for Agent System\s+repair/);
+  assert.match(modelRouting, /Block only that\s+action and continue unrelated work/i);
   assert.match(release, /may change only private Agent\s+System code, configuration, isolated worktrees, and private release lanes/);
   assert.match(release, /cannot mutate the reporting project, its worktrees or\s+continuity, or any public branch/);
   assert.match(release, /reporting project never waits\s+for that repair or activation/);

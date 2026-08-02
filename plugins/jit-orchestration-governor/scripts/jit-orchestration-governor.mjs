@@ -8,6 +8,8 @@ import { pathToFileURL } from "node:url";
 
 export const UNVERIFIED = "Unverified";
 export const DIAGNOSTIC_FILE = "jit-orchestration-governor.jsonl";
+export const COMPLETION_CONTRACT_PREFIX = "AGENT_COMPLETION_CONTRACT_V1 ";
+export const SESSION_REFRESH_SOURCES = Object.freeze(["startup", "resume", "clear", "compact"]);
 export const CANONICAL_ORCHESTRATION_EFFECTS = Object.freeze([
   "browser",
   "build",
@@ -29,6 +31,8 @@ export const CANONICAL_ORCHESTRATION_EFFECTS = Object.freeze([
   "test"
 ]);
 const MAX_DIAGNOSTIC_RECORD_BYTES = 2048;
+const MAX_COMPLETION_MESSAGE_BYTES = 8192;
+const MAX_COMPLETION_FIELD_CHARACTERS = 640;
 const ACTION_KEYS = new Set([
   "immediate_intent", "estimated_duration_ms", "effects", "project_authority_granted",
   "seat0_coordination", "seat0_activity", "explicitly_atomic", "low_risk", "remedy_known",
@@ -100,6 +104,15 @@ function deny(reason) {
   return { hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: reason }, systemMessage: reason };
 }
 
+function sessionContext(additionalContext) {
+  return {
+    hookSpecificOutput: {
+      hookEventName: "SessionStart",
+      additionalContext
+    }
+  };
+}
+
 function boundedAppend(root, record) {
   try {
     fs.mkdirSync(root, { recursive: true, mode: 0o700 });
@@ -153,9 +166,90 @@ export function diagnosticPath(root) {
   return path.join(path.resolve(root), DIAGNOSTIC_FILE);
 }
 
+function processSessionStart(root, input) {
+  const source = typeof input?.source === "string" ? input.source : "";
+  if (!SESSION_REFRESH_SOURCES.includes(source)) return {};
+  boundedAppend(root, {
+    outcome: "jit_bootstrap_refresh",
+    source,
+    host_activation: UNVERIFIED
+  });
+  return sessionContext(
+    `Agent System JIT bootstrap refresh (${source}): re-resolve the exact project, repository/worktree, current authority, immediate intent, effects, and available native collaboration capabilities. Read applicable AGENTS.md instructions and use the govern-codex-policy skill before a governed action to load only the smallest current policy delta. Preserve existing authority and context history. This refresh is advisory context, not execution admission or a persistent workflow.`
+  );
+}
+
+function completionContract(message) {
+  if (typeof message !== "string" || Buffer.byteLength(message) > MAX_COMPLETION_MESSAGE_BYTES) {
+    throw new Error("completion message is missing or exceeds the bounded size");
+  }
+  const marker = message.split(/\r?\n/u).find((line) => line.startsWith(COMPLETION_CONTRACT_PREFIX));
+  if (!marker) throw new Error(`missing ${COMPLETION_CONTRACT_PREFIX.trim()} marker`);
+  let parsed;
+  try {
+    parsed = JSON.parse(marker.slice(COMPLETION_CONTRACT_PREFIX.length));
+  } catch {
+    throw new Error("completion marker must contain valid JSON");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("completion marker must contain one JSON object");
+  }
+  const allowed = new Set(["status", "artifact", "validation", "residuals"]);
+  if (Object.keys(parsed).some((key) => !allowed.has(key))) {
+    throw new Error("completion marker contains an unsupported field");
+  }
+  if (parsed.status !== "complete" && parsed.status !== "blocked") {
+    throw new Error("completion status must be complete or blocked");
+  }
+  for (const field of ["artifact", "validation", "residuals"]) {
+    if (typeof parsed[field] !== "string" || !parsed[field].trim()) {
+      throw new Error(`${field} must be a non-empty string`);
+    }
+    if (parsed[field].length > MAX_COMPLETION_FIELD_CHARACTERS) {
+      throw new Error(`${field} exceeds the bounded length`);
+    }
+  }
+  return parsed;
+}
+
+function processSubagentStop(root, input) {
+  const agentType = typeof input?.agent_type === "string" && input.agent_type.trim()
+    ? input.agent_type.trim().slice(0, 160)
+    : null;
+  if (input?.stop_hook_active === true) {
+    boundedAppend(root, {
+      outcome: "completion_feedback_exhausted",
+      agent_type: agentType,
+      host_activation: UNVERIFIED
+    });
+    return {};
+  }
+  try {
+    const contract = completionContract(input?.last_assistant_message);
+    boundedAppend(root, {
+      outcome: "completion_contract_observed",
+      agent_type: agentType,
+      completion_status: contract.status,
+      host_activation: UNVERIFIED
+    });
+    return {};
+  } catch (error) {
+    const reason = `Return one bounded completion line before stopping: ${COMPLETION_CONTRACT_PREFIX}{"status":"complete|blocked","artifact":"path or commit, or none","validation":"commands/results, or not run","residuals":"remaining risk/blocker, or none"}. ${error.message}.`;
+    boundedAppend(root, {
+      outcome: "completion_feedback_requested",
+      agent_type: agentType,
+      reason: error.message,
+      host_activation: UNVERIFIED
+    });
+    return { decision: "block", reason };
+  }
+}
+
 export function processHook(input, options = {}) {
-  if (input?.hook_event_name !== "PreToolUse") return {};
   const root = stateRoot(options.stateRoot);
+  if (input?.hook_event_name === "SessionStart") return processSessionStart(root, input);
+  if (input?.hook_event_name === "SubagentStop") return processSubagentStop(root, input);
+  if (input?.hook_event_name !== "PreToolUse") return {};
   const metadata = actionMetadata(input);
   if (!metadata || !isMaterial(metadata.action)) {
     if (metadata && isExplicitSeat0(metadata.seat)) {

@@ -19,9 +19,10 @@ status unknown**.
 
 | Failure class family | Disposition | Evidence boundary |
 | --- | --- | --- |
-| Runtime enforcement and host integration | `unverifiable` / `runtime_limited` | Local application behavior is not authoritative host-interception proof. |
+| Runtime enforcement and host integration | `runtime_limited` | Local application behavior is not authoritative host-interception proof; ordinary direct native workers remain available without a local gate. |
 | Local hook coverage | `mitigated` / `runtime_limited` | Official documentation supports `PreToolUse` matching local function tools, including `spawn_agent` via the `Agent` alias; specialized tool paths can opt out. |
-| Subagent lifecycle hooks | `unverifiable` | `SubagentStart` can add context but `continue: false` does not deny a subagent launch. |
+| Subagent lifecycle hooks | `runtime_limited` | `SubagentStart` can add passive context but `continue: false` does not deny a subagent launch; it cannot attest requested-to-actual model or reasoning binding. |
+| Native worktree ownership | `unverifiable` | Codex-managed chat worktrees and Agent-System-owned child worktrees are distinct ownership models; native association is not an ownership receipt. |
 | App-server telemetry and collaboration | `mitigated` | Official app-server documentation exposes thread usage updates, account usage reads, per-turn token categories, and collaboration items that can carry `newThreadId`; local use remains separately evidenced. |
 | Screenshot, profile, and label symptoms | `ticket_status_unknown` | The reviewed current app 26.727 changelog does not claim fixes for these symptoms. Absence of a changelog claim is not proof of an unresolved defect. |
 | Local workflow validation | `mitigated` | Repository checks can demonstrate bounded local behavior only. |
@@ -39,7 +40,12 @@ authoritative runtime evidence.
 OpenAI's official [Codex hooks manual](https://learn.chatgpt.com/docs/hooks.md)
 documents `PreToolUse` coverage for local function tools (with `spawn_agent`
 matching `Agent`), the non-denying `SubagentStart` boundary, and specialized
-tool-path opt-outs. The official [Codex App Server manual](https://learn.chatgpt.com/docs/app-server.md)
+tool-path opt-outs. Direct native workers therefore remain normal workers;
+explicit model and reasoning values are requested configuration, and actual
+values remain `Unverified` without authoritative runtime selection metadata.
+Codex-managed chat worktrees are distinct from Agent-System-owned child
+worktrees; a native association remains `Unverified` unless the host provides
+an authoritative ownership receipt. The official [Codex App Server manual](https://learn.chatgpt.com/docs/app-server.md)
 documents `thread/tokenUsage/updated`, `account/usage/read`, per-turn input,
 cached-input, output, and reasoning token usage, and collaboration items with
 an optional `newThreadId`. The current app 26.727 changelog review contains no
@@ -52,3 +58,6 @@ evidence.
 Only a future, approved, bounded reproduction with authoritative host metadata
 may change a host-runtime classification. It must update private evidence first
 and must not disclose private identifiers or contents in a tracked artifact.
+After a hook-definition change, reload the Codex app and review `/hooks` trust
+state before treating hook coverage as current; neither step proves native
+interception or changes a ticket classification.

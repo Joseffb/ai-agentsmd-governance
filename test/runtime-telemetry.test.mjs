@@ -75,6 +75,29 @@ test("runtime ingestion emits schema-recognized per-turn token/quota facts, bind
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test("runtime ingestion normalizes unambiguous cache token aliases and downgrades conflicting observations", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-runtime-cache-alias-"));
+  const sessions = path.join(root, "sessions");
+  const projectRoot = path.join(root, "project");
+  const ledger = path.join(root, "events.jsonl");
+  fs.mkdirSync(sessions);
+  fs.mkdirSync(projectRoot);
+  fs.writeFileSync(path.join(sessions, "cache-alias.jsonl"), [
+    JSON.stringify({ type: "session_meta", timestamp: "2026-07-28T00:00:00.000Z", payload: { id: "cache-session", session_id: "cache-task", cwd: projectRoot } }),
+    JSON.stringify({ type: "event_msg", timestamp: "2026-07-28T00:00:01.000Z", payload: { type: "token_count", info: { last_token_usage: { input_tokens: 10, cached_tokens: 4, cache_write_tokens: 2, total_tokens: 12 } } } }),
+    JSON.stringify({ type: "event_msg", timestamp: "2026-07-28T00:00:02.000Z", payload: { type: "token_count", info: { last_token_usage: { input_tokens: 10, cached_input_tokens: 3, cached_tokens: 4, total_tokens: 12 } } } })
+  ].join("\n"));
+  await ingestRuntimeTelemetry({ sessionRoot: sessions, project: "alpha", projectPath: projectRoot, thread: "cache-task", ledger });
+  const usage = fs.readFileSync(ledger, "utf8").trim().split("\n").map(JSON.parse).filter((event) => event.type === "token.usage");
+  assert.equal(usage.length, 2);
+  assert.deepEqual(usage[0].cached_input_tokens, 4);
+  assert.deepEqual(usage[0].cache_write_input_tokens, 2);
+  assert.equal(usage[0].coverage_status, "complete");
+  assert.equal(usage[1].cached_input_tokens, undefined);
+  assert.equal(usage[1].coverage_status, "partial");
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test("runtime ingestion refuses unbound or misattributed session transcripts", async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-runtime-binding-"));
   const input = fixture(root);

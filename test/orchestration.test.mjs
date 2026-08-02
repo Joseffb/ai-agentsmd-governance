@@ -529,7 +529,7 @@ test("bundle records the explicit RC-3 identity, decision, worker, and execution
     assert.equal(worker.seat, index + 1);
     assert.deepEqual(worker.assignment_ids, worker.item_ids);
     assert.equal(worker.requested_model, "gpt-5.6-terra");
-    assert.equal(worker.requested_reasoning_raw, "high");
+    assert.equal(worker.requested_reasoning_raw, "max");
     assert.equal(worker.actual_model, "Unverified");
     assert.equal(worker.actual_reasoning_raw, "Unverified");
     assert.deepEqual(worker.prompt_envelope.scope, { item_ids: worker.item_ids, write_scopes: worker.write_scopes });
@@ -539,7 +539,7 @@ test("bundle records the explicit RC-3 identity, decision, worker, and execution
       "incomplete_required_validation"
     ]);
     assert.equal(worker.prompt_envelope.requested_model, "gpt-5.6-terra");
-    assert.equal(worker.prompt_envelope.requested_reasoning_raw, "high");
+    assert.equal(worker.prompt_envelope.requested_reasoning_raw, "max");
     assert.equal(worker.prompt_envelope.execution_id, bundle.execution_id);
     assert.equal(worker.prompt_envelope.correlation_id, bundle.correlation_id);
     assert.equal(worker.prompt_envelope.causation_id, bundle.causation_id);
@@ -769,14 +769,14 @@ test("model recommendation chooses the lowest declared reliable tier", () => {
   });
   assert.deepEqual(recommendLowestReliableModel({ complexity: "routine" }), {
     model: "gpt-5.6-luna",
-    reasoning: "low",
+    reasoning: "max",
     rationale: "lowest known recommendation for the declared reasoning class",
     actual_model: "Unverified",
     actual_reasoning_raw: "Unverified"
   });
   assert.deepEqual(recommendLowestReliableModel({ complexity: "complex" }), {
     model: "gpt-5.6-terra",
-    reasoning: "high",
+    reasoning: "max",
     rationale: "lowest known recommendation for the declared reasoning class",
     actual_model: "Unverified",
     actual_reasoning_raw: "Unverified"
@@ -789,6 +789,22 @@ test("model recommendation chooses the lowest declared reliable tier", () => {
     actual_reasoning_raw: "Unverified"
   });
   assert.deepEqual(recommendLowestReliableModel({ complexity: "mechanical", adversarial: true }), {
+    model: "gpt-5.6-sol",
+    reasoning: "high",
+    rationale: "lowest known recommendation for the declared reasoning class",
+    actual_model: "Unverified",
+    actual_reasoning_raw: "Unverified"
+  });
+  for (const effect of ["database_mutation", "destructive_operation", "migration"]) {
+    assert.deepEqual(recommendLowestReliableModel({ complexity: "routine", effects: [effect] }), {
+      model: "gpt-5.6-terra",
+      reasoning: "max",
+      rationale: "lowest known recommendation for the declared reasoning class",
+      actual_model: "Unverified",
+      actual_reasoning_raw: "Unverified"
+    }, effect);
+  }
+  assert.deepEqual(recommendLowestReliableModel({ complexity: "routine", effects: ["security"] }), {
     model: "gpt-5.6-sol",
     reasoning: "high",
     rationale: "lowest known recommendation for the declared reasoning class",
@@ -879,7 +895,7 @@ test("Spark selection and Terra-low fallback require proven eligibility", () => 
   for (const availability of ["authoritatively_unavailable", "separate_pool_exhausted"]) {
     const bundle = buildOrchestrationBundle({ ...base, spark_eligibility: { ...base.spark_eligibility, availability } });
     assert.equal(bundle.model_recommendation.model, "gpt-5.6-terra", availability);
-    assert.equal(bundle.model_recommendation.reasoning, "high", availability);
+    assert.equal(bundle.model_recommendation.reasoning, "max", availability);
     assert.equal(bundle.model_recommendation.spark_gate.actual_availability, "Unverified", availability);
     assert.equal(validateOrchestrationBundle(bundle), true, availability);
   }
@@ -893,7 +909,7 @@ test("Spark selection and Terra-low fallback require proven eligibility", () => 
 
   const absent = buildOrchestrationBundle({ ...base, spark_eligibility: undefined });
   assert.equal(absent.model_recommendation.model, "gpt-5.6-terra");
-  assert.equal(absent.model_recommendation.reasoning, "high");
+  assert.equal(absent.model_recommendation.reasoning, "max");
   assert.deepEqual(absent.model_recommendation.spark_gate, {
     work_kind: "unexposed",
     requires_judgment: true,
@@ -908,8 +924,8 @@ test("Spark selection and Terra-low fallback require proven eligibility", () => 
       effects: ["source_mutation", effect],
       spark_eligibility: undefined
     });
-    assert.equal(excluded.model_recommendation.model, "gpt-5.6-terra", effect);
-    assert.equal(excluded.model_recommendation.reasoning, "high", effect);
+    assert.equal(excluded.model_recommendation.model, effect === "security" ? "gpt-5.6-sol" : "gpt-5.6-terra", effect);
+    assert.equal(excluded.model_recommendation.reasoning, effect === "security" ? "high" : "max", effect);
     assert.equal(excluded.model_recommendation.spark_gate.requires_judgment, true, effect);
     assert.deepEqual(excluded.model_recommendation.spark_gate.excluded_effects, [effect], effect);
     assert.equal(validateOrchestrationBundle(excluded), true, effect);

@@ -5,8 +5,8 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { resolveOrchestrationReleaseIdentity } from "../lib/orchestration-cli.mjs";
-import { bundleDigest } from "../lib/orchestration.mjs";
+import { composeWorkerMessage, resolveOrchestrationReleaseIdentity } from "../lib/orchestration-cli.mjs";
+import { bundleDigest, canonicalJson } from "../lib/orchestration.mjs";
 
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cli = path.join(repository, "bin", "acg.mjs");
@@ -40,11 +40,44 @@ function run(args, environment = {}) {
   });
 }
 
-function parseLaunchEnvelope(report) {
-  const firstLine = report.native_quarantine.spawn_request.message.split("\n", 1)[0];
-  assert.equal(firstLine.startsWith("MODEL_ROUTING_GATE_V1 "), true);
-  return JSON.parse(firstLine.slice("MODEL_ROUTING_GATE_V1 ".length));
+function parseDirectAssignment(report) {
+  const delimiter = "CANONICAL_ASSIGNMENT_JSON:\n";
+  const message = report.native_assignment.start_request.message;
+  const index = message.indexOf(delimiter);
+  assert.notEqual(index, -1);
+  return JSON.parse(message.slice(index + delimiter.length));
 }
+
+test("worker message keeps a byte-stable instruction prefix and canonical volatile suffix", () => {
+  const first = {
+    project_identity: { project: "alpha", project_root: "/private/alpha" },
+    execution_id: "execution-a",
+    worker_seat: 1,
+    routing_selection: { requested_model: "gpt-5.6-terra" }
+  };
+  const second = {
+    project_identity: { project: "beta", project_root: "/private/beta" },
+    execution_id: "execution-b",
+    worker_seat: 2,
+    routing_selection: { requested_model: "gpt-5.6-sol" }
+  };
+  const firstSentinel = "ACG_ORCHESTRATION_WORKER_RESULT:first";
+  const secondSentinel = "ACG_ORCHESTRATION_WORKER_RESULT:second";
+  const firstMessage = composeWorkerMessage({ assignmentCore: first, resultSentinel: firstSentinel });
+  const secondMessage = composeWorkerMessage({ assignmentCore: second, resultSentinel: secondSentinel });
+  const delimiter = "CANONICAL_ASSIGNMENT_JSON:\n";
+  const firstDelimiter = firstMessage.indexOf(delimiter) + delimiter.length;
+  const secondDelimiter = secondMessage.indexOf(delimiter) + delimiter.length;
+  assert.equal(firstMessage.slice(0, firstDelimiter), secondMessage.slice(0, secondDelimiter));
+  assert.notEqual(firstMessage.slice(firstDelimiter), secondMessage.slice(secondDelimiter));
+  assert.equal(firstMessage.slice(firstDelimiter), canonicalJson({ ...first, required_final_sentinel: firstSentinel }));
+  assert.equal(secondMessage.slice(secondDelimiter), canonicalJson({ ...second, required_final_sentinel: secondSentinel }));
+  assert.equal(firstMessage.slice(0, firstDelimiter).includes("alpha"), false, "volatile project facts stay outside the stable prefix");
+  assert.equal(firstMessage.includes(firstSentinel), true);
+  for (const forbidden of ["prompt_cache_key", "breakpoints", "cache_breakpoints", "cache_control"]) {
+    assert.equal(firstMessage.includes(forbidden), false, forbidden);
+  }
+});
 
 function stripExecutionIdentity(value) {
   if (Array.isArray(value)) return value.map(stripExecutionIdentity);
@@ -140,7 +173,7 @@ test("orchestrate next accepts only a verified private predecessor and binds its
   assert.match(rejected.stderr, /bundle digest is invalid/);
 });
 
-test("orchestrate launch emits and persists an exact Spark-selectable native package", (t) => {
+test("orchestrate launch blocks direct mutating spawns pending seat assignment and child preflight", (t) => {
   const { root, project, environment } = fixture(t);
   const facts = writeFacts(root, {
     estimated_duration_ms: 300001,
@@ -165,55 +198,54 @@ test("orchestrate launch emits and persists an exact Spark-selectable native pac
   assert.equal(report.bundle_digest, bundleReport.bundle_digest);
   assert.equal(report.worker_seat, 1);
   assert.equal(report.availability_evidence, "Unverified");
-  assert.equal(report.native_quarantine.pass_spawn_request_verbatim, true);
-  assert.equal(report.native_quarantine.spawn_request.fork_context, false);
-  assert.equal(report.native_quarantine.spawn_request.model, "gpt-5.3-codex-spark");
-  assert.equal(report.native_quarantine.spawn_request.reasoning_effort, "low");
-  const envelope = parseLaunchEnvelope(report);
-  assert.equal(envelope.seat_id, "seat-1");
-  assert.equal(envelope.composer_assignment.bundle_path, bundleReport.bundle_path);
-  assert.equal(envelope.composer_assignment.bundle_digest, bundleReport.bundle_digest);
-  assert.match(envelope.composer_assignment.execution_id, /^execution-[a-f0-9]{32}$/u);
-  assert.equal(envelope.composer_assignment.worker_seat, 1);
-  assert.deepEqual(envelope.composer_assignment.worker_assignment_ids, ["bounded-edit"]);
-  assert.match(envelope.composer_assignment.worker_prompt_envelope_sha256, /^sha256:[a-f0-9]{64}$/u);
-  assert.equal(envelope.composer_assignment.availability_evidence, "Unverified");
-  assert.equal(envelope.composer_assignment.requested_model, "gpt-5.3-codex-spark");
-  assert.equal(envelope.composer_assignment.requested_reasoning_raw, "low");
-  assert.deepEqual(envelope.composer_assignment.spark_gate, {
-    work_kind: "mechanical_edit",
-    requires_judgment: false,
-    availability: "selectable",
-    actual_availability: "Unverified",
-    worker_required: true,
-    excluded_effects: []
+  assert.equal(report.contract, "native_mutating_worker_isolation_required");
+  assert.equal(report.admission, "blocked_pending_verified_worktree_and_child_preflight");
+  assert.equal(report.requested_model, "gpt-5.3-codex-spark");
+  assert.equal(report.requested_reasoning_raw, "low");
+  assert.equal(report.actual_model, "Unverified");
+  assert.equal(report.actual_reasoning_raw, "Unverified");
+  assert.equal(report.native_assignment, null);
+  assert.equal(report.admitted_assignment, null);
+  assert.deepEqual(report.high_level_next_action, {
+    command: "seat assign",
+    project: "fixture",
+    repository: fs.realpathSync(project),
+    bundle_path: bundleReport.bundle_path,
+    worker_seat: "1",
+    write_scopes: ["lib/bounded-edit.mjs"],
+    requested_model: "gpt-5.3-codex-spark",
+    requested_reasoning_raw: "low",
+    required_unbound_inputs: ["base", "worktree_root"],
+    child_preflight: {
+      command: "seat preflight",
+      assignment_source: "seat_assign.assignment_package",
+      required_before_mutation: true
+    },
+    no_guess_contract: "Select an exact base commit and approved worktree root through seat assign; do not construct a native spawn request."
   });
+  assert.equal(JSON.stringify(report).includes("start_request"), false);
+  assert.equal(fs.readdirSync(path.dirname(bundleReport.bundle_path)).some((entry) => entry.includes(".seat-1.launch.json")), false);
+});
+
+test("orchestrate launch keeps direct native read-only discovery usable", (t) => {
+  const { root, project, environment } = fixture(t);
+  const facts = writeFacts(root, {
+    estimated_duration_ms: 300001,
+    effects: ["filesystem_mutation"],
+    decomposition_complete: false,
+    coherent_chain: false,
+    work_items: [{ id: "bounded-discovery", write_scopes: ["lib/bounded-discovery.mjs"] }]
+  });
+  const next = run(["orchestrate", "next", "--project", "fixture", "--path", project, "--intent", "implementation", "--facts", facts], environment);
+  assert.equal(next.status, 0, next.stderr);
+  const bundleReport = JSON.parse(next.stdout);
+  const launch = run(["orchestrate", "launch", "--bundle", bundleReport.bundle_path, "--seat", "1"], environment);
+  assert.equal(launch.status, 0, launch.stderr);
+  const report = JSON.parse(launch.stdout);
+  assert.equal(report.native_assignment.contract, "native_direct_worker_assignment");
+  assert.equal(report.native_assignment.start_request.task_name, "worker-seat-1");
   assert.equal(report.admitted_assignment.starts_new_turn, true);
-  assert.equal(report.admitted_assignment.pass_message_verbatim, true);
-  assert.deepEqual(
-    report.admitted_assignment.worker_prompt_envelope,
-    JSON.parse(fs.readFileSync(bundleReport.bundle_path, "utf8")).topology.workers[0].prompt_envelope
-  );
-  assert.match(report.admitted_assignment.message, new RegExp(`${report.admitted_assignment.required_final_sentinel}$`, "u"));
-  assert.equal(fs.statSync(report.launch_package_path).mode & 0o077, 0);
-  assert.deepEqual(JSON.parse(fs.readFileSync(report.launch_package_path, "utf8")), {
-    schema_version: report.schema_version,
-    bundle_path: report.bundle_path,
-    bundle_digest: report.bundle_digest,
-    execution_id: report.execution_id,
-    correlation_id: report.correlation_id,
-    causation_id: report.causation_id,
-    worker_seat: report.worker_seat,
-    availability_evidence: report.availability_evidence,
-    native_quarantine: report.native_quarantine,
-    native_quarantine_instruction: report.native_quarantine_instruction,
-    admitted_assignment: report.admitted_assignment,
-    launch_package_digest: report.launch_package_digest
-  });
-  const serialized = JSON.stringify(report);
-  for (const forbidden of ["source_content", "model_output", "credential", "api_key", "hidden_reasoning"]) {
-    assert.doesNotMatch(serialized, new RegExp(forbidden, "iu"), forbidden);
-  }
+  assert.equal(parseDirectAssignment(report).worker_prompt_envelope.isolation_effects, "read_only_discovery_no_project_mutation");
 });
 
 test("orchestrate launch separates omitted eligibility from proven unknown Terra fallback", (t) => {
@@ -232,14 +264,11 @@ test("orchestrate launch separates omitted eligibility from proven unknown Terra
   const launch = run(["orchestrate", "launch", "--bundle", bundleReport.bundle_path, "--seat", "1"], environment);
   assert.equal(launch.status, 0, launch.stderr);
   const report = JSON.parse(launch.stdout);
-  const composer = parseLaunchEnvelope(report).composer_assignment;
-  assert.equal(report.native_quarantine.spawn_request.model, "gpt-5.6-terra");
-  assert.equal(report.native_quarantine.spawn_request.reasoning_effort, "high");
+  const sparkGate = JSON.parse(fs.readFileSync(bundleReport.bundle_path, "utf8")).model_recommendation.spark_gate;
+  assert.equal(report.requested_model, "gpt-5.6-terra");
+  assert.equal(report.requested_reasoning_raw, "max");
   assert.equal(report.availability_evidence, "Unverified");
-  assert.equal(composer.requested_model, "gpt-5.6-terra");
-  assert.equal(composer.requested_reasoning_raw, "high");
-  assert.equal(composer.availability_evidence, "Unverified");
-  assert.deepEqual(composer.spark_gate, {
+  assert.deepEqual(sparkGate, {
     work_kind: "unexposed",
     requires_judgment: true,
     availability: "unknown_or_unexposed",
@@ -263,11 +292,11 @@ test("orchestrate launch separates omitted eligibility from proven unknown Terra
     const excludedLaunch = run(["orchestrate", "launch", "--bundle", excludedBundle.bundle_path, "--seat", "1"], environment);
     assert.equal(excludedLaunch.status, 0, excludedLaunch.stderr);
     const excludedReport = JSON.parse(excludedLaunch.stdout);
-    const excludedComposer = parseLaunchEnvelope(excludedReport).composer_assignment;
-    assert.equal(excludedReport.native_quarantine.spawn_request.model, "gpt-5.6-terra", effect);
-    assert.equal(excludedReport.native_quarantine.spawn_request.reasoning_effort, "high", effect);
-    assert.deepEqual(excludedComposer.spark_gate.excluded_effects, [effect], effect);
-    assert.equal(excludedComposer.spark_gate.requires_judgment, true, effect);
+    const excludedSparkGate = JSON.parse(fs.readFileSync(excludedBundle.bundle_path, "utf8")).model_recommendation.spark_gate;
+    assert.equal(excludedReport.requested_model, effect === "security" ? "gpt-5.6-sol" : "gpt-5.6-terra", effect);
+    assert.equal(excludedReport.requested_reasoning_raw, effect === "security" ? "high" : "max", effect);
+    assert.deepEqual(excludedSparkGate.excluded_effects, [effect], effect);
+    assert.equal(excludedSparkGate.requires_judgment, true, effect);
   }
 
   for (const availability of ["unknown_or_unexposed"]) {
@@ -290,13 +319,12 @@ test("orchestrate launch separates omitted eligibility from proven unknown Terra
     const explicitLaunch = run(["orchestrate", "launch", "--bundle", explicitBundle.bundle_path, "--seat", "1"], environment);
     assert.equal(explicitLaunch.status, 0, explicitLaunch.stderr);
     const explicitReport = JSON.parse(explicitLaunch.stdout);
-    const explicitComposer = parseLaunchEnvelope(explicitReport).composer_assignment;
-    assert.equal(explicitReport.native_quarantine.spawn_request.model, "gpt-5.6-terra", availability);
-    assert.equal(explicitReport.native_quarantine.spawn_request.reasoning_effort, "low", availability);
+    const explicitSparkGate = JSON.parse(fs.readFileSync(explicitBundle.bundle_path, "utf8")).model_recommendation.spark_gate;
+    assert.equal(explicitReport.requested_model, "gpt-5.6-terra", availability);
+    assert.equal(explicitReport.requested_reasoning_raw, "low", availability);
     assert.equal(explicitReport.availability_evidence, "Unverified", availability);
-    assert.equal(explicitComposer.availability_evidence, "Unverified", availability);
-    assert.equal(explicitComposer.spark_gate.availability, availability);
-    assert.equal(explicitComposer.spark_gate.actual_availability, "Unverified");
+    assert.equal(explicitSparkGate.availability, availability);
+    assert.equal(explicitSparkGate.actual_availability, "Unverified");
   }
 
   for (const availability of ["authoritatively_unavailable", "separate_pool_exhausted"]) {
@@ -342,11 +370,11 @@ test("orchestrate launch rejects legacy, invalid-seat, tampered, exposed, and no
 
   const original = JSON.parse(fs.readFileSync(workerReport.bundle_path, "utf8"));
   const tampered = structuredClone(original);
-  tampered.topology.workers[0].requested_model = "gpt-5.6-sol";
+  tampered.topology.workers[0].prompt_envelope.isolation_effects = "read_only_discovery_no_project_mutation";
   fs.writeFileSync(workerReport.bundle_path, JSON.stringify(tampered), { mode: 0o600 });
   const rejectedTamper = run(["orchestrate", "launch", "--bundle", workerReport.bundle_path, "--seat", "1"], environment);
   assert.notEqual(rejectedTamper.status, 0);
-  assert.match(rejectedTamper.stderr, /bundle digest is invalid|does not match the model recommendation/u);
+  assert.match(rejectedTamper.stderr, /bundle digest is invalid/u);
 
   fs.writeFileSync(workerReport.bundle_path, JSON.stringify(original), { mode: 0o600 });
   fs.chmodSync(workerReport.bundle_path, 0o644);
