@@ -64,7 +64,7 @@ test("complete policy tree verifies", () => {
   assert.equal(result.module_count, 17);
   assert.equal(result.traceability_rules, 0);
   assert.equal(result.traceability, "optional_local_migration_provenance");
-  assert.equal(result.system_version, "3.4.1");
+  assert.equal(result.system_version, "3.4.2");
   assert.equal(result.display_channel, "RC-3.0");
 });
 
@@ -75,8 +75,8 @@ test("canary routing contract passes", () => {
 });
 
 test("portable Spark guidance preserves deterministic mechanics without quarantining normal native workers", () => {
-  assert.equal(readJson(path.join(codeRoot, "package.json")).version, "3.4.1");
-  assert.equal(readJson(path.join(codeRoot, "package-lock.json")).version, "3.4.1");
+  assert.equal(readJson(path.join(codeRoot, "package.json")).version, "3.4.2");
+  assert.equal(readJson(path.join(codeRoot, "package-lock.json")).version, "3.4.2");
   const readme = fs.readFileSync(path.join(codeRoot, "README.md"), "utf8");
   const role = fs.readFileSync(path.join(codeRoot, "docs", "agent-system-role.md"), "utf8");
   const orchestration = fs.readFileSync(path.join(policyRoot, "modules", "jit-orchestration.md"), "utf8");

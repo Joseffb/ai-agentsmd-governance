@@ -118,6 +118,29 @@ test("prepare rejects ambiguous bases and unsafe worktree targets", () => {
   }
 });
 
+test("prepare rejects an unregistered copy that forges a registered worktree's Git metadata", () => {
+  const value = fixture();
+  try {
+    const registered = path.join(value.worktrees, "registered");
+    const forged = path.join(value.worktrees, "forged");
+    git(value.repository, ["worktree", "add", "-b", "codex/existing-fake/writer", registered, value.base]);
+    fs.cpSync(registered, forged, { recursive: true });
+    assert.throws(() => execFileSync(process.execPath, [
+      helper, "prepare",
+      "--project", "fixture",
+      "--repository", value.repository,
+      "--base", value.base,
+      "--work-id", "existing-fake",
+      "--seat", "writer",
+      "--worktree", forged,
+      "--allow-existing-clean-worktree", "yes",
+      "--write-scope", "README.md"
+    ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }), /not registered by the canonical repository/);
+  } finally {
+    value.cleanup();
+  }
+});
+
 test("invalid generated declarations leave no branch or worktree", () => {
   const value = fixture();
   try {

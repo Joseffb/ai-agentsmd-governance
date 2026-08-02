@@ -62,6 +62,29 @@ function makeActivationRelease(root, options = {}) {
   return { source, releaseId };
 }
 
+function makeVerifiedLegacyPluginRelease(source, releaseId, plugin, version) {
+  const releases = path.join(source, ".runtime", "releases");
+  const candidate = path.join(releases, releaseId);
+  const staging = path.join(releases, `.legacy-${plugin}-${process.pid}-${crypto.randomUUID()}`);
+  fs.cpSync(candidate, staging, { recursive: true });
+  const manifestFile = path.join(staging, "plugins", plugin, ".codex-plugin", "plugin.json");
+  const manifest = readJson(manifestFile);
+  manifest.version = version;
+  fs.writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`);
+  const metadata = readJson(path.join(staging, "release.json"));
+  fs.rmSync(path.join(staging, "release.json"));
+  const { release_id: _releaseId, content_sha256: _contentSha256, ...payload } = metadata;
+  const digest = bundleDigest(staging);
+  payload.bundle_sha256 = `sha256:${digest.sha256}`;
+  payload.files = digest.records;
+  const contentSha = sha256(canonicalJson(payload));
+  const legacyReleaseId = `v1-${contentSha.slice(0, 16)}`;
+  fs.writeFileSync(path.join(staging, "release.json"), `${JSON.stringify({ release_id: legacyReleaseId, content_sha256: `sha256:${contentSha}`, ...payload }, null, 2)}\n`);
+  const finalRoot = path.join(releases, legacyReleaseId);
+  fs.renameSync(staging, finalRoot);
+  return finalRoot;
+}
+
 function makeFakeCodex(root) {
   const executable = path.join(root, "fake-codex.mjs");
   fs.writeFileSync(executable, `#!/usr/bin/env node
@@ -1124,12 +1147,14 @@ test("activation migrates exact or older evidence-matching Agent System plugins 
   const codexExecutable = makeFakeCodex(root);
   const jitLegacy = makeLegacyPluginSource(root, "jit-orchestration-governor", "3.0.0-rc.3");
   const modelLegacy = makeLegacyPluginSource(root, "model-routing-gate", "1.2.0+codex.20260802");
-  cacheLegacyPluginSource(codexHome, "personal", "jit-orchestration-governor", "3.0.0-rc.1", jitLegacy);
-  cacheLegacyPluginSource(codexHome, "personal", "model-routing-gate", "1.2.0+codex.20260802", modelLegacy);
+  const priorJitRelease = makeVerifiedLegacyPluginRelease(source, releaseId, "jit-orchestration-governor", "3.0.0-rc.2");
+  const candidatePlugins = path.join(source, ".runtime", "releases", releaseId, "plugins");
+  cacheLegacyPluginSource(codexHome, "personal", "jit-orchestration-governor", "3.0.0-rc.2", path.join(priorJitRelease, "plugins", "jit-orchestration-governor"));
+  cacheLegacyPluginSource(codexHome, "personal", "model-routing-gate", "1.2.0+codex.20260802", path.join(candidatePlugins, "model-routing-gate"));
   writeFakeCodexState(codexHome, {
     marketplaces: { personal: path.join(root, "personal-marketplace") },
     installed: {
-      "jit-orchestration-governor@personal": { pluginId: "jit-orchestration-governor@personal", name: "jit-orchestration-governor", marketplaceName: "personal", version: "3.0.0-rc.1", installed: true, enabled: true, source: { path: jitLegacy } },
+      "jit-orchestration-governor@personal": { pluginId: "jit-orchestration-governor@personal", name: "jit-orchestration-governor", marketplaceName: "personal", version: "3.0.0-rc.2", installed: true, enabled: true, source: { path: jitLegacy } },
       "model-routing-gate@personal": { pluginId: "model-routing-gate@personal", name: "model-routing-gate", marketplaceName: "personal", version: "1.2.0+codex.20260802", installed: true, enabled: true, source: { path: modelLegacy } }
     },
     events: []
@@ -1138,7 +1163,7 @@ test("activation migrates exact or older evidence-matching Agent System plugins 
 
   const result = activateRelease(source, releaseId, home, { codexHome, codexExecutable });
   assert.deepEqual(result.mandatory_plugin_activation.migrated_legacy_plugins, [
-    { plugin_id: "jit-orchestration-governor@personal", version: "3.0.0-rc.1" },
+    { plugin_id: "jit-orchestration-governor@personal", version: "3.0.0-rc.2" },
     { plugin_id: "model-routing-gate@personal", version: "1.2.0+codex.20260802" }
   ]);
   const state = readJson(path.join(codexHome, "fake-codex-state.json"));
@@ -1149,13 +1174,13 @@ test("activation migrates exact or older evidence-matching Agent System plugins 
   assert.equal(path.basename(fs.realpathSync(path.join(source, ".runtime", "current"))), releaseId);
 });
 
-test("an unverifiable same-name plugin conflict fails before activation with a removal command", (t) => {
+test("a spoofed same-name manifest with a different tree fails closed and remains installed", (t) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-plugin-conflict-"));
   const home = path.join(root, "home");
   const codexHome = path.join(root, "isolated-codex-home");
   const { source, releaseId } = makeActivationRelease(root);
   const codexExecutable = makeFakeCodex(root);
-  const unknown = makeLegacyPluginSource(root, "jit-orchestration-governor", "3.0.0-rc.1", "Another Publisher");
+  const unknown = makeLegacyPluginSource(root, "jit-orchestration-governor", "3.0.0-rc.3");
   writeFakeCodexState(codexHome, {
     marketplaces: { personal: path.join(root, "personal-marketplace") },
     installed: {
@@ -1171,6 +1196,191 @@ test("an unverifiable same-name plugin conflict fails before activation with a r
   );
   const state = readJson(path.join(codexHome, "fake-codex-state.json"));
   assert.equal(Object.hasOwn(state.installed, "jit-orchestration-governor@personal"), true);
+  assert.equal(state.events.includes("plugin remove jit-orchestration-governor@personal --json"), false);
+  assert.equal(fs.existsSync(path.join(source, ".runtime", "current")), false);
+});
+
+test("a trusted plugin tree with an arbitrary selector fails listing integrity before removal", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-plugin-selector-"));
+  const home = path.join(root, "home");
+  const codexHome = path.join(root, "isolated-codex-home");
+  const { source, releaseId } = makeActivationRelease(root);
+  const codexExecutable = makeFakeCodex(root);
+  const plugin = "jit-orchestration-governor";
+  const version = "3.0.0-rc.3";
+  const trustedPlugin = path.join(source, ".runtime", "releases", releaseId, "plugins", plugin);
+  cacheLegacyPluginSource(codexHome, "personal", plugin, version, trustedPlugin);
+  writeFakeCodexState(codexHome, {
+    marketplaces: { personal: path.join(root, "personal-marketplace") },
+    installed: {
+      "arbitrary-state-key": {
+        pluginId: "unrelated-plugin@personal",
+        name: plugin,
+        marketplaceName: "personal",
+        version,
+        installed: true,
+        enabled: true,
+        source: { path: trustedPlugin }
+      }
+    },
+    events: []
+  });
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  assert.throws(
+    () => activateRelease(source, releaseId, home, { codexHome, codexExecutable }),
+    /Mandatory plugin listing integrity conflict.*no plugin was removed/
+  );
+  const state = readJson(path.join(codexHome, "fake-codex-state.json"));
+  assert.equal(Object.hasOwn(state.installed, "arbitrary-state-key"), true);
+  assert.equal(state.events.some((event) => event.startsWith("plugin remove ")), false);
+  assert.equal(fs.existsSync(path.join(source, ".runtime", "current")), false);
+
+  const duplicate = {
+    pluginId: `${plugin}@personal`,
+    name: plugin,
+    marketplaceName: "personal",
+    version,
+    installed: true,
+    enabled: true,
+    source: { path: trustedPlugin }
+  };
+  writeFakeCodexState(codexHome, {
+    marketplaces: { personal: path.join(root, "personal-marketplace") },
+    installed: { "duplicate-one": duplicate, "duplicate-two": duplicate },
+    events: []
+  });
+  assert.throws(
+    () => activateRelease(source, releaseId, home, { codexHome, codexExecutable }),
+    /Duplicate mandatory plugin listing.*no plugin was removed/
+  );
+  const duplicateState = readJson(path.join(codexHome, "fake-codex-state.json"));
+  assert.deepEqual(Object.keys(duplicateState.installed).sort(), ["duplicate-one", "duplicate-two"]);
+  assert.equal(duplicateState.events.some((event) => event.startsWith("plugin remove ")), false);
+});
+
+test("snapshot rollback preserves a nested external-target symlink without traversing or materializing it", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-plugin-nested-symlink-"));
+  const home = path.join(root, "home");
+  const codexHome = path.join(root, "isolated-codex-home");
+  const external = path.join(root, "external-plugin-version");
+  const nestedLink = path.join(codexHome, "plugins", "cache", "openai-bundled", "chrome", "latest");
+  const { source, releaseId } = makeActivationRelease(root);
+  const codexExecutable = makeFakeCodex(root);
+  fs.mkdirSync(external, { recursive: true });
+  fs.writeFileSync(path.join(external, "sentinel.txt"), "external version state\n");
+  fs.mkdirSync(path.dirname(nestedLink), { recursive: true });
+  fs.symlinkSync(external, nestedLink);
+  const originalLinkTarget = fs.readlinkSync(nestedLink);
+  fs.writeFileSync(path.join(codexHome, "plugins", "prior.txt"), "prior plugin state\n");
+  const priorFailure = process.env.FAKE_CODEX_FAIL_PLUGIN;
+  process.env.FAKE_CODEX_FAIL_PLUGIN = "model-routing-gate";
+  t.after(() => {
+    if (priorFailure === undefined) delete process.env.FAKE_CODEX_FAIL_PLUGIN;
+    else process.env.FAKE_CODEX_FAIL_PLUGIN = priorFailure;
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  assert.throws(
+    () => activateRelease(source, releaseId, home, { codexHome, codexExecutable }),
+    /injected plugin install failure/
+  );
+  assert.equal(fs.lstatSync(nestedLink).isSymbolicLink(), true);
+  assert.equal(fs.readlinkSync(nestedLink), originalLinkTarget);
+  assert.equal(fs.readFileSync(path.join(external, "sentinel.txt"), "utf8"), "external version state\n");
+  assert.deepEqual(fs.readdirSync(external), ["sentinel.txt"]);
+  assert.equal(fs.readFileSync(path.join(codexHome, "plugins", "prior.txt"), "utf8"), "prior plugin state\n");
+  assert.equal(fs.existsSync(path.join(source, ".runtime", "current")), false);
+});
+
+test("activation rejects a symlinked top-level plugin-state root without traversing its target", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-plugin-symlink-"));
+  const home = path.join(root, "home");
+  const codexHome = path.join(root, "isolated-codex-home");
+  const external = path.join(root, "external-plugin-state");
+  const { source, releaseId } = makeActivationRelease(root);
+  const codexExecutable = makeFakeCodex(root);
+  fs.mkdirSync(external, { recursive: true });
+  fs.writeFileSync(path.join(external, "sentinel.txt"), "external state\n");
+  fs.mkdirSync(codexHome, { recursive: true });
+  fs.symlinkSync(external, path.join(codexHome, "plugins"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  assert.throws(
+    () => activateRelease(source, releaseId, home, { codexHome, codexExecutable }),
+    /Refusing plugin activation snapshot through symbolic link/
+  );
+  assert.equal(fs.lstatSync(path.join(codexHome, "plugins")).isSymbolicLink(), true);
+  assert.equal(fs.readFileSync(path.join(external, "sentinel.txt"), "utf8"), "external state\n");
+  assert.equal(fs.existsSync(path.join(external, "cache")), false);
+  assert.equal(fs.existsSync(path.join(source, ".runtime", "current")), false);
+});
+
+test("activation lock prevents a concurrent CODEX_HOME activation without changing plugin state", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-plugin-lock-"));
+  const home = path.join(root, "home");
+  const codexHome = path.join(root, "isolated-codex-home");
+  const { source, releaseId } = makeActivationRelease(root);
+  const codexExecutable = makeFakeCodex(root);
+  const lock = path.join(codexHome, ".agent-system-activation", "activation.lock");
+  fs.mkdirSync(lock, { recursive: true });
+  fs.writeFileSync(path.join(lock, "owner.json"), `${JSON.stringify({ schema_version: 1, pid: process.pid, release_id: "other-release", started_at: "2026-08-02T00:00:00.000Z" })}\n`);
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  assert.throws(
+    () => activateRelease(source, releaseId, home, { codexHome, codexExecutable }),
+    /already in progress for this CODEX_HOME/
+  );
+  assert.equal(fs.existsSync(path.join(codexHome, "fake-codex-state.json")), false);
+  assert.equal(fs.existsSync(path.join(source, ".runtime", "current")), false);
+
+  fs.writeFileSync(path.join(lock, "owner.json"), `${JSON.stringify({ schema_version: 1, pid: -1, release_id: "abandoned-release", started_at: "2026-08-01T00:00:00.000Z" })}\n`);
+  const staleTime = new Date(Date.now() - 10 * 60 * 1000);
+  fs.utimesSync(lock, staleTime, staleTime);
+  const recovered = activateRelease(source, releaseId, home, { codexHome, codexExecutable });
+  assert.equal(recovered.mandatory_plugin_activation.status, "installed_and_verified");
+  assert.equal(fs.existsSync(lock), false);
+});
+
+test("a just-created ownerless CODEX_HOME lock fails cleanly instead of being stolen", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-plugin-ownerless-lock-"));
+  const home = path.join(root, "home");
+  const codexHome = path.join(root, "isolated-codex-home");
+  const { source, releaseId } = makeActivationRelease(root);
+  const codexExecutable = makeFakeCodex(root);
+  const lock = path.join(codexHome, ".agent-system-activation", "activation.lock");
+  fs.mkdirSync(lock, { recursive: true });
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  assert.throws(
+    () => activateRelease(source, releaseId, home, { codexHome, codexExecutable }),
+    /CODEX_HOME.*being initialized or is not yet stale/
+  );
+  assert.equal(fs.existsSync(lock), true);
+  assert.equal(fs.existsSync(path.join(codexHome, "fake-codex-state.json")), false);
+  assert.equal(fs.existsSync(path.join(source, ".runtime", "activation.lock")), false);
+  assert.equal(fs.existsSync(path.join(source, ".runtime", "current")), false);
+});
+
+test("the shared source runtime lock serializes activation across distinct CODEX_HOMEs", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-plugin-runtime-lock-"));
+  const home = path.join(root, "home");
+  const firstCodexHome = path.join(root, "first-codex-home");
+  const secondCodexHome = path.join(root, "second-codex-home");
+  const { source, releaseId } = makeActivationRelease(root);
+  const codexExecutable = makeFakeCodex(root);
+  const lock = path.join(source, ".runtime", "activation.lock");
+  fs.mkdirSync(lock);
+  fs.writeFileSync(path.join(lock, "owner.json"), `${JSON.stringify({ schema_version: 1, pid: process.pid, release_id: "other-release", scope: "source runtime", started_at: "2026-08-02T00:00:00.000Z" })}\n`);
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  for (const codexHome of [firstCodexHome, secondCodexHome]) {
+    assert.throws(
+      () => activateRelease(source, releaseId, home, { codexHome, codexExecutable }),
+      /already in progress for this source runtime/
+    );
+    assert.equal(fs.existsSync(path.join(codexHome, "fake-codex-state.json")), false);
+  }
   assert.equal(fs.existsSync(path.join(source, ".runtime", "current")), false);
 });
 

@@ -30,6 +30,11 @@ function fixture() {
   git(repository, ["add", "storage.rs"]);
   git(repository, ["commit", "-q", "-m", "fixture"]);
   const base = git(repository, ["rev-parse", "HEAD"]);
+  const profile = path.join(root, "machine-profile.json");
+  fs.writeFileSync(profile, JSON.stringify({
+    schema_version: 1,
+    project_roots: { "example-enterprise": [repository] }
+  }));
   const prepared = JSON.parse(execFileSync(process.execPath, [
     helper, "prepare",
     "--project", "example-enterprise",
@@ -43,8 +48,19 @@ function fixture() {
   ], { encoding: "utf8", env: { ...process.env, TMPDIR: root } }));
   return {
     root,
+    repository,
+    base,
     worktree,
     prepared,
+    withProfile(run) {
+      const previous = process.env.ACG_MACHINE_PROFILE;
+      process.env.ACG_MACHINE_PROFILE = profile;
+      try { return run(); }
+      finally {
+        if (previous === undefined) delete process.env.ACG_MACHINE_PROFILE;
+        else process.env.ACG_MACHINE_PROFILE = previous;
+      }
+    },
     cleanup() {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -69,12 +85,56 @@ test("verified assignment receipt grants the prepared worktree root", () => {
   const value = fixture();
   try {
     assert.throws(() => resolveRoute(request(value), policyRoot), /outside approved roots/);
-    const routed = resolveRoute(request(value, value.prepared.receipt_path), policyRoot);
+    const routed = value.withProfile(() => resolveRoute(request(value, value.prepared.receipt_path), policyRoot));
     const capability = routed.resolution_receipt.authorization_decision.subagent_worktree_capability;
     assert.equal(capability.receipt_sha256, value.prepared.receipt_sha256);
     assert.equal(capability.worktree, fs.realpathSync(value.worktree));
     assert.equal(capability.branch, "codex/example-provider-storage/pascal");
     assert.equal(capability.authority, "receipt_bound_worktree");
+  } finally {
+    value.cleanup();
+  }
+});
+
+test("a rehashed receipt cannot grant its worktree to a different request project", () => {
+  const value = fixture();
+  try {
+    const receipt = JSON.parse(fs.readFileSync(value.prepared.receipt_path, "utf8"));
+    receipt.work_id = "rehash-does-not-rebind-project";
+    const unsigned = { ...receipt };
+    delete unsigned.receipt_sha256;
+    receipt.receipt_sha256 = `sha256:${crypto.createHash("sha256").update(JSON.stringify(unsigned)).digest("hex")}`;
+    fs.writeFileSync(value.prepared.receipt_path, JSON.stringify(receipt));
+    assert.throws(
+      () => value.withProfile(() => resolveRoute({ ...request(value, value.prepared.receipt_path), project: "other-project" }, policyRoot)),
+      /Continuation receipt project does not match --project/
+    );
+  } finally {
+    value.cleanup();
+  }
+});
+
+test("a low-level helper cannot mint a project-B route capability over project-A lineage", () => {
+  const value = fixture();
+  try {
+    const spoofed = JSON.parse(execFileSync(process.execPath, [
+      helper, "prepare",
+      "--project", "other-project",
+      "--repository", value.repository,
+      "--base", value.base,
+      "--work-id", "PROJECT-B-SPOOF",
+      "--seat", "attacker",
+      "--worktree", path.join(value.root, "worktrees", "spoofed"),
+      "--write-scope", "storage.rs"
+    ], { encoding: "utf8", env: { ...process.env, TMPDIR: value.root } }));
+    const spoofedValue = { ...value, worktree: spoofed.worktree };
+    assert.throws(
+      () => value.withProfile(() => resolveRoute({
+        ...request(spoofedValue, spoofed.receipt_path),
+        project: "other-project"
+      }, policyRoot)),
+      /Repository belongs to unrelated project: example-enterprise/
+    );
   } finally {
     value.cleanup();
   }
@@ -86,7 +146,7 @@ test("tampered receipt and branch mismatch fail closed", () => {
     const receipt = JSON.parse(fs.readFileSync(tampered.prepared.receipt_path, "utf8"));
     receipt.seat = "Other";
     fs.writeFileSync(tampered.prepared.receipt_path, JSON.stringify(receipt, null, 2) + "\n");
-    assert.throws(() => resolveRoute(request(tampered, tampered.prepared.receipt_path), policyRoot), /receipt digest is invalid/);
+    assert.throws(() => tampered.withProfile(() => resolveRoute(request(tampered, tampered.prepared.receipt_path), policyRoot)), /receipt digest is invalid/);
   } finally {
     tampered.cleanup();
   }
@@ -94,7 +154,7 @@ test("tampered receipt and branch mismatch fail closed", () => {
   const wrongBranch = fixture();
   try {
     git(wrongBranch.worktree, ["switch", "-q", "-c", "wrong-branch"]);
-    assert.throws(() => resolveRoute(request(wrongBranch, wrongBranch.prepared.receipt_path), policyRoot), /branch mismatch/);
+    assert.throws(() => wrongBranch.withProfile(() => resolveRoute(request(wrongBranch, wrongBranch.prepared.receipt_path), policyRoot)), /branch mismatch/);
   } finally {
     wrongBranch.cleanup();
   }
@@ -109,10 +169,10 @@ test("router verifies bounded large continuation evidence and detects later sour
       helper, "continue", "--receipt", value.prepared.receipt_path, "--expected-head", value.prepared.base_commit
     ], { encoding: "utf8", env: { ...process.env, TMPDIR: value.root } }));
     assert.doesNotMatch(fs.readFileSync(continued.receipt_path, "utf8"), /xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/);
-    const routed = resolveRoute(request(value, continued.receipt_path), policyRoot);
+    const routed = value.withProfile(() => resolveRoute(request(value, continued.receipt_path), policyRoot));
     assert.equal(routed.resolution_receipt.authorization_decision.decision, "allow");
     fs.appendFileSync(path.join(value.worktree, "storage.rs"), "changed");
-    assert.throws(() => resolveRoute(request(value, continued.receipt_path), policyRoot), /dirty state changed/);
+    assert.throws(() => value.withProfile(() => resolveRoute(request(value, continued.receipt_path), policyRoot)), /dirty state changed/);
   } finally {
     value.cleanup();
   }
@@ -139,10 +199,10 @@ test("router accepts generated-only continuation receipts without write_scope", 
     receipt.receipt_sha256 = `sha256:${crypto.createHash("sha256").update(JSON.stringify(unsigned)).digest("hex")}`;
     fs.writeFileSync(continued.receipt_path, JSON.stringify(receipt));
     const generatedRequest = { ...request({ ...value, worktree: prepared.worktree }, continued.receipt_path), paths: [prepared.worktree] };
-    assert.equal(resolveRoute(generatedRequest, policyRoot).resolution_receipt.authorization_decision.decision, "allow");
+    assert.equal(value.withProfile(() => resolveRoute(generatedRequest, policyRoot)).resolution_receipt.authorization_decision.decision, "allow");
     fs.rmSync(path.join(prepared.worktree, "node_modules"), { recursive: true, force: true });
     fs.symlinkSync(value.root, path.join(prepared.worktree, "node_modules"));
-    assert.throws(() => resolveRoute(generatedRequest, policyRoot), /Generated output scope root must not be a symlink/);
+    assert.throws(() => value.withProfile(() => resolveRoute(generatedRequest, policyRoot)), /Generated output scope root must not be a symlink/);
   } finally {
     value.cleanup();
   }
@@ -151,14 +211,14 @@ test("router accepts generated-only continuation receipts without write_scope", 
 test("top-level communication owns one lifecycle without stdin", () => {
   const value = fixture();
   try {
-    const output = JSON.parse(execFileSync(process.execPath, [
+    const output = value.withProfile(() => JSON.parse(execFileSync(process.execPath, [
       cli,
       "communicate",
       "--project", "example-enterprise",
       "--target", "fixture-task",
       "--scope", value.worktree,
       "--subagent-worktree-receipt", value.prepared.receipt_path
-    ], { encoding: "utf8" }));
+    ], { encoding: "utf8" })));
     assert.equal(output.command, "communicate");
     assert.equal(output.communication_authorized, true);
     assert.equal(output.message_sent, false);

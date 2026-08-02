@@ -91,6 +91,37 @@ test("deep audit accepts a derived worktree with uniquely matching registered Gi
   }
 });
 
+test("deep audit rejects an unregistered external copy that shares Git metadata", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-deep-audit-forged-"));
+  const home = path.join(root, "home");
+  const repository = path.join(root, "repository");
+  const registered = path.join(root, "registered-worktree");
+  const forged = path.join(root, "forged-worktree");
+  fs.mkdirSync(path.join(home, ".codex"), { recursive: true });
+  fs.mkdirSync(repository);
+  execFileSync("git", ["-C", repository, "init"]);
+  execFileSync("git", ["-C", repository, "config", "user.email", "acg@example.invalid"]);
+  execFileSync("git", ["-C", repository, "config", "user.name", "ACG Test"]);
+  fs.writeFileSync(path.join(repository, "owned.txt"), "base\n");
+  execFileSync("git", ["-C", repository, "add", "."]);
+  execFileSync("git", ["-C", repository, "commit", "-m", "base"]);
+  execFileSync("git", ["-C", repository, "worktree", "add", "-b", "audit-forged", registered]);
+  fs.cpSync(registered, forged, { recursive: true });
+  fs.writeFileSync(path.join(home, ".codex", "governance-machine-profile.json"), JSON.stringify({
+    schema_version: 1,
+    project_roots: { "fixture-project": [repository] }
+  }));
+  const env = { ...process.env, HOME: home };
+  delete env.ACG_MACHINE_PROFILE;
+  try {
+    assert.throws(() => execFileSync(process.execPath, [
+      cli, "audit", "--project", "fixture-project", "--path", forged
+    ], { encoding: "utf8", env, stdio: ["ignore", "pipe", "pipe"] }), /not registered by the canonical repository/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("conditional policies give bounded root and thread-tool recovery guidance", () => {
   const projectPolicy = fs.readFileSync(path.join(codeRoot, "governance", "modules", "project-overlays.md"), "utf8");
   const delegationPolicy = fs.readFileSync(path.join(codeRoot, "governance", "modules", "delegation.md"), "utf8");

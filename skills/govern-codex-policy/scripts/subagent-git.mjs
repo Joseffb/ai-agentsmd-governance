@@ -94,6 +94,7 @@ function existingCleanWorktree(value, repository, branch, baseCommit) {
   if (fs.realpathSync(git(worktree, ["rev-parse", "--show-toplevel"])) !== worktree) fail("Existing worktree must be a Git worktree root");
   if (git(worktree, ["branch", "--show-current"]) !== branch) fail(`Existing worktree branch mismatch: expected ${branch}`);
   if (git(worktree, ["rev-parse", "HEAD"]).toLowerCase() !== baseCommit) fail("Existing worktree moved from the requested base; create a new clean worktree");
+  registeredWorktree(repository, worktree, branch, baseCommit, "Existing worktree");
   if (git(worktree, ["status", "--porcelain=v1", "--untracked-files=all"])) {
     fail("Existing derived worktree is dirty and has no governed assignment receipt. Reuse its original receipt with seat continue; if it is unavailable, preserve the candidate and use the project's native/manual recovery workflow instead of seat assign.");
   }
@@ -127,6 +128,26 @@ function commonGitDirectory(cwd) {
   const value = git(cwd, ["rev-parse", "--git-common-dir"]);
   const absolute = path.isAbsolute(value) ? value : path.resolve(cwd, value);
   return fs.realpathSync(absolute);
+}
+
+function registeredWorktree(repository, worktree, branch, head, label = "Worktree") {
+  const output = execFileSync("git", ["-C", repository, "worktree", "list", "--porcelain", "-z"], {
+    encoding: "utf8",
+    env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" },
+    stdio: ["ignore", "pipe", "pipe"],
+    maxBuffer: GIT_TEXT_MAX_BUFFER
+  });
+  const matches = output.split("\0\0").filter(Boolean).map((record) => Object.fromEntries(
+    record.split("\0").filter(Boolean).map((line) => {
+      const separator = line.indexOf(" ");
+      return [line.slice(0, separator), line.slice(separator + 1)];
+    })
+  )).filter((entry) => entry.worktree === worktree);
+  if (matches.length !== 1) fail(`${label} is not registered by the canonical repository`);
+  const registered = matches[0];
+  if (registered.HEAD?.toLowerCase() !== head) fail(`${label} HEAD does not match its canonical repository registration`);
+  if (registered.branch !== `refs/heads/${branch}`) fail(`${label} branch does not match its canonical repository registration`);
+  return registered;
 }
 
 function digest(value) {
@@ -240,6 +261,7 @@ function verifyIdentity(receipt) {
   if (git(worktree, ["branch", "--show-current"]) !== receipt.branch) fail("Assigned worktree is on the wrong branch");
   const head = git(worktree, ["rev-parse", "HEAD"]).toLowerCase();
   if (head !== receipt.base_commit) fail("Assigned worktree moved from the verified base; prepare a new isolated seat");
+  registeredWorktree(repository, worktree, receipt.branch, head, "Assigned worktree");
   return { repository, worktree, head };
 }
 

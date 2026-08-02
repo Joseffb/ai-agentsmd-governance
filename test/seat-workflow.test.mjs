@@ -505,6 +505,15 @@ test("seat assign rejects an unrelated repository, symlink alias, and ambiguous 
   assert.notEqual(unrelated.status, 0);
   assert.match(unrelated.stderr, /different repository/u);
 
+  const registered = createCleanDerivedWorktree(value, "forged-registration");
+  const forged = path.join(value.root, "forged-registration");
+  fs.cpSync(registered, forged, { recursive: true });
+  const unregistered = spawnSync(process.execPath, seatArgsForExistingWorktree(value, "forged-registration", forged), {
+    encoding: "utf8", env: value.env
+  });
+  assert.notEqual(unregistered.status, 0);
+  assert.match(unregistered.stderr, /not registered by the canonical repository/u);
+
   const derived = createCleanDerivedWorktree(value, "symlink-alias");
   const alias = path.join(value.root, "derived-alias");
   fs.symlinkSync(derived, alias);
